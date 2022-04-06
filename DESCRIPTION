@@ -1,0 +1,17 @@
+Package: provoc
+Title: Proportions of Variants of Concern from Counts and Coverage of a list of Mutations and a Reference for Which Variants Those Mutations may Come From
+Version: 0.0.0.9000
+Authors@R: 
+    person("Devan", "Becker", , "D7Becker@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: Given a data frame with columns counts, coverage, and mutation, along with a matrix with rows representing Variants of Concern and columns representing mutations for those variants (entries being 1 if the mutation exists, 0 otherwise), this package provides an optimization routine and a Bayesian model to estimate the proportions of each variant of concern. The Bayesian model requires an installation of JAGS and the runjags R package.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
+Imports: 
+    dplyr,
+    stats,
+    tidyr
+Suggests:
+    runjags

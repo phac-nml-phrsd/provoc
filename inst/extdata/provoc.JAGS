@@ -1,0 +1,16 @@
+model{
+    # Likelihood
+    for(i in 1:N) {
+        # adjust pvec to be in (0,1) rather than [0,1]
+        count[i] ~ dbinom((pvec[i] + 0.001)*0.999, coverage[i])
+    }
+
+    # Prior on proportions for each variant
+    for(j in 1:P) {
+        p1[j] ~ dbeta(alpha, beta)
+        p[j] <- ifelse(sum(p1) >= 1, p1[j]/sum(p1), p1[j])
+    }
+
+    # Sum of p times an indicator function
+    pvec <- p %*% variantmat
+}

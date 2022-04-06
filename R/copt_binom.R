@@ -1,46 +1,8 @@
-# Functions for ProVoC
-
-p_model <- {"
-model{
-    # Likelihood
-    for(i in 1:N) {
-        # Ensure that the proportion is less than 1
-        #p1[i] <- min(0.9999, pvec[i])
-        #sump[i] <- sum(pvec[i])
-        count[i] ~ dbinom((pvec[i] + 0.001)*0.999, coverage[i])
-    }
-
-    # Prior on proportions for each variant
-    for(j in 1:P) {
-        p1[j] ~ dbeta(alpha, beta)
-        p[j] <- ifelse(sum(p1) >= 1, p1[j]/sum(p1), p1[j])
-    }
-
-    # Sum of p times an indicator function
-    pvec <- p %*% variantmat
-}
-"}
-
-
-
-melt_mcmc <- function(mcmc.list, pivot = TRUE) {
-    mcmc <- bind_rows(lapply(1:length(mcmc.list$mcmc),
-            function(i) {
-                x <- as.data.frame(mcmc.list$mcmc[[i]])
-                x$chain <- i
-                x$iter <- 1:nrow(x)
-                x
-            }
-        ))
-    if(pivot) {
-        return(tidyr::pivot_longer(mcmc, -c("chain", "iter")))
-    } else {
-        return(mcmc)
-    }
-}
-
-
-
+#' Transform a vector to the interior of the feasible region to be used as inits for constrOptim
+#' 
+#' @param x A vector of numbers
+#' 
+#' @return A vector with the same length of x such that the sum of the values is larger than 0 but less than 1 and all values are between 0 and 1
 to_feasible <- function(x){
     x <- x - min(x, na.rm = TRUE) + 0.0001
     x <- 0.99 * x / sum(x, na.rm = TRUE)
@@ -48,35 +10,11 @@ to_feasible <- function(x){
 }
 
 
-
-coda_binom <- function(cocovoc1, vari2, prm){
-    tryCatch(
-            run.jags(
-                model = p_model,
-                data = list(
-                    count = cocovoc1$count,
-                    N = nrow(cocovoc1),
-                    coverage = cocovoc1$coverage + 1,
-                    P = nrow(vari2),
-                    variantmat = vari2,
-                    alpha = 2,
-                    beta = 8),
-                #inits = list(p1 = rep(1/nrow(variantmat), nrow(variantmat))),
-                adapt = prm$adapt,
-                burnin = prm$burnin,
-                n.chains = 3,
-                sample = prm$sample,
-                thin = prm$thin,
-                monitor = c("p"),
-                summarise = FALSE,
-                silent = prm$quiet,
-                #silent.runjags = TRUE,
-                method = "parallel"),
-            error = function(e) e)
-}
-
-
-
+#' Initialize a vector of proportions for the variants of concern, prioritizing current (March 2022) most probable VoCs.
+#' 
+#' @param varmat The variant matrix to be used in the study; only used for the rownames (which should be VOCs in the expected format)
+#' 
+#' @return varmat a vector with the same length as the number of rows of varmat, such that the values sum to less than one and each value is between 0 and 1
 rho_initializer <- function(varmat) {
     rho_init <- rep(10, length = nrow(varmat))
     # B or Omicron
@@ -99,20 +37,31 @@ rho_initializer <- function(varmat) {
 }
 
 
-
+#' Estimate the proportions of VOCs using Constrained OPTimization
+#' 
+#' @param coco A data frame containing counts, coverage, and mutation names
+#' @param varmat The variant matrix to be used in the study. The rownames must be the VoCs and the colnames must be the mutation names (in the same format as the mutation names in `coco`)
+#' 
+#' @return A list containing the vector of proportions for the variants of concern, in the same order as the rows of varmat. This list also contains valuable convergence information.
+#' @export
+#' 
+#' @details The estimates are found by minimizing the squared difference between the frequency of each mutation and the prediction of a binomial model where the proportion is equal to the sum of rho times the relevant column of varmat and the size parameter is equal to the coverage. 
+#' 
+#' The algorithm will first try a prior guess based on the current (March 2022) most common VOCs, then will try a uniform proportion, then (the nuclear option) will try 100 random perturbations until it works. Fails gracefully, with list elements indicating the convergence status and the initialization of rho. 
+#' 
+#' This function currently does not return any estimate of variance for the proportions and should not be trusted beyond a quick check.
 copt_binom <- function(coco, varmat) {
     bad_freq <- which(is.na(coco$frequency))
     muts <- coco$mut[-bad_freq]
     freq2 <- coco$frequency[-bad_freq]
     cov2 <- coco$coverage[-bad_freq]
     vari2 <- varmat[, muts]
-    rho_init <- 0.99*rep(1/nrow(vari2), nrow(vari2))
 
     objective <- function(rho, frequency, varmat, coverage) {
         count <- round(frequency * coverage)
         prob <- as.numeric(rho %*% varmat)
         prob[coverage == 0] <- 0
-        -sum(dbinom(x = count, size = coverage, prob = prob,
+        -sum(stats::dbinom(x = count, size = coverage, prob = prob,
             log = TRUE))
     }
 
@@ -138,7 +87,7 @@ copt_binom <- function(coco, varmat) {
 
 
     rho_init <- rho_initializer(vari2)
-    res <- constrOptim(rho_init,
+    res <- stats::constrOptim(rho_init,
         f = objective, grad = NULL,
         ui = ui, ci = ci,
         frequency = freq2, coverage = cov2, varmat = vari2,
@@ -147,7 +96,8 @@ copt_binom <- function(coco, varmat) {
 
     if(res$convergence) { # if not converged,
         # Try a different initialization
-        res <- constrOptim(rho_init,
+        rho_init <- 0.99*rep(1/nrow(vari2), nrow(vari2))
+        res <- stats::constrOptim(rho_init,
             f = objective, grad = NULL,
             ui = ui, ci = ci,
             frequency = freq2, coverage = cov2, varmat = vari2,
@@ -166,11 +116,11 @@ copt_binom <- function(coco, varmat) {
             print(paste0("Attempt ", i, " of 100."))
             # Add noise to previous iteration
             rho_init <- res$par +
-                rnorm(length(rho_init), 0, 0.1)
+                stats::rnorm(length(rho_init), 0, 0.1)
             # Constrain to interior of feasible region
             rho_init <- to_feasible(rho_init)
 
-            res <- constrOptim(rho_init,
+            res <- stats::constrOptim(rho_init,
                 f = objective, grad = NULL,
                 ui = ui, ci = ci,
                 frequency = freq2, coverage = cov2, varmat = vari2,
@@ -183,5 +133,3 @@ copt_binom <- function(coco, varmat) {
 
     res
 }
-
-
