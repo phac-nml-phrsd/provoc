@@ -2,12 +2,16 @@
 % Please edit documentation in R/coda_binom.R
 \name{coda_binom}
 \alias{coda_binom}
-\title{Estimate a Bayesian model for rho.}
+\title{Estimate a Bayesian model for \eqn{\rho}.}
 \usage{
 coda_binom(
   coco,
   varmat,
-  prm = list(adapt = 500, burnin = 1000, sample = 1000, thin = 4, quiet = 0)
+  adapt = 500,
+  burnin = 1000,
+  sample = 1000,
+  thin = 4,
+  quiet = TRUE
 )
 }
 \arguments{
@@ -15,11 +19,23 @@ coda_binom(
 
 \item{varmat}{The variant matrix to be used in the study. The rownames must be the VoCs and the colnames must be the mutation names (in the same format as the mutation names in \code{coco})}
 
-\item{prm}{The parameters for the mcmc fit, generally from a prm.json file.}
+\item{adapt, burnin, sample, thin}{Parameters passed to runjags. Note that \code{sample} is the final number of samples that you will receive from each chain (i.e. if \code{thin = 5} and \code{sample = 1000}, you will end up drawing 5000 samples so that 1000 are returned after thinning).}
+
+\item{quiet}{If TRUE, much (but not all) of the runjags output will be suppressed.}
 }
 \value{
 an mcmc.list object with each column representing the proportion of the variant of concern, in the order of the rownames of variantmat. It is suggested to use melt_mcmc to get output that plays better with ggplot2 and dplyr.
 }
 \description{
-Estimate a Bayesian model for rho.
+Fits \eqn{counts_i \sim Binom(p_i, coverage_i)}, where \eqn{p_i} is \eqn{\rho} (the vector of proportions for each variant) times the column of the variant matrix corresponding to the \eqn{i}th mutation. In other words, \eqn{p_i} is the sum of the proportions of the variants that contain mutation i.
+}
+\examples{
+varmat <= simulate_varmat()
+coco <- simulate_coco(varmat, rel_counts = c(100, 200, 300))
+
+coda <- coda_binom(coco, varmat)
+codf <- melt_mcmc(coda, pivot = FALSE)
+
+plot(x = codf$iter, y = codf[, 1], col = codf$chain)
+
 }

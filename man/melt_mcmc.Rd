@@ -4,12 +4,12 @@
 \alias{melt_mcmc}
 \title{Convert a list of MCMC objects to a data frame with \code{chain} and \code{iter}}
 \usage{
-melt_mcmc(mcmc.list, pivot = TRUE)
+melt_mcmc(mcmc.list, pivot = FALSE)
 }
 \arguments{
-\item{mcmc.list}{The list of MCMC objects, as returned by runjags or rjags}
+\item{mcmc.list}{The list of MCMC objects, as returned by runjags or rjags.}
 
-\item{pivot}{Use tidyr::pivot_longer to make an easy-to-plot object}
+\item{pivot}{Use tidyr::pivot_longer to make an easy-to-plot object.}
 }
 \value{
 A data frame, either with columns iter, chain and all monitored variables if pivot = FALSE or iter, chain, value for the posterior sample and name for the name of the monitored variable if pivot = TRUE.
