@@ -12,7 +12,17 @@ copt_binom(coco, varmat)
 \item{varmat}{The variant matrix to be used in the study. The rownames must be the VoCs and the colnames must be the mutation names (in the same format as the mutation names in \code{coco})}
 }
 \value{
-A list containing the vector of proportions for the variants of concern, in the same order as the rows of varmat. This list also contains valuable convergence information.
+A list containing the results (\code{$par}) as well as convergence information from \code{constrOptim}.
+
+\describe{
+\item{par}{The estimated proportions of the variants of concern (\eqn{rho})}
+\item{value}{The estimated optimum value of the objective function. Not often useful.}
+\item{counts}{The number of times the function was calculated (i.e. total iterations). Has nothing to do with the counts column in \code{coco}.}
+\item{message}{If the algorithm didn't converge, some explanation as to why.}
+\item{outer.iterations}{The number of calls to \code{optim}}
+\item{barrier.value}{value of the barrier function at the optimum}
+\item{init_method}{The method used to initialize \eqn{rho}. Either Prior_Assumption (assumes mostly Omicron, then Delta, then fills out the others to make it sum to 1), "Uniform" for equal values of each variant, or "Nuclear" for a routine that tries 100 random perturbations of the previous values.}
+}
 }
 \description{
 Estimate the proportions of VOCs using Constrained OPTimization
@@ -22,5 +32,14 @@ The estimates are found by minimizing the squared difference between the frequen
 
 The algorithm will first try a prior guess based on the current (March 2022) most common VOCs, then will try a uniform proportion, then (the nuclear option) will try 100 random perturbations until it works. Fails gracefully, with list elements indicating the convergence status and the initialization of rho.
 
-This function currently does not return any estimate of variance for the proportions and should not be trusted beyond a quick check.
+This function currently does not return any estimate of variance for the proportions and should not be trusted beyond a quick check. In practice it produces results equivalent to \code{coda_binom()} (even when it doesn't converge), but always check the residuals.
+}
+\examples{
+varmat = simulate_varmat() # default values (Omicron)
+coco = simulate_coco(varmat, rel_counts = c(100, 200, 300)) # expect 1/6, 2/6, and 3/6
+res = copt_binom(coco, varmat)
+res$par
+}
+\seealso{
+\code{\link[stats]{constrOptim}}
 }
