@@ -56,6 +56,7 @@ copt_binom <- function(coco, varmat) {
     freq2 <- coco$frequency[-bad_freq]
     cov2 <- coco$coverage[-bad_freq]
     vari2 <- varmat[, muts]
+    rho_init <- rho_initializer(vari2)
 
     objective <- function(rho, frequency, varmat, coverage) {
         count <- round(frequency * coverage)
@@ -86,7 +87,6 @@ copt_binom <- function(coco, varmat) {
     ci <- c(c_sum1, c_sum0, c_p0, c_p1)
 
 
-    rho_init <- rho_initializer(vari2)
     res <- stats::constrOptim(rho_init,
         f = objective, grad = NULL,
         ui = ui, ci = ci,

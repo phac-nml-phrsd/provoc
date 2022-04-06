@@ -29,9 +29,13 @@ melt_mcmc <- function(mcmc.list, pivot = TRUE) {
 #' 
 #' @return an mcmc.list object with each column representing the proportion of the variant of concern, in the order of the rownames of variantmat. It is suggested to use melt_mcmc to get output that plays better with ggplot2 and dplyr.
 #' @export
-coda_binom <- function(coco, varmat, prm){
+coda_binom <- function(
+        coco, 
+        varmat, 
+        prm = list(adapt = 500, burnin = 1000, 
+            sample = 1000, thin = 4, quiet = 0)){
     if(requireNamespace("runjags", quietly = TRUE)) {
-        tryCatch(
+        res <- tryCatch(
                 runjags::run.jags(
                     model = system.file("inst/extdata/provoc.JAGS", package = "provoc"),
                     data = list(
@@ -54,6 +58,7 @@ coda_binom <- function(coco, varmat, prm){
                     #silent.runjags = TRUE,
                     method = "parallel"),
                 error = function(e) e)
+        return(res)
     } else {
         "JAGS and runjags are required to use this function."
     }

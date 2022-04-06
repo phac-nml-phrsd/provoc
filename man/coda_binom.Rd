@@ -4,7 +4,11 @@
 \alias{coda_binom}
 \title{Estimate a Bayesian model for rho.}
 \usage{
-coda_binom(coco, varmat, prm)
+coda_binom(
+  coco,
+  varmat,
+  prm = list(adapt = 500, burnin = 1000, sample = 1000, thin = 4, quiet = 0)
+)
 }
 \arguments{
 \item{coco}{A data frame containing counts, coverage, and mutation names}
