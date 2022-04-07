@@ -47,15 +47,27 @@ coda_binom <- function(
         adapt = 500, burnin = 1000, sample = 1000, thin = 4,
         quiet = TRUE){
     if(requireNamespace("runjags", quietly = TRUE)) {
+        bad_freq <- which(is.na(coco$coverage))
+        if(length(bad_freq) > 0) {
+            muts <- coco$mut[-bad_freq]
+            cou2 <- coco$count[-bad_freq]
+            cov2 <- coco$coverage[-bad_freq]
+            vari2 <- varmat[, muts]
+        } else {
+            muts <- coco$mut
+            cou2 <- coco$count
+            cov2 <- coco$coverage
+            vari2 <- varmat
+        }
         res <- tryCatch(
                 runjags::run.jags(
                     model = system.file("inst/extdata/provoc.JAGS", package = "provoc"),
                     data = list(
-                        count = coco$count,
-                        N = nrow(coco),
-                        coverage = coco$coverage + 1,
-                        P = nrow(varmat),
-                        variantmat = varmat,
+                        count = cou2,
+                        N = length(cou2),
+                        coverage = cov2 + 1,
+                        P = nrow(vari2),
+                        variantmat = vari2,
                         alpha = 2,
                         beta = 8),
                     #inits = list(p1 = rep(1/nrow(variantmat), nrow(variantmat))),
