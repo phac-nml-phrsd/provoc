@@ -61,7 +61,7 @@ coda_binom <- function(
         }
         res <- tryCatch(
                 runjags::run.jags(
-                    model = system.file("inst/extdata/provoc.JAGS", package = "provoc"),
+                    model = system.file("extdata/provoc.JAGS", package = "provoc"),
                     data = list(
                         count = cou2,
                         N = length(cou2),
