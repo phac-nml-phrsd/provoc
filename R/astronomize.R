@@ -42,6 +42,12 @@ re.findall <- function(pat, s) {
 #' If this is not the case, a path to the root folder of the constellations repo is required. The path is to the root folder, not the folder with the constellation files. TODO: allow for both cases.
 #' 
 #' There are no options to specify which lineages to include. I am working on a \code{annihilate(coco, varmat)} function to remove mutations that aren't shared between coco and varmat and squash lineages that have too few observed mutations or are too similar to other lineages.
+#' 
+#' @examples
+#' if(dir.exists("../constellations")) {
+#'     varmat <- astronomize()
+#' }
+#' 
 astronomize <- function(path = "../constellations") {
     orfs <- list(
         'orf1a'= c(265, 13468),
@@ -70,7 +76,7 @@ astronomize <- function(path = "../constellations") {
     stelpath <- paste0(path, "/constellations/definitions")
 
     sitelist <- lapply(list.files(stelpath, full.names = TRUE), function(stelfile){
-        stelfile <<- stelfile
+        stelfile <- stelfile
         lineage <- gsub("^c|\\.json$", "", basename(stelfile))
         constellation <- jsonlite::read_json(stelfile, simplifyVector = TRUE)
         constellation$sites <- unique(constellation$sites)
@@ -79,7 +85,7 @@ astronomize <- function(path = "../constellations") {
 
         # convert constellation to label notation in the mapped files
         sites <- lapply(unique(constellation$sites), function(d) {
-            d <<- d
+            d <- d
             toks <- toupper(strsplit(d, ":")[[1]])
 
             if (toks[1] != "DEL" && toks[1] != "NUC")

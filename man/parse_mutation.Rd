@@ -8,7 +8,7 @@ parse_mutation(
   type,
   pos,
   alt,
-  reffile = system.file("inst/extdata/NC_045512.fa", package = "provoc")
+  reffile = system.file("extdata/NC_045512.fa", package = "provoc")
 )
 }
 \arguments{
@@ -24,5 +24,5 @@ parse_mutation(
 e.g. aa:orf1a:K856R
 }
 \description{
-As with many things in this repo, lovingly stolen from \url{https://github.com/PoonLab/gromstole}.
+As with many things in this repo, lovingly stolen from the \code{seq_utils.py} script in \url{https://github.com/PoonLab/gromstole} (as well as PoonLab/covizu).
 }
