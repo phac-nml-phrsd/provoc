@@ -49,12 +49,12 @@ coda_binom <- function(
     if(requireNamespace("runjags", quietly = TRUE)) {
         bad_freq <- which(is.na(coco$coverage))
         if(length(bad_freq) > 0) {
-            muts <- coco$mut[-bad_freq]
+            muts <- coco$mutation[-bad_freq]
             cou2 <- coco$count[-bad_freq]
             cov2 <- coco$coverage[-bad_freq]
             vari2 <- varmat[, muts]
         } else {
-            muts <- coco$mut
+            muts <- coco$mutation
             cou2 <- coco$count
             cov2 <- coco$coverage
             vari2 <- varmat
