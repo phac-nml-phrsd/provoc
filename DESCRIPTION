@@ -12,6 +12,9 @@ RoxygenNote: 7.1.2
 Imports: 
     dplyr,
     stats,
-    tidyr
+    tidyr,
+    jsonlite
 Suggests:
-    runjags
+    runjags,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
