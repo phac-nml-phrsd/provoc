@@ -2,7 +2,8 @@
 % Please edit documentation in R/astronomize.R
 \name{astronomize}
 \alias{astronomize}
-\title{Extract mutation list from a directory of constellation files.}
+\title{List of open reading frames
+Extract mutation list from a directory of constellation files.}
 \usage{
 astronomize(path = "../constellations")
 }
@@ -25,4 +26,10 @@ This function requires a local clone of the constellations repository. By defaul
 If this is not the case, a path to the root folder of the constellations repo is required. The path is to the root folder, not the folder with the constellation files. TODO: allow for both cases.
 
 There are no options to specify which lineages to include. I am working on a \code{annihilate(coco, varmat)} function to remove mutations that aren't shared between coco and varmat and squash lineages that have too few observed mutations or are too similar to other lineages.
+}
+\examples{
+if(dir.exists("../constellations")) {
+    varmat <- astronomize()
+}
+
 }
