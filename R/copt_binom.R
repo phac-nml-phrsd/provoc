@@ -132,19 +132,22 @@ copt_binom <- function(coco, varmat) {
 
     if(res$convergence) { 
         print("Trying the nuclear option for constrOptim.")
+        print("This has never actually worked before.")
         print("Godspeed.")
         # Uniform inititialization
         i <- 0
         converged <- FALSE
-        while(i < 100 & !converged) {
+        while(i < 50 & !converged) {
             i <- i + 1
-            print(paste0("Attempt ", i, " of 100."))
+            if(!i %% 10) print(paste0("Attempt ", i, " of 100."))
+
             # Add noise to previous iteration
             rho_init <- res$par +
                 stats::rnorm(length(rho_init), 0, 0.1)
             # Constrain to interior of feasible region
             rho_init <- to_feasible(rho_init)
 
+            # TODO: Use the result with the lowest value
             res <- stats::constrOptim(rho_init,
                 f = objective, grad = NULL,
                 ui = ui, ci = ci,
