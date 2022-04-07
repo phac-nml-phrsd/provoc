@@ -1,5 +1,7 @@
 #' Simulate a small variant matrix for testing
 #' 
+#' Creates a matrix with the specified VoCs and mutation names, but randomly applies mutations. A future version of this function may be useful for simulating mutations in a more meaningful way, but for now it's only useful for testing purposes.
+#' 
 #' @param VOC Names of variants of concern
 #' @param mutations Names of mutations
 #' 
