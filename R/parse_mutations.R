@@ -1,47 +1,7 @@
-#' Amino acid one-letter codes
-#' 
-#' As with many things in this repo, lovingly stolen from \url{https://github.com/PoonLab/gromstole}.
-gcode <- list(
-            'TTT'= 'F', 'TTC'= 'F', 'TTA'= 'L', 'TTG'= 'L',
-            'TCT'= 'S', 'TCC'= 'S', 'TCA'= 'S', 'TCG'= 'S',
-            'TAT'= 'Y', 'TAC'= 'Y', 'TAA'= '*', 'TAG'= '*',
-            'TGT'= 'C', 'TGC'= 'C', 'TGA'= '*', 'TGG'= 'W',
-            'CTT'= 'L', 'CTC'= 'L', 'CTA'= 'L', 'CTG'= 'L',
-            'CCT'= 'P', 'CCC'= 'P', 'CCA'= 'P', 'CCG'= 'P',
-            'CAT'= 'H', 'CAC'= 'H', 'CAA'= 'Q', 'CAG'= 'Q',
-            'CGT'= 'R', 'CGC'= 'R', 'CGA'= 'R', 'CGG'= 'R',
-            'ATT'= 'I', 'ATC'= 'I', 'ATA'= 'I', 'ATG'= 'M',
-            'ACT'= 'T', 'ACC'= 'T', 'ACA'= 'T', 'ACG'= 'T',
-            'AAT'= 'N', 'AAC'= 'N', 'AAA'= 'K', 'AAG'= 'K',
-            'AGT'= 'S', 'AGC'= 'S', 'AGA'= 'R', 'AGG'= 'R',
-            'GTT'= 'V', 'GTC'= 'V', 'GTA'= 'V', 'GTG'= 'V',
-            'GCT'= 'A', 'GCC'= 'A', 'GCA'= 'A', 'GCG'= 'A',
-            'GAT'= 'D', 'GAC'= 'D', 'GAA'= 'E', 'GAG'= 'E',
-            'GGT'= 'G', 'GGC'= 'G', 'GGA'= 'G', 'GGG'= 'G',
-            '---'= '-', 'XXX'= '?'
-        )
-
-#' Open reading frame positions
-#' 
-#' As with many things in this repo, lovingly stolen from \url{https://github.com/PoonLab/gromstole}.
-orfs = list(
-            'orf1a'= c(265, 13468),
-            'orf1b'= c(13467, 21555),
-            'S'= c(21562, 25384),
-            'orf3a'= c(25392, 26220),
-            'E'= c(26244, 26472),
-            'M'= c(26522, 27191),
-            'orf6'= c(27201, 27387),
-            'orf7a'= c(27393, 27759),
-            'orf7b'= c(27755, 27887),
-            'orf8'= c(27893, 28259),
-            'N'= c(28273, 29533),
-            'orf10'= c(29557, 29674)
-        )
 
 #' Parse mutations from (type, pos, alt) to amino acid
 #' 
-#' As with many things in this repo, lovingly stolen from \url{https://github.com/PoonLab/gromstole}.
+#' As with many things in this repo, lovingly stolen from the \code{seq_utils.py} script in \url{https://github.com/PoonLab/gromstole} (as well as PoonLab/covizu).
 #' 
 #' @param type Either "~", "+", or "-" for mutation, insertion, or deletion, respectively.
 #' @param pos The one-indexed position relative to the reference.
@@ -51,7 +11,40 @@ orfs = list(
 #' @return e.g. aa:orf1a:K856R
 #' @export
 parse_mutation <- function(type, pos, alt, 
-    reffile = system.file("inst/extdata/NC_045512.fa", package = "provoc")) {
+    reffile = system.file("extdata/NC_045512.fa", package = "provoc")) {
+    gcode <- list(
+        'TTT'= 'F', 'TTC'= 'F', 'TTA'= 'L', 'TTG'= 'L',
+        'TCT'= 'S', 'TCC'= 'S', 'TCA'= 'S', 'TCG'= 'S',
+        'TAT'= 'Y', 'TAC'= 'Y', 'TAA'= '*', 'TAG'= '*',
+        'TGT'= 'C', 'TGC'= 'C', 'TGA'= '*', 'TGG'= 'W',
+        'CTT'= 'L', 'CTC'= 'L', 'CTA'= 'L', 'CTG'= 'L',
+        'CCT'= 'P', 'CCC'= 'P', 'CCA'= 'P', 'CCG'= 'P',
+        'CAT'= 'H', 'CAC'= 'H', 'CAA'= 'Q', 'CAG'= 'Q',
+        'CGT'= 'R', 'CGC'= 'R', 'CGA'= 'R', 'CGG'= 'R',
+        'ATT'= 'I', 'ATC'= 'I', 'ATA'= 'I', 'ATG'= 'M',
+        'ACT'= 'T', 'ACC'= 'T', 'ACA'= 'T', 'ACG'= 'T',
+        'AAT'= 'N', 'AAC'= 'N', 'AAA'= 'K', 'AAG'= 'K',
+        'AGT'= 'S', 'AGC'= 'S', 'AGA'= 'R', 'AGG'= 'R',
+        'GTT'= 'V', 'GTC'= 'V', 'GTA'= 'V', 'GTG'= 'V',
+        'GCT'= 'A', 'GCC'= 'A', 'GCA'= 'A', 'GCG'= 'A',
+        'GAT'= 'D', 'GAC'= 'D', 'GAA'= 'E', 'GAG'= 'E',
+        'GGT'= 'G', 'GGC'= 'G', 'GGA'= 'G', 'GGG'= 'G',
+        '---'= '-', 'XXX'= '?'
+    )
+    orfs = list(
+        'orf1a'= c(265, 13468),
+        'orf1b'= c(13467, 21555),
+        'S'= c(21562, 25384),
+        'orf3a'= c(25392, 26220),
+        'E'= c(26244, 26472),
+        'M'= c(26522, 27191),
+        'orf6'= c(27201, 27387),
+        'orf7a'= c(27393, 27759),
+        'orf7b'= c(27755, 27887),
+        'orf8'= c(27893, 28259),
+        'N'= c(28273, 29533),
+        'orf10'= c(29557, 29674)
+    )
 
     pos <- as.numeric(pos) - 1 # convert to 0-indexed
 
@@ -61,15 +54,11 @@ parse_mutation <- function(type, pos, alt,
         this_orf <- "None"
         this_left <- this_right <- "None"
 
-        i <- 1
-        while(pos >= orfs[[i]][1]) {
-            i <- i + 1
-        }
-        i <- i - 1
-        if (pos < orfs[[i]][2]) {
-            this_orf <- names(orfs)[i]
-            this_left <- orfs[[i]][1] 
-            this_right <- orfs[[i]][2] 
+        orfl <- sapply(orfs, function(x) x[1] < pos & x[2] > pos)
+        if(any(orfl)) {
+            this_orf <- names(orfl)[orfl]
+            this_left <- orfs[[this_orf]][1]
+            this_right <- orfs[[this_orf]][2]
         }
 
         if(this_orf != "None") {
