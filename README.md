@@ -1,7 +1,7 @@
 # ProVoC
 
-<!-- badges: start -->
-<!-- badges: end -->
+[![Lifecycle:
+development](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental-1)
 
 PROportions of Variants of Concern using counts, coverage, and a variant matrix.
 
