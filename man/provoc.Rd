@@ -4,10 +4,10 @@
 \alias{provoc}
 \title{Proportions of Variants of Concern}
 \usage{
-provoc(fuse, method = c("optimize", "runjags"))
+provoc(fused, method = c("optim", "runjags"))
 }
 \arguments{
-\item{fuse}{The fused data frame of coco and varmat}
+\item{fused}{The fused data frame of coco and varmat}
 
 \item{method}{Optimization or Bayesian?}
 }
