@@ -17,20 +17,18 @@ to_feasible <- function(x){
 #' @return varmat a vector with the same length as the number of rows of varmat, such that the values sum to less than one and each value is between 0 and 1
 rho_initializer <- function(varmat) {
     rho_init <- rep(10, length = nrow(varmat))
-    # B or Omicron
-    probables1 <- c("BA.1", "BA.2", "B.1.1.529", "B")
+    # Omicron
+    probables1 <- c("BA.1$", "BA.2$", "^B.1.1.529$")
     for (i in seq_along(probables1)) {
-        if(probables1[i] %in% rownames(varmat)) {
-            row_index <- which(
-                rownames(varmat) == probables1[i]
-            )
-            rho_init[row_index] <- 50
+        var_in_names <- grepl(probables1[i], rownames(varmat))
+        if(any(var_in_names)) {
+            rho_init[which(var_in_names)] <- 50
         }
     }
 
     # Delta
-    probables2 <- grepl("^AY", rownames(varmat))
-    rho_init[probables2] <- 25
+    probables2 <- grepl("AY*", rownames(varmat))
+    rho_init[which(probables2)] <- 25
 
     # Ensure it's not on the boundary
     0.99 * rho_init / sum(rho_init)
@@ -140,7 +138,7 @@ provoc_optim <- function(coco, varmat) {
         converged <- FALSE
         while(i < 50 & !converged) {
             i <- i + 1
-            if(!i %% 10) print(paste0("Attempt ", i, " of 100."))
+            if(!i %% 10) print(paste0("Attempt ", i, " of 50."))
 
             # Add noise to previous iteration
             rho_init <- res$par +
