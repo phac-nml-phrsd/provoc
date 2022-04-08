@@ -4,6 +4,7 @@
 #' 
 #' @param coco A data frame with a column labelled \code{mutation}.
 #' @param varmat Rownames are variants, column names are Mutations.
+#' @param vebose Print information about mutations that were removed by the fusion.
 #' 
 #' @return A data frame with the same columns as coco (possibly fewer rows) and the same columns plus new columns for the variants of concern. The provoc function expects this structure.
 #' @export
@@ -15,24 +16,35 @@
 #' After removing mutations, it's possible that some rows lose their distinctive mutations and become identical. In this case the names of the lineages are pasted together and only one of the rows are kept.
 #' 
 #' Duplicate mutation names in coco are NOT removed. It is safe to use this function on a data frame that contains multiple samples.
-fuse <- function(coco, varmat) {
+fuse <- function(coco, varmat, verbose = TRUE) {
     if(any(colnames(coco) %in% paste0("var_", rownames(varmat)))) {
-        stop("coco should not contain column names that are names of lineages")
+        stop("coco should not contain column names that are names of lineages. Is this object already fused?")
     }
+
     shared <- intersect(coco$mutation, colnames(varmat))
+    # We can't say anything about mutations not in varmat.
+    coco <- coco[!is.na(coco$mutation),]
+    coco <- coco[coco$mutation %in% shared, ]
+
     if(length(shared) < 3) {
         stop("Too few shared mutations. Are they in the same format?")
     } else if(length(shared) <= 10) {
         warning("Fewer than 10 shared mutations. Results may be very difficult to interpret.")
+    } else if(length(shared)/nrow(coco) < 0.5) {
+        warning(paste0(length(shared)/nrow(coco), 
+            "% of coco's mutations are being used. Consider a larger variant matrix."))
+    }
+    if(verbose) {
+        print(paste0(100 * round(nrow(coco) / pre, 3), 
+            "% of the rows of coco have been removed."))
+        coco_only <- coco$mutations[!coco$mutations %in% rownmaes(varmat)]
+        varmat_only <- rownames(varmat)[!rownmaes(varmat) %in% coco$mutations]
+        print("coco-only mutations (removed):")
+        print(coco_only)
+        print("varmat-only mutations (removed)")
+        print(varmat_only)
     }
 
-    # We can't say anything about mutations not in varmat.
-    pre <- nrow(coco)
-    coco <- coco[coco$mutation %in% shared, ]
-    if(nrow(coco) / pre < 0.5) {
-        warning(paste0(100 * round(nrow(coco) / pre, 3), 
-            "% of the rows of coco have been removed."))
-    }
 
     # Lineages without mutations
     vari2 <- varmat[, shared]
@@ -40,7 +52,6 @@ fuse <- function(coco, varmat) {
     vari2 <- vari2[!too_many_zeros, ]
 
     # Squash identical lineages
-    # TODO: Add verbose option to see which mutations were removed.
     i <- 0
     while(i < nrow(vari2)) {
         i <- i + 1

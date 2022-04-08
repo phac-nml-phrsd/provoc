@@ -4,12 +4,14 @@
 \alias{fuse}
 \title{Ensure mutations are present in both coco and varmat}
 \usage{
-fuse(coco, varmat)
+fuse(coco, varmat, verbose = TRUE)
 }
 \arguments{
 \item{coco}{A data frame with a column labelled \code{mutation}.}
 
 \item{varmat}{Rownames are variants, column names are Mutations.}
+
+\item{vebose}{Print information about mutations that were removed by the fusion.}
 }
 \value{
 A data frame with the same columns as coco (possibly fewer rows) and the same columns plus new columns for the variants of concern. The provoc function expects this structure.

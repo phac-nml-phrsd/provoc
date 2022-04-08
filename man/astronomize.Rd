@@ -23,7 +23,7 @@ From the repo, a constellation "a collection of mutations which are functionally
 
 This function requires a local clone of the constellations repository. By default, I assume that your current project is in the same parent directory as the constellation file (e.g. your working directory is \code{.../parent/current_project} and the constellations repo is cloned as \code{.../parent/constellations}).
 
-If this is not the case, a path to the root folder of the constellations repo is required. The path is to the root folder, not the folder with the constellation files. TODO: allow for both cases.
+If this is not the case, a path to the root folder of the constellations repo is required. The path is to the root folder, not the folder with the constellation files.
 
 There are no options to specify which lineages to include. I am working on a \code{annihilate(coco, varmat)} function to remove mutations that aren't shared between coco and varmat and squash lineages that have too few observed mutations or are too similar to other lineages.
 }

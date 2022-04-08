@@ -41,7 +41,8 @@ varmat <- simulate_varmat()
 # Expect 1/6 BA.1, 2/6 BA.2, and 3/6 B.1.1.529
 coco <- simulate_coco(varmat, rel_counts = c(100, 200, 300))
 
-copt <- provoc(coco, varmat, method = "optim")
+fused <- fuse(coco, varmat)
+copt <- provoc(fused, method = "optim")
 copt$par
 ```
 
@@ -50,8 +51,7 @@ copt$par
 ```
 
 If you have a cloned version of [the constellations repo](https://github.com/cov-lineages/constellations), you can create a variant matrix based on their variant definitions.
-TODO: This matrix will need be "fused" with coco to ensure that the intersection of the mutation lists is used.
-WARNING: Implementing this fusion method might drastically change the way these functions work. 
+This matrix will need be "fused" with coco to ensure that the intersection of the mutation lists is used.
 
 ```R
 varmat <- astronomize()
@@ -61,7 +61,9 @@ is_omicron <- rownames(varmat) %in% c("cBA.1", "cBA.2", "cB.1.1.529")
 rel_counts[is_omicron] <- c(100, 200, 300)
 coco <- simulate_coco(varmat, rel_counts = rel_counts)
 
-copt <- provoc(coco, varmat, method = "optim")
+fused <- fuse(coco, varmat)
+
+copt <- provoc(fused, method = "optim")
 cbind(copt$par, rownames(varmat))
 ```
 
@@ -81,7 +83,7 @@ The package includes a helper function to put it in a nice format for `ggplot2` 
 library(ggplot2)
 library(coda) # for gelman.diag()
 
-coda <- provoc(coco, varmat, method = "optim")
+coda <- provoc(fused, method = "optim")
 
 # coda_binom returns an mcmc.list object; all coda methods will apply
 gelman.diag(coda)

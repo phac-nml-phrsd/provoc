@@ -21,12 +21,9 @@ provoc <- function (fused, method = c("optim", "runjags")) {
 
     if(method[1] == "optim") {
         res <- provoc_optim(coco, varmat)
-        # TODO: Take best version of nuclear option
-        # TODO: Error checking in *_binom are unnecessary
         # TODO: Process the output
     } else {
         res <- provoc_jags(coco, varmat)
-        # TODO: rename p[x] with the voc name
         # TODO: Process the output
     }
     # TODO: Unify output formats, including convergence yes/no, convergence note and point estimates.

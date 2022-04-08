@@ -68,18 +68,10 @@ rho_initializer <- function(varmat) {
 #' res = copt_binom(coco, varmat)
 #' res$par
 provoc_optim <- function(coco, varmat) {
-    bad_freq <- which(is.na(coco$coverage))
-    if(length(bad_freq) > 0) {
-        muts <- coco$mutation[-bad_freq]
-        cou2 <- coco$count[-bad_freq]
-        cov2 <- coco$coverage[-bad_freq]
-        vari2 <- varmat[, muts]
-    } else {
-        muts <- coco$mutation
-        cou2 <- coco$count
-        cov2 <- coco$coverage
-        vari2 <- varmat
-    }
+    muts <- coco$mutation
+    cou2 <- coco$count
+    cov2 <- coco$coverage
+    vari2 <- varmat
     rho_init <- rho_initializer(vari2)
 
     objective <- function(rho, count, varmat, coverage) {
@@ -146,7 +138,6 @@ provoc_optim <- function(coco, varmat) {
             # Constrain to interior of feasible region
             rho_init <- to_feasible(rho_init)
 
-            # TODO: Use the result with the lowest value
             res <- stats::constrOptim(rho_init,
                 f = objective, grad = NULL,
                 ui = ui, ci = ci,

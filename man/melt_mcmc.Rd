@@ -4,7 +4,7 @@
 \alias{melt_mcmc}
 \title{Convert a list of MCMC objects to a data frame with \code{chain} and \code{iter}}
 \usage{
-melt_mcmc(mcmc.list, pivot = FALSE)
+melt_mcmc(mcmc.list, var_names = NULL, pivot = FALSE)
 }
 \arguments{
 \item{mcmc.list}{The list of MCMC objects, as returned by runjags or rjags.}

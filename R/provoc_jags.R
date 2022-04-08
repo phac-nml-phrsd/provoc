@@ -5,7 +5,7 @@
 #' 
 #' @return A data frame, either with columns iter, chain and all monitored variables if pivot = FALSE or iter, chain, value for the posterior sample and name for the name of the monitored variable if pivot = TRUE.
 #' @export
-melt_mcmc <- function(mcmc.list, pivot = FALSE) {
+melt_mcmc <- function(mcmc.list, var_names = NULL, pivot = FALSE) {
     mcmc <- dplyr::bind_rows(lapply(1:length(mcmc.list$mcmc),
             function(i) {
                 x <- as.data.frame(mcmc.list$mcmc[[i]])
@@ -47,18 +47,10 @@ provoc_jags <- function(
         adapt = 500, burnin = 1000, sample = 1000, thin = 4,
         quiet = TRUE){
     if(requireNamespace("runjags", quietly = TRUE)) {
-        bad_freq <- which(is.na(coco$coverage))
-        if(length(bad_freq) > 0) {
-            muts <- coco$mutation[-bad_freq]
-            cou2 <- coco$count[-bad_freq]
-            cov2 <- coco$coverage[-bad_freq]
-            vari2 <- varmat[, muts]
-        } else {
-            muts <- coco$mutation
-            cou2 <- coco$count
-            cov2 <- coco$coverage
-            vari2 <- varmat
-        }
+        muts <- coco$mutation
+        cou2 <- coco$count
+        cov2 <- coco$coverage
+        vari2 <- varmat
 
         jags_rho_inits <- function(varmat) {
             method = round(runif(1))
@@ -106,6 +98,9 @@ provoc_jags <- function(
                     #silent.runjags = TRUE,
                     method = "parallel"),
                 error = function(e) e)
+        for(i in 1:length(res$mcmc)) {
+            colnames(res$mcmc[[i]]) <- rownames(vari2)
+        }
         return(res)
     } else {
         "JAGS and runjags are required to use this function."
