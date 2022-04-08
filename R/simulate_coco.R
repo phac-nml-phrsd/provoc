@@ -10,13 +10,17 @@
 #' @details By default, uses a negative binomial distribution for the counts and uniform censoring for the coverage.
 simulate_coco <- function(varmat, rel_counts = NULL, censoring = NULL) {
     if(is.null(rel_counts)) {
-        # TODO: better defaults to check that the method worked (set three or four to larger values, note this in a message).
         rel_counts <- stats::rnbinom(nrow(varmat), mu = 25, size = 100)
+        max_count <- max(rel_counts)
+        rel_counts[sample(1:length(rel_counts), 3, TRUE)] <- max_count * c(3,7,13)
     } else {
         if(length(rel_counts) != nrow(varmat)) {
             stop("Counts must correspond to rows in varmat.")
         }
     }
+    print("Expected results:")
+    print(rbind(variant = rownames(varmat), proportion = round(rel_counts/sum(rel_counts), 3)))
+
     if(is.null(censoring)) {
         censoring <- stats::runif(ncol(varmat))
     } else {
@@ -24,7 +28,7 @@ simulate_coco <- function(varmat, rel_counts = NULL, censoring = NULL) {
             stop("Censoring must correspond to columns in varmat.")
         }
     }
-    # Total number of sequences
+
     total_seqs <- sum(rel_counts)
     rel_props <- rel_counts / total_seqs
 
