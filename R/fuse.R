@@ -21,6 +21,7 @@ fuse <- function(coco, varmat, verbose = TRUE) {
         stop("coco should not contain column names that are names of lineages. Is this object already fused?")
     }
 
+    pre <- nrow(coco)
     shared <- intersect(coco$mutation, colnames(varmat))
     # We can't say anything about mutations not in varmat.
     coco <- coco[!is.na(coco$mutation),]
@@ -28,20 +29,21 @@ fuse <- function(coco, varmat, verbose = TRUE) {
 
     if(length(shared) < 3) {
         stop("Too few shared mutations. Are they in the same format?")
-    } else if(length(shared) <= 10) {
+    } else if(length(shared) <= 10 & ncol(varmat) > 10) {
         warning("Fewer than 10 shared mutations. Results may be very difficult to interpret.")
-    } else if(length(shared)/nrow(coco) < 0.5) {
-        warning(paste0(length(shared)/nrow(coco), 
+    } else if(pre/length(shared) < 0.5) {
+        warning(paste0(length(shared)/pre, 
             "% of coco's mutations are being used. Consider a larger variant matrix."))
     }
     if(verbose) {
-        print(paste0(100 * round(nrow(coco) / pre, 3), 
+        perc_rm <- 1 - round(length(shared) / pre, 3)
+        print(paste0(100 * perc_rm, 
             "% of the rows of coco have been removed."))
-        coco_only <- coco$mutations[!coco$mutations %in% rownmaes(varmat)]
-        varmat_only <- rownames(varmat)[!rownmaes(varmat) %in% coco$mutations]
-        print("coco-only mutations (removed):")
+        coco_only <- coco$mutation[!coco$mutation %in% shared]
+        varmat_only <- colnames(varmat)[!colnames(varmat) %in% shared]
+        print("coco-only mutations removed:")
         print(coco_only)
-        print("varmat-only mutations (removed)")
+        print("varmat-only mutations removed")
         print(varmat_only)
     }
 
