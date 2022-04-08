@@ -24,10 +24,10 @@ The variant matrix can be created several ways:
 
 Data must be specified as follows.
 There must be a column labelled `count`, a column labelled `coverage`, and a column labelled `mutation`.
-TODO: There can be an optional column labelled `sample`, which will be interpreted as a grouping variable and the analysis will be run once for each unique value of `sample`.
-TODO: Any other columns will be ignored but perpetuated, so you are free to leave them in your data for future purposes (e.g. location and date will still be tied to unique sample ids).
+There can be an optional column labelled `sample`, which will be interpreted as a grouping variable and the analysis will be run once for each unique value of `sample`.
+Any other columns will be ignored, so you are free to leave them in your data for future purposes (e.g. location and date will still be tied to unique sample ids).
 
-Here is an overview of the basic functionality of the package.
+Here is an overview of the basic functionality of the package. TODO: Vignettes.
 It may be helpful to look at the structure of the simulated objects to know what the primary functions expect.
 
 ```R

@@ -81,8 +81,7 @@ parse_mutation <- function(type, pos, alt,
         # Revert to 1-indexing
         return(paste0("ins:", pos + 1, ":", nchar(alt)))
     } else if (type == "-") {
-        # 1-indexing AND deletion is the next nucleotide
-        return(paste0("del:", pos + 2, ":", alt))
+        return(paste0("del:", pos + 1, ":", alt))
     }
 
     # Revert to 1-indexing
