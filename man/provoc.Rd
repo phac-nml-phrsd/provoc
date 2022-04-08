@@ -4,12 +4,14 @@
 \alias{provoc}
 \title{Proportions of Variants of Concern}
 \usage{
-provoc(fused, method = c("optim", "runjags"))
+provoc(fused, method = c("optim", "runjags"), ...)
 }
 \arguments{
 \item{fused}{The fused data frame of coco and varmat}
 
 \item{method}{Optimization or Bayesian?}
+
+\item{...}{Arguments to be passed to provoc_jags (ignored for method = "optim"). See \code{?provoc_binom}.}
 }
 \value{
 Results of the estimation. Currently has different output depending on method, but will hopefully be unified in a later version.

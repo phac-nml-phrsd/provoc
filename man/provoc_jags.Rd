@@ -9,9 +9,11 @@ provoc_jags(
   varmat,
   adapt = 500,
   burnin = 1000,
-  sample = 1000,
   thin = 4,
-  quiet = TRUE
+  sample = 1000,
+  n.chains = 3,
+  quiet = TRUE,
+  summarise = FALSE
 )
 }
 \arguments{
@@ -22,6 +24,8 @@ provoc_jags(
 \item{adapt, burnin, sample, thin}{Parameters passed to runjags. Note that \code{sample} is the final number of samples that you will receive from each chain (i.e. if \code{thin = 5} and \code{sample = 1000}, you will end up drawing 5000 samples so that 1000 are returned after thinning).}
 
 \item{quiet}{If TRUE, much (but not all) of the runjags output will be suppressed.}
+
+\item{summarise}{Include runjags' summaries of the MCMC output.}
 }
 \value{
 an mcmc.list object with each column representing the proportion of the variant of concern, in the order of the rownames of variantmat. It is suggested to use melt_mcmc to get output that plays better with ggplot2 and dplyr.
