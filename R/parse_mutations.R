@@ -62,6 +62,7 @@ parse_mutation <- function(type, pos, alt,
         }
 
         if(this_orf != "None") {
+            # 3 nucleotides per codon
             codon_left <- 3 * ((pos-this_left) %/% 3)
             codon_pos <- (pos-this_left) %% 3
 
@@ -77,10 +78,13 @@ parse_mutation <- function(type, pos, alt,
                 return(paste0("aa:", this_orf, ":", ramino, round(1+codon_left/3), qamino))
         }
     } else if (type == "+") {
+        # Revert to 1-indexing
         return(paste0("ins:", pos + 1, ":", nchar(alt)))
     } else if (type == "-") {
+        # 1-indexing AND deletion is the next nucleotide
         return(paste0("del:", pos + 2, ":", alt))
     }
 
+    # Revert to 1-indexing
     return(paste0(refseq[pos + 1], pos + 1, alt))
 }

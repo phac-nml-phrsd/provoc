@@ -42,7 +42,7 @@ melt_mcmc <- function(mcmc.list, pivot = FALSE) {
 #' 
 #' plot(x = codf$iter, y = codf[, 1], col = codf$chain)
 #' 
-coda_binom <- function(
+provoc_jags <- function(
         coco, varmat, 
         adapt = 500, burnin = 1000, sample = 1000, thin = 4,
         quiet = TRUE){

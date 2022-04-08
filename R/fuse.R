@@ -40,6 +40,7 @@ fuse <- function(coco, varmat) {
     vari2 <- vari2[!too_many_zeros, ]
 
     # Squash identical lineages
+    # TODO: Add verbose option to see which mutations were removed.
     i <- 0
     while(i < nrow(vari2)) {
         i <- i + 1

@@ -20,13 +20,12 @@ provoc <- function (fused, method = c("optim", "runjags")) {
     colnames(varmat) <- coco$mutation
 
     if(method[1] == "optim") {
-        res <- copt_binom(coco, varmat)
+        res <- provoc_optim(coco, varmat)
         # TODO: Take best version of nuclear option
         # TODO: Error checking in *_binom are unnecessary
         # TODO: Process the output
-        # TODO: Better names for everything (these functions will still be exported if users want to perform their own error checks, make them easy to use; maybe provoc_optimize?).
     } else {
-        res <- coda_binom(coco, varmat)
+        res <- provoc_jags(coco, varmat)
         # TODO: rename p[x] with the voc name
         # TODO: Process the output
     }

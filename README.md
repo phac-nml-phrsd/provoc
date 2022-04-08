@@ -41,7 +41,7 @@ varmat <- simulate_varmat()
 # Expect 1/6 BA.1, 2/6 BA.2, and 3/6 B.1.1.529
 coco <- simulate_coco(varmat, rel_counts = c(100, 200, 300))
 
-copt <- copt_binom(coco, varmat)
+copt <- provoc(coco, varmat, method = "optim")
 copt$par
 ```
 
@@ -61,7 +61,7 @@ is_omicron <- rownames(varmat) %in% c("cBA.1", "cBA.2", "cB.1.1.529")
 rel_counts[is_omicron] <- c(100, 200, 300)
 coco <- simulate_coco(varmat, rel_counts = rel_counts)
 
-copt <- copt_binom(coco, varmat)
+copt <- provoc(coco, varmat, method = "optim")
 cbind(copt$par, rownames(varmat))
 ```
 
@@ -81,7 +81,7 @@ The package includes a helper function to put it in a nice format for `ggplot2` 
 library(ggplot2)
 library(coda) # for gelman.diag()
 
-coda <- coda_binom(coco, varmat)
+coda <- provoc(coco, varmat, method = "optim")
 
 # coda_binom returns an mcmc.list object; all coda methods will apply
 gelman.diag(coda)

@@ -69,7 +69,7 @@ rho_initializer <- function(varmat) {
 #' coco = simulate_coco(varmat, rel_counts = c(100, 200, 300)) # expect 1/6, 2/6, and 3/6
 #' res = copt_binom(coco, varmat)
 #' res$par
-copt_binom <- function(coco, varmat) {
+provoc_optim <- function(coco, varmat) {
     bad_freq <- which(is.na(coco$coverage))
     if(length(bad_freq) > 0) {
         muts <- coco$mutation[-bad_freq]
