@@ -10,7 +10,6 @@
 #' 
 #' @details By default, uses a negative binomial distribution for the counts and uniform censoring for the coverage.
 simulate_coco <- function(varmat, rel_counts = NULL, censoring = NULL, absurd = FALSE) {
-    # TODO (Major): I'm simulating this wrong. Find rho, find coverage, use rbinom.
     if(is.null(rel_counts)) {
         rel_counts <- stats::rnbinom(nrow(varmat), mu = 25, size = 100)
         max_count <- max(rel_counts)
@@ -32,14 +31,10 @@ simulate_coco <- function(varmat, rel_counts = NULL, censoring = NULL, absurd = 
     }
 
     total_seqs <- sum(rel_counts)
-    rel_props <- rel_counts / total_seqs
+    rho <- rel_counts / total_seqs
+    p <- rho %*% varmat
+    coverage <- round(censoring * sum(rel_counts))
+    counts <- stats::rbinom(n = length(p), size = coverage, prob = p)
 
-    # Counts of each mutations (after RNA degredation)
-    # TODO: Add "absurd" option where the counts have nothing to do with the variant matrix
-    counts <- round(as.numeric(
-        t(varmat) %*% rel_counts) * censoring)
-    # Coverage (censored by RNA degredation)
-    coverage <- round(rep(total_seqs, 
-        length(counts)) * censoring)
     return(data.frame(count = counts, coverage = coverage, mutation = colnames(varmat)))
 }
