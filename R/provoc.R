@@ -28,7 +28,6 @@ provoc <- function (fused, method = c("optim", "runjags")) {
     } else {
         res <- coda_binom(coco, varmat)
         # TODO: rename p[x] with the voc name
-        # TODO: Inits and seeds
         # TODO: Process the output
     }
     # TODO: Unify output formats, including convergence yes/no, convergence note and point estimates.

@@ -59,18 +59,42 @@ coda_binom <- function(
             cov2 <- coco$coverage
             vari2 <- varmat
         }
+
+        jags_rho_inits <- function(varmat) {
+            method = round(runif(1))
+            if(method == 1) {
+                init1 <- rho_initializer(varmat)
+                init1 <- init1 + rnorm(length(init1), 0, 0.05)
+                return(to_feasible(init1))
+            } else {
+                init2 <- runif(nrow(varmat), 0.2, 0.8)
+                return(to_feasible(init2))
+            }
+        }
+
         res <- tryCatch(
                 runjags::run.jags(
-                    model = system.file("extdata/provoc.JAGS", package = "provoc"),
+                    model = system.file("extdata/provoc.JAGS",
+                     package = "provoc"),
                     data = list(
                         count = cou2,
                         N = length(cou2),
-                        coverage = cov2 + 1,
+                        coverage = cov2,
                         P = nrow(vari2),
                         variantmat = vari2,
                         alpha = 2,
                         beta = 8),
-                    #inits = list(p1 = rep(1/nrow(variantmat), nrow(variantmat))),
+                    inits = list(
+                        list(p1 = jags_rho_inits(varmat), 
+                            .RNG.name="base::Super-Duper", 
+                            .RNG.seed = 1), 
+                        list(p1 = jags_rho_inits(varmat), 
+                            .RNG.name="base::Wichmann-Hill", 
+                            .RNG.seed = 2), 
+                        list(p1 = jags_rho_inits(varmat), 
+                            .RNG.name="base::Mersenne-Twister", 
+                            .RNG.seed = 3)
+                    ),
                     adapt = adapt,
                     burnin = burnin,
                     n.chains = 3,
