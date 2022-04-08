@@ -130,6 +130,7 @@ provoc_optim <- function(coco, varmat) {
         res$init_method <- "Uniform"
     }
 
+    bestres <- res
     if(res$convergence) { 
         print("Trying the nuclear option for constrOptim.")
         print("This has never actually worked before.")
@@ -143,7 +144,7 @@ provoc_optim <- function(coco, varmat) {
 
             # Add noise to previous iteration
             rho_init <- res$par +
-                stats::rnorm(length(rho_init), 0, 0.1)
+                stats::rnorm(length(rho_init), 0, 0.05)
             # Constrain to interior of feasible region
             rho_init <- to_feasible(rho_init)
 
@@ -156,8 +157,13 @@ provoc_optim <- function(coco, varmat) {
             }
             res$init_method <- "Nuclear"
 
+            # Only take the best results out of all nuclear tries
+            if(res$value < bestres$value) {
+                bestres <- res
+            }
+
             converged <- !res$convergence
     }
 
-    res
+    bestres
 }
