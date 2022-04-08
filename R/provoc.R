@@ -36,7 +36,8 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
     for(i in seq_along(res_list)) {
         # TODO: Allow parameters to be passed to the respective functions.
         cat("\n")
-        message(paste0("Fitting sample ", samples[i], ", ", which(samples == samples[i]), "of ", length(samples)))
+        message(paste0("Fitting sample ", samples[i], ", ", 
+            which(samples == samples[i]), " of ", length(samples)))
         fusi <- fused[fused$sample == samples[i], ]
         variants <- startsWith(names(fusi), "var_")
         varnames <- names(fused)[variants]
@@ -51,10 +52,10 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
         if(method[1] == "optim") {
             res_temp <- provoc_optim(coco, varmat)
             res <- list(
-                point_est = data.frame(rho = res_temp$par, 
-                    variant = varnames,
+                point_est = data.frame(rho = res_temp$par,
                     ci_low = NA,
-                    ci_high = NA),
+                    ci_high = NA, 
+                    variant = varnames),
                 convergence = res_temp$convergence,
                 convergence_note = res_temp$init_method,
                 note = "CI is NA; bootstrapping not yet implemented.",
@@ -64,20 +65,26 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
                 res_temp <- provoc_jags(coco, varmat, ...)
 
                 if(requireNamespace("coda", quietly = TRUE)) {
-                    gr <- coda::gelman.diag(res_temp)$psrf
-                    convergence_gr <- coda::gelman.diag(res_temp)$mpsrf > 1.15
+                    g_diag <- coda::gelman.diag(res_temp)
+                    gr <- g_diag$psrf
+                    convergence_gr <- g_diag$mpsrf > 1.15
                 } else {
                     gr <- "coda not install, cannot calculate GR statistics"
                     convergence_gr <- NA
                 }
 
-                point_est <- melt_mcmc(res_temp, varmat, pivot = FALSE)
-                point_est <- point_est[, -which(names(point_est) %in% c("chain", "iter"))]
-                point_est <- t(apply(point_est, 2, quantile, probs = c(0.025, 0.5, 0.975)))
+                point_est <- melt_mcmc(res_temp, varmat,
+                    pivot = FALSE)
+                point_est <- point_est[, 
+                    -which(names(point_est) %in% c("chain", "iter"))]
+                point_est <- t(apply(point_est, 2, quantile, 
+                    probs = c(0.025, 0.5, 0.975)))
                 point_est <- as.data.frame(point_est)
-                names(point_est) <- c("ci_low", "rho", "ci_high")
+                names(point_est) <- c("ci_low", "rho", 
+                    "ci_high")
                 point_est$variant <- rownames(varmat)
-                point_est <- point_est[, c("rho", "ci_low", "ci_high", "variant")]
+                point_est <- point_est[, c("rho", "ci_low", 
+                    "ci_high", "variant")]
                 rownames(point_est) <- NULL
 
                 logLik <- sum(stats::dbinom(
@@ -98,6 +105,12 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
             }
         }
         # TODO: (Long Term) make this it's own class with nice printing defaults
+        # TODO: Add methods (for both single results and lists): summary, plot
+            # Only print top variants; include columns that are constant within samples; convergence status; log-Likelihood
+            # Autoplot (gg) for res and res_list objects?
+                # Bonus: colour schemes that respect variant names? Could be another repo that other labs might enjoy.
+        # TODO: Replace processing in provoc() with separate processing functions for optim and jags; user can choose how to process.
+        # TODO: Include median read depth, quality measures
         res_list[[i]] <- res
 
         message("Done.")
