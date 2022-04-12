@@ -1,13 +1,29 @@
 #' Proportions of Variants of Concern
 #' 
-#' Un-fuses coco and varmat and applies the appropriate estimation technique. Applies to each unique value of 
+#' Un-fuses coco and varmat and applies the appropriate estimation technique. If a column labelled "sample" is present, applies the analysis to each sample separately.
 #' 
-#' @param fused The fused data frame of coco and varmat
+#' @param fused The fused data frame of coco and varmat. The fusion ensures that the mutations are properly joined and varmat contains only the most pertinent mutations.
 #' @param method Optimization or Bayesian?
-#' @param ... Arguments to be passed to provoc_jags (ignored for method = "optim"). See \code{?provoc_binom}.
+#' @param ... Arguments to be passed to \code{provoc_jags()} (ignored for method = "optim"). See \code{?provoc_jags}.
 #' 
-#' @return Results of the estimation. Currently has different output depending on method, but will hopefully be unified in a later version.
+#' @return Results of the estimation. Regardless of the technique used, the results are as follows.
+#' 
+#' \describe{
+#'      \item{point_est}{A data frame with columns labelled rho, ci_low, ci_high, and the name of the variant. For \code{optim}, these are the estimates (bootstrap CI not yet implemented). For \code{runjags}, these are the medians and quantiles.}
+#'      \item{convergence}{True if the algorithm converged.}
+#'      \item{convergence_notes}{For \code{optim}, the message returned from \code{optim} as well as the initialization method for rho. For \code{runjags}, the gelman-rubin statistics for each parameter.}
+#'      \item{note}{A brief note about the method.}
+#'      \item{loglik}{The log likelihood value. For \code{runjags}, this is calculated for the medians of all parameters. This may be changed in future updates.}
+#'      \item{sample_info}{The function checks for any columns that have exactly one unique value within a given sample. The unique value of each is returned in a data frame. Very useful if samples have columns such as "date" or "location".}
+#' }
 #' @export
+#' 
+#' @examples
+#' varmat <- simulate_varmat()
+#' coco <- simulate_coco(varmat)
+#' fused <- fuse(coco, varmat)
+#' res <- provoc(fused)
+#' res$point_est
 provoc <- function (fused, method = c("optim", "runjags"), ...) {
     if("sample" %in% colnames(fused)) {
         samples <- unique(fused$sample)
@@ -43,6 +59,9 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
         varnames <- names(fused)[variants]
         coco <- fusi[, !variants]
 
+        sample_info <- apply(coco, 2, function(x) length(unique(x)) == 1)
+        sample_info <- coco[1, sample_info]
+
         vardf <- fusi[, variants]
         varmat <- t(as.matrix(vardf))
         varmat <- matrix(as.numeric(varmat), ncol = ncol(varmat))
@@ -55,21 +74,24 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
                 point_est = data.frame(rho = res_temp$par,
                     ci_low = NA,
                     ci_high = NA, 
-                    variant = varnames),
-                convergence = res_temp$convergence,
-                convergence_note = res_temp$init_method,
+                    variant = rownames(varmat)),
+                convergence = res_temp$convergence == 0,
+                convergence_note = paste(res_temp$convergence, res_temp$init_method, sep = ';'),
                 note = "CI is NA; bootstrapping not yet implemented.",
-                logLik = -res_temp$value)
+                logLik = -res_temp$value,
+                sample_info = sample_info)
         } else {
             if(requireNamespace("runjags", quietly = TRUE)) {
                 res_temp <- provoc_jags(coco, varmat, ...)
 
+                # TODO: all of this should be in the provoc_jags() function, not cluttering up this file.
+
                 if(requireNamespace("coda", quietly = TRUE)) {
                     g_diag <- coda::gelman.diag(res_temp)
                     gr <- g_diag$psrf
-                    convergence_gr <- g_diag$mpsrf > 1.15
+                    convergence_gr <- g_diag$mpsrf <= 1.15
                 } else {
-                    gr <- "coda not install, cannot calculate GR statistics"
+                    gr <- "coda library not installed, cannot calculate GR statistics"
                     convergence_gr <- NA
                 }
 
@@ -97,8 +119,9 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
                     point_est = point_est,
                     convergence = convergence_gr,
                     convergence_note = gr,
-                    note = "To return entire posteriors, call provoc_binom() directly. Loglik is calculated for medians only. Convergence is based on multivariate psrf.",
-                    logLik = logLik)
+                    note = "To return entire posteriors, call provoc_jags() directly. Loglik is calculated for medians only (bad). Convergence is based on multivariate psrf.",
+                    logLik = logLik,
+                    sample_info = sample_info)
                     
             } else {
                 res <- "JAGS and runjags are required to use this method."

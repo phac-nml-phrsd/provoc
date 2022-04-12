@@ -7,15 +7,31 @@
 provoc(fused, method = c("optim", "runjags"), ...)
 }
 \arguments{
-\item{fused}{The fused data frame of coco and varmat}
+\item{fused}{The fused data frame of coco and varmat. The fusion ensures that the mutations are properly joined and varmat contains only the most pertinent mutations.}
 
 \item{method}{Optimization or Bayesian?}
 
-\item{...}{Arguments to be passed to provoc_jags (ignored for method = "optim"). See \code{?provoc_binom}.}
+\item{...}{Arguments to be passed to \code{provoc_jags()} (ignored for method = "optim"). See \code{?provoc_jags}.}
 }
 \value{
-Results of the estimation. Currently has different output depending on method, but will hopefully be unified in a later version.
+Results of the estimation. Regardless of the technique used, the results are as follows.
+
+\describe{
+\item{point_est}{A data frame with columns labelled rho, ci_low, ci_high, and the name of the variant. For \code{optim}, these are the estimates (bootstrap CI not yet implemented). For \code{runjags}, these are the medians and quantiles.}
+\item{convergence}{True if the algorithm converged.}
+\item{convergence_notes}{For \code{optim}, the message returned from \code{optim} as well as the initialization method for rho. For \code{runjags}, the gelman-rubin statistics for each parameter.}
+\item{note}{A brief note about the method.}
+\item{loglik}{The log likelihood value. For \code{runjags}, this is calculated for the medians of all parameters. This may be changed in future updates.}
+\item{sample_info}{The function checks for any columns that have exactly one unique value within a given sample. The unique value of each is returned in a data frame. Very useful if samples have columns such as "date" or "location".}
+}
 }
 \description{
-Un-fuses coco and varmat and applies the appropriate estimation technique. Applies to each unique value of
+Un-fuses coco and varmat and applies the appropriate estimation technique. If a column labelled "sample" is present, applies the analysis to each sample separately.
+}
+\examples{
+varmat <- simulate_varmat()
+coco <- simulate_coco(varmat)
+fused <- fuse(coco, varmat)
+res <- provoc(fused)
+res$point_est
 }
