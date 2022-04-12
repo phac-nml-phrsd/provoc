@@ -48,6 +48,8 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
     }
 
     res_list <- vector(mode = "list", length = length(samples))
+    convergence_note <- character(length(samples))
+    convergence <- logical(length(samples))
     names(res_list) <- samples
     for(i in seq_along(res_list)) {
         # TODO: Allow parameters to be passed to the respective functions.
@@ -59,8 +61,9 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
         varnames <- names(fused)[variants]
         coco <- fusi[, !variants]
 
+        # Guaranteed to include a column called "sample"
         sample_info <- apply(coco, 2, function(x) length(unique(x)) == 1)
-        sample_info <- coco[1, sample_info]
+        sample_info <- coco[1, sample_info, drop = FALSE]
 
         vardf <- fusi[, variants]
         varmat <- t(as.matrix(vardf))
@@ -70,16 +73,19 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
 
         if(method[1] == "optim") {
             res_temp <- provoc_optim(coco, varmat)
-            res <- list(
-                point_est = data.frame(rho = res_temp$par,
+
+            res_df <- data.frame(rho = res_temp$par,
                     ci_low = NA,
                     ci_high = NA, 
-                    variant = rownames(varmat)),
-                convergence = res_temp$convergence == 0,
-                convergence_note = paste(res_temp$convergence, res_temp$init_method, sep = ';'),
-                note = "CI is NA; bootstrapping not yet implemented.",
-                logLik = -res_temp$value,
-                sample_info = sample_info)
+                    variant = rownames(varmat))
+            for (ii in seq_len(ncol(sample_info))) {
+                res_df[, names(sample_info)[ii]] <- sample_info[1, ii]
+            }
+            convergence[i] <- res_temp$convergence == 0
+            convergence_note[i] <- paste("Optim results: ", 
+                res_temp$convergence, 
+                "; Initialization: ", res_temp$init_method, sep = '')
+            res_list[[i]] <- res_df
         } else {
             if(requireNamespace("runjags", quietly = TRUE)) {
                 res_temp <- provoc_jags(coco, varmat, ...)
@@ -109,22 +115,20 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
                     "ci_high", "variant")]
                 rownames(point_est) <- NULL
 
-                logLik <- sum(stats::dbinom(
-                    x = fused$count, 
-                    size = fused$coverage, 
-                    prob = as.numeric(point_est$rho %*% varmat), 
-                    log = TRUE))
-
-                res <- list(
-                    point_est = point_est,
-                    convergence = convergence_gr,
-                    convergence_note = gr,
-                    note = "To return entire posteriors, call provoc_jags() directly. Loglik is calculated for medians only (bad). Convergence is based on multivariate psrf.",
-                    logLik = logLik,
-                    sample_info = sample_info)
+                res_df <- point_est
+                for (ii in seq_len(ncol(sample_info))) {
+                    res_df[, names(sample_info)[ii]] <- sample_info[1, ii]
+                }
+                convergence[i] <- convergence_gr
+                convergence_note[i] <- ifelse(convergence_gr,
+                    yes = g_diag$mpsrf,
+                    no = paste0("Upper CI larger than 1.15: ", 
+                        paste(rownames(gr)[gr[, 2] >= 1.15], collapse = ", ")))
+                res_list[[i]] <- res_df
                     
             } else {
-                res <- "JAGS and runjags are required to use this method."
+                res_df <- "JAGS and runjags are required to use this method."
+                res_list[[i]] <- res_df
             }
         }
         # TODO: (Long Term) make this it's own class with nice printing defaults
@@ -134,13 +138,36 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
                 # Bonus: colour schemes that respect variant names? Could be another repo that other labs might enjoy.
         # TODO: Replace processing in provoc() with separate processing functions for optim and jags; user can choose how to process.
         # TODO: Include median read depth, quality measures
-        res_list[[i]] <- res
 
         message("Done.")
     }
 
-    res_list
+    res <- dplyr::bind_rows(res_list)
+    attr(res, "convergence") <- data.frame(sample = samples, 
+        convergence = convergence, 
+        convergence_note = convergence_note)
+    res
 }
 
-
-
+#' Check if provoc converged
+#' 
+#' If converged, returns True and prints a message. Otherwise, prints the samples and the note giving hints as to why it didn't converge.
+#' 
+#' @param res The result of \code{provoc()}
+#' @param verbose Print a message to the screen? 
+#' 
+#' @return Invisbly returns TRUE if all samples converged, false otherwise. 
+#' @export
+convergence <- function(res, verbose = TRUE) {
+    if(!"convergence" %in% attributes(attributes(res))$names) {
+        stop("Not a result of provoc - does not have correct attributes")
+    }
+    conv <- attr(res, "convergence")
+    if(any(!as.logical(conv$convergence))) {
+        if(verbose) print(conv[which(!as.logical(conv$convergence)), -2])
+        return(invisible(FALSE))
+    } else {
+        if(verbose) cat("All samples converged\n")
+        return(invisible(TRUE))
+    }
+}
