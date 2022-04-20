@@ -74,7 +74,7 @@ varmat_from_variants <- function(variants,
 #' @param aa The vector of mutations in amino acid format (like those create by \code{parse_mutation}). TODO: Not yet implemented.
 #' @param data A data frame containing columns labelled "type", "pos", and "alt", each with entries in the expected format. TODO: Not yet implemented.
 #' @param max_n The maximum number of mutations from a given lineage to retain.
-#' @param top_quantile Only take mutations that are in the top \code{top_quantile} quantile. E.g. 0.05 gives the mutations in more than 95% of the sequences of that lineage.
+#' @param top_quantile Only take mutations that are in the top \code{top_quantile} quantile. E.g. 0.95 gives the mutations that are observed in more than 95% of the sequences of that lineage.
 #' 
 #' @return A variant matrix (rownames are variants, colnames are mutations, entry i,j is 1 if variant i contains mutation j, 0 otherwise).
 #' @export
@@ -98,12 +98,14 @@ varmat_from_data <- function(type = NULL, pos = NULL, alt = NULL,
         mutations2$mutation <- gsub("~", "m", mutations2$mutation)
         mutations2$mutation <- gsub("\\+", "i", mutations2$mutation)
         mutations2$mutation <- gsub("-", "d", mutations2$mutation)
-    } 
+    }
+
+
     
-    mutations <- paste(type, pos, alt, sep = "|")
+    mutations <- unique(paste(type, pos, alt, sep = "|"))
     varmat <- dplyr::bind_rows(lapply(unique(mutations_by_lineage$lineage), function(x) {
         m <- mutations_by_lineage[mutations_by_lineage$lineage == x,]
-        m <- m[m$count <= max_n & m$count < quantile(m$count, 1 - top_quantile), ]
+        m <- m[m$count <= max_n & m$count <= quantile(m$count, top_quantile), ]
         mutations_present <- m$mutation[m$mutation %in% mutations]
         # If no mutations, create a dummy dataframe with two 
         # columns and column names that can be removed.
@@ -114,6 +116,8 @@ varmat_from_data <- function(type = NULL, pos = NULL, alt = NULL,
         names(res) <- mutations_present
         res
     }))
+
+    # TODO: Warn about unused mutations
 
     varmat <- varmat[, !names(varmat) %in% c("None", "Found")]
     varmat[is.na(varmat)] <- 0

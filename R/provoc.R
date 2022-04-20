@@ -51,8 +51,7 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
     convergence_note <- character(length(samples))
     convergence <- logical(length(samples))
     names(res_list) <- samples
-    for(i in seq_along(res_list)) {
-        # TODO: Allow parameters to be passed to the respective functions.
+    for(i in seq_along(res_list)) { # TODO: Parallelize (for optim)
         cat("\n")
         message(paste0("Fitting sample ", samples[i], ", ", 
             which(samples == samples[i]), " of ", length(samples)))
@@ -131,7 +130,6 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
                 res_list[[i]] <- res_df
             }
         }
-        # TODO: (Long Term) make this it's own class with nice printing defaults
         # TODO: Add methods (for both single results and lists): summary, plot
             # Only print top variants; include columns that are constant within samples; convergence status; log-Likelihood
             # Autoplot (gg) for res and res_list objects?

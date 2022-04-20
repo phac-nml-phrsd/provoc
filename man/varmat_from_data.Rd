@@ -27,7 +27,7 @@ varmat_from_data(
 
 \item{max_n}{The maximum number of mutations from a given lineage to retain.}
 
-\item{top_quantile}{Only take mutations that are in the top \code{top_quantile} quantile. E.g. 0.05 gives the mutations in more than 95\% of the sequences of that lineage.}
+\item{top_quantile}{Only take mutations that are in the top \code{top_quantile} quantile. E.g. 0.95 gives the mutations that are observed in more than 95\% of the sequences of that lineage.}
 }
 \value{
 A variant matrix (rownames are variants, colnames are mutations, entry i,j is 1 if variant i contains mutation j, 0 otherwise).
