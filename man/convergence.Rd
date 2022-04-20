@@ -15,5 +15,5 @@ convergence(res, verbose = TRUE)
 Invisbly returns TRUE if all samples converged, false otherwise.
 }
 \description{
-Check if provoc converged
+If converged, returns True and prints a message. Otherwise, prints the samples and the note giving hints as to why it didn't converge.
 }

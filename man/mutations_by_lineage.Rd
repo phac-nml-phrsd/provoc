@@ -9,7 +9,7 @@ A data frame with four columns.
 \describe{
 \item{lineage}{The designated lineage, as labelled in GenBank. Note that these are imperfect and sequence lineage assignment has changed over time.}
 \item{mutation}{The name of the mutation (relative to \code{NC_045512}), in the format "type|position|alt".}
-\item{count}{As of March 2022, the number of GenBank records labelled with this mutation that contained this mutation.}
+\item{count}{As of March 2022, the number of GenBank records labelled with this lineage that contained this mutation.}
 }
 }
 \source{
