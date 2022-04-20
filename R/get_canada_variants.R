@@ -15,6 +15,8 @@ get_canada_variants <- function(path = "data/canada_variants.csv"){
     } else {
         canada_variants <- read.csv("https://health-infobase.canada.ca/src/data/covidLive/covid19-epiSummary-variants.csv")
         names(canada_variants) <- c("Variant_Grouping", "Identifier", "Lineage", "Percent_CT_of_Sample", "Collection_Week")
+        name_rms <- "( \\(Gamma\\))|( \\(Beta\\))|( \\(Eta\\))|( \\(Delta\\))|( \\(Alpha\\))"
+        canada_variants$Lineage <- gsub(name_rms, "", canada_variants$Lineage)
         write.csv(canada_variants, file = path, row.names = FALSE)
     }
     return(canada_variants)
