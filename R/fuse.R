@@ -4,6 +4,7 @@
 #' 
 #' @param coco A data frame with a column labelled \code{mutation}.
 #' @param varmat Rownames are variants, column names are Mutations.
+#' @param min_perc A variant must have at least \code{min_perc} of the mutations.
 #' @param vebose Print information about mutations that were removed by the fusion.
 #' 
 #' @return A data frame with the same columns as coco (possibly fewer rows) and the same columns plus new columns for the variants of concern. The provoc function expects this structure.
@@ -16,7 +17,7 @@
 #' After removing mutations, it's possible that some rows lose their distinctive mutations and become identical. In this case the names of the lineages are pasted together and only one of the rows are kept.
 #' 
 #' Duplicate mutation names in coco are NOT removed. It is safe to use this function on a data frame that contains multiple samples.
-fuse <- function(coco, varmat, verbose = TRUE) {
+fuse <- function(coco, varmat, min_perc = 0.01, verbose = TRUE) {
     if(any(colnames(coco) %in% paste0("var_", rownames(varmat)))) {
         stop("coco should not contain column names that are names of lineages. Is this object already fused?")
     }
@@ -48,9 +49,10 @@ fuse <- function(coco, varmat, verbose = TRUE) {
     }
 
 
-    # Lineages without mutations
+    # Lineages with too few mutations (less than 10% are 1s) 
+    # TODO: Make this a parameter?
     vari2 <- varmat[, shared]
-    too_many_zeros <- apply(vari2, 1, sum) == 0
+    too_many_zeros <- apply(vari2, 1, sum) <= (ncol(vari2) * min_perc)
     vari2 <- vari2[!too_many_zeros, ]
 
     # Squash identical lineages

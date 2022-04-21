@@ -4,12 +4,14 @@
 \alias{fuse}
 \title{Ensure mutations are present in both coco and varmat}
 \usage{
-fuse(coco, varmat, verbose = TRUE)
+fuse(coco, varmat, min_perc = 0.01, verbose = TRUE)
 }
 \arguments{
 \item{coco}{A data frame with a column labelled \code{mutation}.}
 
 \item{varmat}{Rownames are variants, column names are Mutations.}
+
+\item{min_perc}{A variant must have at least \code{min_perc} of the mutations.}
 
 \item{vebose}{Print information about mutations that were removed by the fusion.}
 }
