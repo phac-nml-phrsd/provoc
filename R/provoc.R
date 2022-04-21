@@ -50,8 +50,10 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
     res_list <- vector(mode = "list", length = length(samples))
     convergence_note <- character(length(samples))
     convergence <- logical(length(samples))
+    t0s <- double(length(samples))
     names(res_list) <- samples
     for(i in seq_along(res_list)) { # TODO: Parallelize (for optim)
+        t0 <- Sys.time()
         cat("\n")
         message(paste0("Fitting sample ", samples[i], ", ", 
             which(samples == samples[i]), " of ", length(samples)))
@@ -138,12 +140,14 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
         # TODO: Include median read depth, quality measures
 
         message("Done.")
+        t0s[i] <- difftime(Sys.time(), t0, units = "mins")
     }
 
     res <- dplyr::bind_rows(res_list)
     attr(res, "convergence") <- data.frame(sample = samples, 
         convergence = convergence, 
-        convergence_note = convergence_note)
+        convergence_note = convergence_note,
+        time = t0s)
     res
 }
 
