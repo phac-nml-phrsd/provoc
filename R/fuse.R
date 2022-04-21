@@ -74,3 +74,27 @@ fuse <- function(coco, varmat, min_perc = 0.01, verbose = TRUE) {
 
     dplyr::left_join(coco, vardf, by = "mutation")
 }
+
+#' Un-fuse coco and varmat.
+#' 
+#' Fusion ensures that the mutation lists match and are in the correct order, but the two must be separated.
+#' 
+#' @param fused The result of \code{fuse(coco, varmat)}
+#' @param sample The name of the sample being used.
+#' 
+#' @return A list containing coco and varmat.
+fission <- function(fused, sample = NULL) {
+    if(!is.null(sample)) fused <- fused[fused$sample == sample, ]
+    variants <- startsWith(names(fused), "var_")
+    varnames <- names(fused)[variants]
+    coco <- fused[, !variants]
+
+    vardf <- fused[, variants]
+    varmat <- t(as.matrix(vardf))
+    varmat <- matrix(as.numeric(varmat), ncol = ncol(varmat))
+    rownames(varmat) <- gsub("var_", "", varnames)
+    colnames(varmat) <- coco$mutation
+
+    return(list(coco = coco, varmat = varmat))
+}
+

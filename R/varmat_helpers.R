@@ -73,6 +73,7 @@ varmat_from_variants <- function(variants,
 #' @param alt A vector containing the alternative (nucleotide(s) for mutations and insertions or the number of deletions).
 #' @param aa The vector of mutations in amino acid format (like those create by \code{parse_mutation}). TODO: Not yet implemented.
 #' @param data A data frame containing columns labelled "type", "pos", and "alt", each with entries in the expected format. TODO: Not yet implemented.
+#' @param mutation_format "tpa" (default) for \code{type|pos|alt} (e.g. \code{~|2832|G}; note that it includes the pipes "|") or "aa" for amino acid (e.g. \code{aa:orf1a:K856R}).
 #' @param max_n The maximum number of mutations from a given lineage to retain.
 #' @param top_quantile Only take mutations that are in the top \code{top_quantile} quantile. E.g. 0.95 gives the mutations that are observed in more than 95% of the sequences of that lineage.
 #' 
@@ -80,6 +81,7 @@ varmat_from_variants <- function(variants,
 #' @export
 varmat_from_data <- function(type = NULL, pos = NULL, alt = NULL, 
     aa = NULL, data = NULL, 
+    mutation_format = c("tpa", "aa"),
     max_n = NULL, top_quantile = NULL) {
 
     # TODO: Error checking (same size, not all null, what if type and aa are both specified, etc.)
@@ -124,5 +126,11 @@ varmat_from_data <- function(type = NULL, pos = NULL, alt = NULL,
     varmat <- as.matrix(varmat)
     rownames(varmat) <- unique(mutations_by_lineage$lineage)
     varmat <- varmat[rowSums(varmat) > 0, ]
+    if (mutation_format[1] == "aa") {
+        for(col in 1:ncol(varmat)) {
+            tpa <- strsplit(colnames(varmat)[col], split = "\\|")[[1]]
+            colnames(varmat)[col] <- parse_mutation(tpa[1], tpa[2], tpa[3])
+        }
+    }
     varmat
 }

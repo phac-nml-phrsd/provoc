@@ -154,5 +154,14 @@ provoc_optim <- function(coco, varmat) {
             converged <- !res$convergence
     }
 
-    bestres
+
+    res_df <- data.frame(rho = bestres$par,
+            ci_low = NA,
+            ci_high = NA, 
+            variant = rownames(varmat))
+    convergence <- ifelse(bestres$convergence == 0, TRUE, bestres$convergence)
+    convergence_note <- paste("Optim results: ", 
+        bestres$convergence, 
+        "; Initialization: ", bestres$init_method, sep = '')
+    return(list(res_df = res_df, convergence = convergence, convergence_note = convergence_note))
 }

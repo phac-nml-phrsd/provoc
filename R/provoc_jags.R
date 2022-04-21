@@ -29,7 +29,7 @@ melt_mcmc <- function(mcmc.list, var_names = NULL, pivot = FALSE) {
 #' @param varmat The variant matrix to be used in the study. The rownames must be the VoCs and the colnames must be the mutation names (in the same format as the mutation names in `coco`)
 #' @param adapt,burnin,sample,thin Parameters passed to runjags. Note that \code{sample} is the final number of samples that you will receive from each chain (i.e. if \code{thin = 5} and \code{sample = 1000}, you will end up drawing 5000 samples so that 1000 are returned after thinning).
 #' @param quiet If TRUE, much (but not all) of the runjags output will be suppressed.
-#' @param summarise Include runjags' summaries of the MCMC output.
+#' @param return_df If TRUE, returns a df with the summary statistics. \code{convergence(res)} will return the convergence information.
 #' 
 #' @return an mcmc.list object with each column representing the proportion of the variant of concern, in the order of the rownames of variantmat. It is suggested to use melt_mcmc to get output that plays better with ggplot2 and dplyr.
 #' @export
@@ -47,7 +47,7 @@ provoc_jags <- function(
         coco, varmat, 
         adapt = 500, burnin = 1000, thin = 4, 
         sample = 1000, n.chains = 3,
-        quiet = TRUE, summarise = FALSE){
+        quiet = TRUE, summarise = FALSE, return_df = TRUE){
     muts <- coco$mutation
     cou2 <- coco$count
     cov2 <- coco$coverage
@@ -65,7 +65,7 @@ provoc_jags <- function(
         }
     }
 
-    res <- tryCatch(
+    res_temp <- tryCatch(
             runjags::run.jags(
                 model = system.file("extdata/provoc.JAGS",
                  package = "provoc"),
@@ -94,13 +94,50 @@ provoc_jags <- function(
                 sample = sample,
                 thin = thin,
                 monitor = c("p"),
-                summarise = summarise,
+                summarise = FALSE,
                 silent = quiet,
                 #silent.runjags = TRUE,
                 method = "parallel"),
             error = function(e) e)
-    for(i in 1:length(res$mcmc)) {
-        colnames(res$mcmc[[i]]) <- rownames(vari2)
+    if("error" %in% class(res_temp)) {
+        return(res_df = data.frame(note = res_temp, convergence = FALSE, convergence_note = ""))
     }
-    return(res)
+    for(i in 1:length(res_temp$mcmc)) {
+        colnames(res_temp$mcmc[[i]]) <- rownames(vari2)
+    }
+
+    if(!return_df) {
+        return(res_temp)
+    } else {
+
+        if(requireNamespace("coda", quietly = TRUE)) {
+            g_diag <- coda::gelman.diag(res_temp)
+            gr <- g_diag$psrf
+            convergence_gr <- g_diag$mpsrf <= 1.15
+        } else {
+            gr <- "coda library not installed, cannot calculate GR statistics"
+            convergence_gr <- NA
+        }
+
+        point_est <- melt_mcmc(res_temp, varmat,
+            pivot = FALSE)
+        point_est <- point_est[, 
+            -which(names(point_est) %in% c("chain", "iter"))]
+        point_est <- t(apply(point_est, 2, quantile, 
+            probs = c(0.025, 0.5, 0.975)))
+        point_est <- as.data.frame(point_est)
+        names(point_est) <- c("ci_low", "rho", 
+            "ci_high")
+        point_est$variant <- rownames(varmat)
+        point_est <- point_est[, c("rho", "ci_low", 
+            "ci_high", "variant")]
+        rownames(point_est) <- NULL
+
+        res_df <- point_est
+        convergence_note <- ifelse(convergence_gr,
+            yes = g_diag$mpsrf,
+            no = paste0("Upper CI larger than 1.15: ", 
+                paste(rownames(gr)[gr[, 2] >= 1.15], collapse = ", ")))
+        return(list(res_df = res_df, convergence = convergence_gr, convergence_note = convergence_note))
+    }
 }

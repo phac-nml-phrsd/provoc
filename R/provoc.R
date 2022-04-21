@@ -2,8 +2,11 @@
 #' 
 #' Un-fuses coco and varmat and applies the appropriate estimation technique. If a column labelled "sample" is present, applies the analysis to each sample separately.
 #' 
+#' @param coco The counts and coverage data frame. Ignored if \code{fused} is supplied.
+#' @param varmat The matrix of variant mutations. Ignored if \code{fused} is supplied.
 #' @param fused The fused data frame of coco and varmat. The fusion ensures that the mutations are properly joined and varmat contains only the most pertinent mutations.
 #' @param method Optimization or Bayesian?
+#' @param ncores For optim, the number of cores to be used. Requires the parallel package for ncores > 1
 #' @param ... Arguments to be passed to \code{provoc_jags()} (ignored for method = "optim"). See \code{?provoc_jags}.
 #' 
 #' @return Results of the estimation. Regardless of the technique used, the results are as follows.
@@ -24,7 +27,8 @@
 #' fused <- fuse(coco, varmat)
 #' res <- provoc(fused)
 #' res$point_est
-provoc <- function (fused, method = c("optim", "runjags"), ...) {
+provoc <- function (coco, varmat, fused = NULL, method = c("optim", "runjags"), ncores = 1, ...) {
+    if(is.null(fused)) fused <- fuse(coco, varmat)
     if("sample" %in% colnames(fused)) {
         samples <- unique(fused$sample)
         sample_table <- table(fused$sample)
@@ -57,79 +61,39 @@ provoc <- function (fused, method = c("optim", "runjags"), ...) {
         cat("\n")
         message(paste0("Fitting sample ", samples[i], ", ", 
             which(samples == samples[i]), " of ", length(samples)))
-        fusi <- fused[fused$sample == samples[i], ]
-        variants <- startsWith(names(fusi), "var_")
-        varnames <- names(fused)[variants]
-        coco <- fusi[, !variants]
+        
+        fissed <- fission(fused, sample = samples[i])
+        coco <- fissed$coco
+        varmat <- fissed$varmat
 
         # Guaranteed to include a column called "sample"
         sample_info <- apply(coco, 2, function(x) length(unique(x)) == 1)
         sample_info <- coco[1, sample_info, drop = FALSE]
 
-        vardf <- fusi[, variants]
-        varmat <- t(as.matrix(vardf))
-        varmat <- matrix(as.numeric(varmat), ncol = ncol(varmat))
-        rownames(varmat) <- gsub("var_", "", varnames)
-        colnames(varmat) <- coco$mutation
 
         if(method[1] == "optim") {
             res_temp <- provoc_optim(coco, varmat)
-
-            res_df <- data.frame(rho = res_temp$par,
-                    ci_low = NA,
-                    ci_high = NA, 
-                    variant = rownames(varmat))
+            res_df <- res_temp$res_df
             for (ii in seq_len(ncol(sample_info))) {
                 res_df[, names(sample_info)[ii]] <- sample_info[1, ii]
             }
-            convergence[i] <- res_temp$convergence == 0
-            convergence_note[i] <- paste("Optim results: ", 
-                res_temp$convergence, 
-                "; Initialization: ", res_temp$init_method, sep = '')
+            convergence[i] <- res_temp$convergence
+            convergence_note[i] <- res_temp$convergence_note
             res_list[[i]] <- res_df
         } else {
             if(requireNamespace("runjags", quietly = TRUE)) {
                 res_temp <- provoc_jags(coco, varmat, ...)
-
-                # TODO: all of this should be in the provoc_jags() function, not cluttering up this file.
-
-                if(requireNamespace("coda", quietly = TRUE)) {
-                    g_diag <- coda::gelman.diag(res_temp)
-                    gr <- g_diag$psrf
-                    convergence_gr <- g_diag$mpsrf <= 1.15
-                } else {
-                    gr <- "coda library not installed, cannot calculate GR statistics"
-                    convergence_gr <- NA
-                }
-
-                point_est <- melt_mcmc(res_temp, varmat,
-                    pivot = FALSE)
-                point_est <- point_est[, 
-                    -which(names(point_est) %in% c("chain", "iter"))]
-                point_est <- t(apply(point_est, 2, quantile, 
-                    probs = c(0.025, 0.5, 0.975)))
-                point_est <- as.data.frame(point_est)
-                names(point_est) <- c("ci_low", "rho", 
-                    "ci_high")
-                point_est$variant <- rownames(varmat)
-                point_est <- point_est[, c("rho", "ci_low", 
-                    "ci_high", "variant")]
-                rownames(point_est) <- NULL
-
-                res_df <- point_est
+                res_df <- res_temp$res_df
                 for (ii in seq_len(ncol(sample_info))) {
                     res_df[, names(sample_info)[ii]] <- sample_info[1, ii]
                 }
-                convergence[i] <- convergence_gr
-                convergence_note[i] <- ifelse(convergence_gr,
-                    yes = g_diag$mpsrf,
-                    no = paste0("Upper CI larger than 1.15: ", 
-                        paste(rownames(gr)[gr[, 2] >= 1.15], collapse = ", ")))
+                convergence[i] <- res_temp$convergence
+                convergence_note[i] <- res_temp$convergence_note
                 res_list[[i]] <- res_df
                     
             } else {
                 res_df <- "JAGS and runjags are required to use this method."
-                res_list[[i]] <- res_df
+                res_list[[i]] <- data.frame(note = res_df)
             }
         }
         # TODO: Add methods (for both single results and lists): summary, plot
