@@ -10,6 +10,7 @@ varmat_from_data(
   alt = NULL,
   aa = NULL,
   data = NULL,
+  mutation_format = c("tpa", "aa"),
   max_n = NULL,
   top_quantile = NULL
 )
@@ -24,6 +25,8 @@ varmat_from_data(
 \item{aa}{The vector of mutations in amino acid format (like those create by \code{parse_mutation}). TODO: Not yet implemented.}
 
 \item{data}{A data frame containing columns labelled "type", "pos", and "alt", each with entries in the expected format. TODO: Not yet implemented.}
+
+\item{mutation_format}{"tpa" (default) for \code{type|pos|alt} (e.g. \code{~|2832|G}; note that it includes the pipes "|") or "aa" for amino acid (e.g. \code{aa:orf1a:K856R}).}
 
 \item{max_n}{The maximum number of mutations from a given lineage to retain.}
 

@@ -4,7 +4,12 @@
 \alias{varmat_from_variants}
 \title{Given a vector of lineage names, uses GenBank data to determine the variant matrix.}
 \usage{
-varmat_from_variants(variants, max_n = NULL, top_quantile = NULL)
+varmat_from_variants(
+  variants,
+  max_n = NULL,
+  top_quantile = NULL,
+  mutation_format = c("tpa", "aa")
+)
 }
 \arguments{
 \item{variants}{A character vector of variant names in the same format as the}
@@ -12,6 +17,8 @@ varmat_from_variants(variants, max_n = NULL, top_quantile = NULL)
 \item{max_n}{The maximum number of mutations from a given lineage to retain.}
 
 \item{top_quantile}{Only take mutations that are in the top \code{top_quantile} quantile. E.g. 0.05 gives the mutations in more than 95\% of the sequences of that lineage.}
+
+\item{mutation_format}{"tpa" (default) for \code{type|pos|alt} (e.g. \code{~|2832|G}; note that it includes the pipes "|") or "aa" for amino acid (e.g. \code{aa:orf1a:K856R}).}
 }
 \value{
 A variant matrix (rownames are variants, colnames are mutations, entry i,j is 1 if variant i contains mutation j, 0 otherwise).

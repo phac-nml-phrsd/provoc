@@ -4,12 +4,25 @@
 \alias{provoc}
 \title{Proportions of Variants of Concern}
 \usage{
-provoc(fused, method = c("optim", "runjags"), ...)
+provoc(
+  coco,
+  varmat,
+  fused = NULL,
+  method = c("optim", "runjags"),
+  ncores = 1,
+  ...
+)
 }
 \arguments{
+\item{coco}{The counts and coverage data frame. Ignored if \code{fused} is supplied.}
+
+\item{varmat}{The matrix of variant mutations. Ignored if \code{fused} is supplied.}
+
 \item{fused}{The fused data frame of coco and varmat. The fusion ensures that the mutations are properly joined and varmat contains only the most pertinent mutations.}
 
 \item{method}{Optimization or Bayesian?}
+
+\item{ncores}{For optim, the number of cores to be used. Requires the parallel package for ncores > 1}
 
 \item{...}{Arguments to be passed to \code{provoc_jags()} (ignored for method = "optim"). See \code{?provoc_jags}.}
 }

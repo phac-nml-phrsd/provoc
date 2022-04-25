@@ -40,7 +40,7 @@ parse_mutation <- function(type, pos, alt,
         'M'= c(26522, 27191),
         'orf6'= c(27201, 27387),
         'orf7a'= c(27393, 27759),
-        'orf7b'= c(27755, 27887),
+        'orf7b'= c(2775, 27887),
         'orf8'= c(27893, 28259),
         'N'= c(28273, 29533),
         'orf10'= c(29557, 29674)
@@ -56,7 +56,7 @@ parse_mutation <- function(type, pos, alt,
 
         orfl <- sapply(orfs, function(x) x[1] < pos & x[2] > pos)
         if(any(orfl)) {
-            this_orf <- names(orfl)[orfl]
+            this_orf <- names(orfl)[orfl][1]
             this_left <- orfs[[this_orf]][1]
             this_right <- orfs[[this_orf]][2]
         }

@@ -11,12 +11,12 @@ varmat_from_list <- function(variant_list) {
         stop("Input must be a list")
     } else if (is.null(names(variant_list))) {
         stop("Input must be a named list.")
-    } else if (any(sapply(variant_list) != "character")) {
+    } else if (any(sapply(variant_list, function(x) class(x) != "character"))) {
         stop("Input must be a named list of character vectors")
     }
 
     # bind_rows forces all columns to be the same, adds NAs
-    varmat <- dpylyr::bind_rows(lapply(variant_list, function(x) {
+    varmat <- dplyr::bind_rows(lapply(variant_list, function(x) {
         # a data frame of 1s
         res <- as.data.frame(matrix(1, nrow = 1, ncol = length(x)))
         names(res) <- x
@@ -39,11 +39,12 @@ varmat_from_list <- function(variant_list) {
 #' @param variants A character vector of variant names in the same format as the 
 #' @param max_n The maximum number of mutations from a given lineage to retain.
 #' @param top_quantile Only take mutations that are in the top \code{top_quantile} quantile. E.g. 0.05 gives the mutations in more than 95% of the sequences of that lineage.
+#' @param mutation_format "tpa" (default) for \code{type|pos|alt} (e.g. \code{~|2832|G}; note that it includes the pipes "|") or "aa" for amino acid (e.g. \code{aa:orf1a:K856R}).
 #' 
 #' @return A variant matrix (rownames are variants, colnames are mutations, entry i,j is 1 if variant i contains mutation j, 0 otherwise).
 #' @export
 varmat_from_variants <- function(variants, 
-    max_n = NULL, top_quantile = NULL) {
+    max_n = NULL, top_quantile = NULL, mutation_format = c("tpa", "aa")) {
     if(is.null(max_n) & is.null(top_quantile)) {
         warning("Parameters not set, using all mutations (varmat will be massive and estimation will be slow and fraught with correlations)")
         top_quantile <- 0
@@ -60,7 +61,14 @@ varmat_from_variants <- function(variants,
     })
     names(variant_list) <- variants
 
-    varmat_from_list(variant_list)
+    varmat <- varmat_from_list(variant_list)
+    if(mutation_format[1] == "aa"){
+        for(i in 1:ncol(varmat)){
+            cn <- strsplit(colnames(varmat)[i], split = "\\|")[[1]]
+            colnames(varmat)[i] <- parse_mutation(cn[1], as.numeric(cn[2]) + 1, cn[3])
+        }
+    }
+    varmat
 }
 
 
@@ -107,7 +115,7 @@ varmat_from_data <- function(type = NULL, pos = NULL, alt = NULL,
     mutations <- unique(paste(type, pos, alt, sep = "|"))
     varmat <- dplyr::bind_rows(lapply(unique(mutations_by_lineage$lineage), function(x) {
         m <- mutations_by_lineage[mutations_by_lineage$lineage == x,]
-        m <- m[m$count <= max_n & m$count <= quantile(m$count, top_quantile), ]
+        m <- m[m$count <= max_n & m$count >= quantile(m$count, top_quantile), ]
         mutations_present <- m$mutation[m$mutation %in% mutations]
         # If no mutations, create a dummy dataframe with two 
         # columns and column names that can be removed.

@@ -57,7 +57,7 @@ This matrix will need be "fused" with coco to ensure that the intersection of th
 varmat <- astronomize()
 
 rel_counts <- rpois(nrow(varmat), 10)
-is_omicron <- rownames(varmat) %in% c("cBA.1", "cBA.2", "cB.1.1.529")
+is_omicron <- rownames(varmat) %in% c("BA.1", "BA.2", "B.1.1.529")
 rel_counts[is_omicron] <- c(100, 200, 300)
 coco <- simulate_coco(varmat, rel_counts = rel_counts)
 

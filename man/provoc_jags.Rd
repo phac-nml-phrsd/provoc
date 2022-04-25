@@ -13,7 +13,8 @@ provoc_jags(
   sample = 1000,
   n.chains = 3,
   quiet = TRUE,
-  summarise = FALSE
+  summarise = FALSE,
+  return_df = TRUE
 )
 }
 \arguments{
@@ -25,7 +26,7 @@ provoc_jags(
 
 \item{quiet}{If TRUE, much (but not all) of the runjags output will be suppressed.}
 
-\item{summarise}{Include runjags' summaries of the MCMC output.}
+\item{return_df}{If TRUE, returns a df with the summary statistics. \code{convergence(res)} will return the convergence information.}
 }
 \value{
 an mcmc.list object with each column representing the proportion of the variant of concern, in the order of the rownames of variantmat. It is suggested to use melt_mcmc to get output that plays better with ggplot2 and dplyr.

@@ -18,7 +18,8 @@ Suggests:
     runjags,
     coda,
     testthat (>= 3.0.0),
-    rvest
+    rvest,
+    parallel
 Config/testthat/edition: 3
 Depends: 
     R (>= 2.10)
