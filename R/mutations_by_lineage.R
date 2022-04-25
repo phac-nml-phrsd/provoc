@@ -20,3 +20,13 @@
 #' 
 #' @source \url{https://nextstrain.org}
 "mutations_by_lineage"
+
+
+#' Facts about the lineages
+#' 
+#' Especially useful for checking the earliest/latest sequence date
+#' 
+#' @format A data frame
+#' 
+#' @source \url{https://nextstrain.org}
+"lineage_facts"
