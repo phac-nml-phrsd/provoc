@@ -42,8 +42,8 @@ varmat <- simulate_varmat()
 coco <- simulate_coco(varmat, rel_counts = c(100, 200, 300))
 
 fused <- fuse(coco, varmat)
-copt <- provoc(fused, method = "optim")
-copt$par
+copt <- provoc(fused = fused, method = "optim")
+copt
 ```
 
 ```
