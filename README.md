@@ -92,8 +92,8 @@ coda <- provoc(fused = fused, method = "runjags", quiet = 0)
 # codf <- melt_mcmc(coda, pivot = TRUE) #currently unnecessary
 
 ggplot(coda) +
-    aes(x = variant, y = rho, ymin = ci_low, ymax = ci_high, colour = factor(chain)) +
-    geom_line() + geom_errorbar() + 
-    facet_wrap(~ name, scales = "free_y")
+    aes(x = variant, y = rho, ymin = ci_low, ymax = ci_high) +
+    geom_point() + geom_errorbar() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 ```
 
