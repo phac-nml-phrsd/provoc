@@ -68,6 +68,7 @@ rho_initializer <- function(varmat) {
 #' res = copt_binom(coco, varmat)
 #' res$par
 provoc_optim <- function(coco, varmat) {
+    #print(coco)
     muts <- coco$mutation
     cou2 <- coco$count
     cov2 <- coco$coverage
@@ -77,6 +78,7 @@ provoc_optim <- function(coco, varmat) {
     objective <- function(rho, count, varmat, coverage) {
         prob <- as.numeric(rho %*% varmat)
         prob[coverage == 0] <- 0
+        prob[prob == 0 & count != 0] <- 0.000001
         -sum(stats::dbinom(x = count, size = coverage, prob = prob,
             log = TRUE))
     }

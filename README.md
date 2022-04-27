@@ -63,16 +63,15 @@ coco <- simulate_coco(varmat, rel_counts = rel_counts)
 
 fused <- fuse(coco, varmat)
 
-copt <- provoc(fused, method = "optim")
-cbind(copt$par, rownames(varmat))
+copt <- provoc(fused = fused, method = "optim")
+copt[copt$variant %in% c("BA.1", "BA.2", "B.1.1.529"), ]
 ```
 
 ```
-## ...
-## [7,] "0.117251611545167"   "cB.1.1.529"
-## ...
-## [20,] "0.235030546918422"   "cBA.1"
-## [21,] "0.352863206897961"   "cBA.2"
+##          rho ci_low ci_high   variant sample
+## 5  0.1184445     NA      NA B.1.1.529      1
+## 16 0.2301833     NA      NA      BA.1      1
+## 17 0.3531027     NA      NA      BA.2      1
 ## ...
 ```
 
@@ -83,18 +82,18 @@ The package includes a helper function to put it in a nice format for `ggplot2` 
 library(ggplot2)
 library(coda) # for gelman.diag()
 
-coda <- provoc(fused, method = "optim")
+coda <- provoc(fused = fused, method = "runjags", quiet = 0)
 
 # coda_binom returns an mcmc.list object; all coda methods will apply
-gelman.diag(coda)
+#gelman.diag(coda) # currently broken
 
 # provoc includes a nice helper function,
 # which adds `iter` and `chain` columns and (optionally) pivots longer.
-codf <- melt_mcmc(coda, pivot = TRUE)
+# codf <- melt_mcmc(coda, pivot = TRUE) #currently unnecessary
 
-ggplot(codf) +
-    aes(x = iter, y = value, colour = factor(chain)) +
-    geom_line() +
+ggplot(coda) +
+    aes(x = variant, y = rho, ymin = ci_low, ymax = ci_high, colour = factor(chain)) +
+    geom_line() + geom_errorbar() + 
     facet_wrap(~ name, scales = "free_y")
 ```
 

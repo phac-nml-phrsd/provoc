@@ -149,6 +149,7 @@ astronomize <- function(path = "../constellations") {
     rownames(varmat) <- gsub(".json", "", list.files(stelpath, full.names = FALSE))
     rownames(varmat) <- gsub("c", "", rownames(varmat))    
 
+    varmat <- varmat[, colSums(varmat) > 0]
     varmat
 }
 
