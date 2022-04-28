@@ -115,7 +115,7 @@ varmat_from_data <- function(type = NULL, pos = NULL, alt = NULL,
     mutations <- unique(paste(type, pos, alt, sep = "|"))
     varmat <- dplyr::bind_rows(lapply(unique(mutations_by_lineage$lineage), function(x) {
         m <- mutations_by_lineage[mutations_by_lineage$lineage == x,]
-        m <- m[m$count <= max_n & m$count >= quantile(m$count, top_quantile), ]
+        m <- m[m$count <= max_n & m$count <= quantile(m$count, top_quantile), ]
         mutations_present <- m$mutation[m$mutation %in% mutations]
         # If no mutations, create a dummy dataframe with two 
         # columns and column names that can be removed.
