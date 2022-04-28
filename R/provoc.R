@@ -82,6 +82,9 @@ provoc <- function (coco, varmat, fused = NULL, method = c("optim", "runjags"), 
             res_list[[i]] <- res_df
         } else {
             if(requireNamespace("runjags", quietly = TRUE)) {
+                if(!runjags::testjags()$JAGS.found) {
+                    stop("runjags was unable to find an installation of JAGS. If you believe JAGS is installed, try running `library(rjags)`.")
+                }
                 res_temp <- provoc_jags(coco, varmat, ...)
                 res_df <- res_temp$res_df
                 for (ii in seq_len(ncol(sample_info))) {
