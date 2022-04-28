@@ -20,10 +20,6 @@ re.findall <- function(pat, s) {
   })
 }
 
-
-#' List of open reading frames
-
-
 #' Extract mutation list from a directory of constellation files.
 #' 
 #' "Constellations" are files produced from \url{https://github.com/cov-lineages/constellations}, which represent the cov-lineage team's best knowledge about which mutations define a lineage. These are updated frequently, please \code{git pull} in your cloned copy accordingly. See details.

@@ -2,8 +2,7 @@
 % Please edit documentation in R/astronomize.R
 \name{astronomize}
 \alias{astronomize}
-\title{List of open reading frames
-Extract mutation list from a directory of constellation files.}
+\title{Extract mutation list from a directory of constellation files.}
 \usage{
 astronomize(path = "../constellations")
 }
