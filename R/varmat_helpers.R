@@ -142,3 +142,39 @@ varmat_from_data <- function(type = NULL, pos = NULL, alt = NULL,
     }
     varmat
 }
+
+#' Filter lineages active on a given date.
+#' 
+#' Using NGSB data (see \code{?mutations_by_lineage}), checks that the earliest sequence in a lineage was observed by \code{start_date}. Optionally checks if the latest sequence in the lineage was observed after start_date. Optionally checks if the lineage was ever observed in Canada.
+#' 
+#' @param lineage_names A character vector of lineage names. Must match the names in \code{mutations_by_lineage}.
+#' @param start_date Earliest date in the study. Must be in ISO-8601 format (as should all dates with no exceptions).
+#' @param check_after Check if there's an observed sequence after the start of your study? Set FALSE if the start date is recent.
+#' @param check_canada Checks if the lineage was ever observed in Canada. Default FALSE.
+#' 
+#' @details The code also ignores any + symbols and anything after them, so lineages such as B.1.617.2+K417N (Delta+) will be treated as B.1.617.2 (Delta).
+#' 
+#' @return A character vector.
+extant_lineages <- function(lineage_names, start_date, check_after = TRUE, check_canada = FALSE) {
+    start_date <- lubridate::ymd(start_date)
+    lineage_names2 <- sapply(strsplit(lineage_names, "\\+"), `[`, 1)
+    include_lineage <- logical(length(lineage_names2))
+
+    for(i in seq_along(include_lineage)) {
+        if(lineage_names2[i] %in% lineage_facts$pango_lineage) {
+            lin_date <- lubridate::ymd(lineage_facts$earliest_date[lineage_facts$pango_lineage == lineage_names2[i]])
+            include_lineage[i] <- lin_date <= start_date
+        }
+
+        if(check_after & include_lineage[i]) {
+            late_date <- lubridate::ymd(lineage_facts$latest_date[lineage_facts$pango_lineage == lineage_names2[i]])
+            include_lineage[i] <- include_lineage[i] & (late_date >= start_date)
+        }
+        if(check_canada & include_lineage[i]) {
+            include_lineage[i] <- include_lineage[i] & 
+                !is.na(lineage_facts$Canada_count[lineage_facts$pango_lineage == lineage_names2[i]])
+        }
+    }
+    
+    lineage_names[include_lineage]
+}

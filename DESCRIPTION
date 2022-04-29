@@ -13,7 +13,8 @@ Imports:
     dplyr,
     stats,
     tidyr,
-    jsonlite
+    jsonlite,
+    lubridate
 Suggests:
     runjags,
     coda,
