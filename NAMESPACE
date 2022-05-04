@@ -2,11 +2,13 @@
 
 export(astronomize)
 export(convergence)
+export(coverage_at_mutations)
 export(fuse)
 export(get_canada_variants)
 export(get_lineage_info)
 export(melt_mcmc)
 export(parse_mutation)
+export(pos_from_aa)
 export(provoc)
 export(provoc_jags)
 export(provoc_optim)
