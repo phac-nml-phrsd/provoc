@@ -35,39 +35,39 @@ rho_initializer <- function(varmat) {
 }
 
 
-#' Estimate the proportions of VOCs using Constrained OPTimization
+#' Estimate the proportions of VOCs using Constrained Optimization
 #' 
-#' @param coco A data frame containing counts, coverage, and mutation names
+#' If 
+#' 
+#' @param coco A data frame containing columns labelled count, coverage, and mutation.
 #' @param varmat The variant matrix to be used in the study. The rownames must be the VoCs and the colnames must be the mutation names (in the same format as the mutation names in `coco`)
+#' @param bootstrap_samples The number of bootstrap samples to use.
 #' 
-#' @return A list containing the results (\code{$par}) as well as convergence information from \code{constrOptim}.
+#' @return A list containing the results as well as convergence information from \code{constrOptim}.
 #' 
 #' \describe{
-#'      \item{par}{The estimated proportions of the variants of concern (\eqn{rho})}
-#'      \item{value}{The estimated optimum value of the objective function. Not often useful.}
-#'      \item{counts}{The number of times the function was calculated (i.e. total iterations). Has nothing to do with the counts column in \code{coco}.}
-#'      \item{message}{If the algorithm didn't converge, some explanation as to why.}
-#'      \item{outer.iterations}{The number of calls to \code{optim}}
-#'      \item{barrier.value}{value of the barrier function at the optimum}
-#'      \item{init_method}{The method used to initialize \eqn{rho}. Either Prior_Assumption (assumes mostly Omicron, then Delta, then fills out the others to make it sum to 1), "Uniform" for equal values of each variant, or "Nuclear" for a routine that tries 100 random perturbations of the previous values.}
+#'      \item{res_df}{The estimated proportions of the variants of concern (\eqn{rho}), including CI if \code{bootstrap_samples > 0}}
+#'      \item{convergence}{Logical}
+#'      \item{convergence_note}{Convergence code from \code{constrOptim}. Also includes the method used for initializing \eqn{\rho}.}
 #' }
 #' 
 #' @export
 #' 
 #' @details The estimates are found by minimizing the squared difference between the frequency of each mutation and the prediction of a binomial model where the proportion is equal to the sum of rho times the relevant column of varmat and the size parameter is equal to the coverage. 
 #' 
-#' The algorithm will first try a prior guess based on the current (March 2022) most common VOCs, then will try a uniform proportion, then (the nuclear option) will try 100 random perturbations until it works. Fails gracefully, with list elements indicating the convergence status and the initialization of rho. 
+#' The algorithm will first try a prior guess based on the current (March 2022) most common VOCs, then will try a uniform proportion, then (the nuclear option) will try 20 random perturbations until it works. Fails gracefully, with list elements indicating the convergence status and the initialization of rho, and returns the results that had the lowest value of the objective function. 
 #' 
-#' This function currently does not return any estimate of variance for the proportions and should not be trusted beyond a quick check. In practice it produces results equivalent to \code{coda_binom()} (even when it doesn't converge), but always check the residuals.
+#' Bootstrapping is performed parametrically, assuming that coverage is Poisson with a mean of the observed coverage and, based on the sampled value of the coverage, the count is sampled from a binomial distribution with proportion equal to that in the data.
 #' 
 #' @seealso \code{\link[stats]{constrOptim}}
 #' 
 #' @examples
-#' varmat = simulate_varmat() # default values (Omicron)
-#' coco = simulate_coco(varmat, rel_counts = c(100, 200, 300)) # expect 1/6, 2/6, and 3/6
-#' res = copt_binom(coco, varmat)
-#' res$par
-provoc_optim <- function(coco, varmat) {
+#' varmat <- simulate_varmat() # default values (Omicron)
+#' varmat <- varmat[row.names(varmat) %in% c("B.1.1.529", "BA.1", "BA.2")]
+#' coco <- simulate_coco(varmat, rel_counts = c(100, 200, 300)) # expect 1/6, 2/6, and 3/6
+#' res <- copt_binom(coco, varmat)
+#' res$res_df
+provoc_optim <- function(coco, varmat, bootstrap_samples = 0) {
     #print(coco)
     muts <- coco$mutation
     cou2 <- coco$count
@@ -108,7 +108,7 @@ provoc_optim <- function(coco, varmat) {
         f = objective, grad = NULL,
         ui = ui, ci = ci,
         count = cou2, coverage = cov2, varmat = vari2,
-        control = list(maxit = 100000))
+        control = list(maxit = 10000))
     res$init_method <- "Prior_Assumption"
 
     if(res$convergence) { # if not converged,
@@ -118,7 +118,7 @@ provoc_optim <- function(coco, varmat) {
             f = objective, grad = NULL,
             ui = ui, ci = ci,
             count = cou2, coverage = cov2, varmat = vari2,
-            control = list(maxit = 100000))
+            control = list(maxit = 10000))
         res$init_method <- "Uniform"
     }
 
@@ -130,7 +130,7 @@ provoc_optim <- function(coco, varmat) {
         # Uniform inititialization
         i <- 0
         converged <- FALSE
-        while(i < 50 & !converged) {
+        while(i < 20 & !converged) {
             i <- i + 1
             if(!i %% 10) print(paste0("Attempt ", i, " of 50."))
 
@@ -144,7 +144,7 @@ provoc_optim <- function(coco, varmat) {
                 f = objective, grad = NULL,
                 ui = ui, ci = ci,
                 count = cou2, coverage = cov2, varmat = vari2,
-                control = list(maxit = 10000))
+                control = list(maxit = 1000))
             }
             res$init_method <- "Nuclear"
 
@@ -153,7 +153,10 @@ provoc_optim <- function(coco, varmat) {
                 bestres <- res
             }
 
-            converged <- !res$convergence
+        converged <- !res$convergence
+        if(bestres$value == res$value) {
+            print("Nuclear Option failed; going with best results.")
+        }
     }
 
 
@@ -165,5 +168,27 @@ provoc_optim <- function(coco, varmat) {
     convergence_note <- paste("Optim results: ", 
         bestres$convergence, 
         "; Initialization: ", bestres$init_method, sep = '')
+
+    if(bootstrap_samples > 0) {
+        boots <- replicate(bootstrap_samples, {
+            tryCatch({
+                coco_boot <- data.frame(mutation = muts,
+                    coverage = rpois(length(cov2), cov2))
+                # Multiply by 0.999 because sometimes integer/double is larger than 1
+                    # even when integer == double
+                coco_boot$count <- rbinom(length(cou2), size = cov2, 
+                    prob = 0.999*cou2/cov2)
+                coco_boot <- coco_boot[complete.cases(coco_boot), ]
+                varmat_boot <- vari2[, muts]
+                provoc_optim(coco_boot, varmat_boot)$res_df[, "rho"]
+            }, error = function(e) rep(NULL, nrow(vari2)))
+        })
+
+        ci <- apply(do.call(cbind, boots), 1, quantile, prob = c(0.025, 0.975))
+
+        res_df$ci_low <- ci[1,]
+        res_df$ci_high <- ci[2,]
+    }
+
     return(list(res_df = res_df, convergence = convergence, convergence_note = convergence_note))
 }
