@@ -8,7 +8,7 @@ model{
     # Prior on proportions for each variant
     for(j in 1:P) {
         p1[j] ~ dbeta(alpha, beta)
-        p[j] <- ifelse(sum(p1) >= 1, p1[j]/sum(p1), p1[j])
+        p[j] <- ifelse(sum(p1) >= 1, p1[j] - (sum(p1) - 1), p1[j])
     }
 
     # Sum of p times an indicator function
