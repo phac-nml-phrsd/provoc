@@ -8,7 +8,7 @@ pos_from_aa <- function(aa) {
     gcodes <- grepl("aa", aa)
     dels <- grepl("del", aa)
     inss <- grepl("ins", aa)
-    points <- grepl("^[A-Z][0-9]", aa)
+    points <- (!grepl(":", aa)) & grepl("[0-9][A-Z]$", aa)
     others <- !(gcodes | dels | inss | points)
     pos <- double(length(aa))
 
@@ -29,16 +29,16 @@ pos_from_aa <- function(aa) {
 
     pos[gcodes] <- sapply(strsplit(aa[gcodes], ":"),
         function(x) {
-            orfs[x[2]][[1]][1] + 3*as.numeric(substr(x[3], 2, nchar(x[3]) - 1)) + 1
+            orfs[x[2]][[1]][1] + 3*as.numeric(gsub("[^0-9]", "", x[3])) + 1
         })
     pos[dels] <- sapply(strsplit(aa[dels], ":"), 
         function(x) {
             as.numeric(x[2])
         })
-    pos[inss] <- sapply(strsplit(aa[ins], ":"), 
+    pos[inss] <- as.numeric(sapply(strsplit(aa[inss], ":"), 
         function(x) {
             as.numeric(x[2])
-        })
+        }))
     pos[points] <- sapply(aa[points], 
         function(x) {
             as.numeric(substr(x, 2, nchar(x) - 1))
@@ -60,11 +60,15 @@ coverage_at_aa <- function(coverage, aa) {
     pos <- pos_from_aa(aa)
     get_three <- grepl("aa", aa)
 
-    sapply(1:length(pos), function(i) {
+    res <- sapply(which(!is.na(pos)), function(i) {
+        if(!is.numeric(pos[i])) print(i)
         ifelse(get_three[i], 
-            yes = max(coverage$coverage[coverage$position %in% pos[i]:(pos[i] + 3)]),
+            yes = max(coverage$coverage[coverage$position %in% (pos[i] - 3):(pos[i])]),
             no = coverage$coverage[coverage$position == pos[i]])
     })
+
+    res[is.na(pos)] <- NA
+    res
 }
 
 #' Add coverage of missing mutations to a data set
