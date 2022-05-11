@@ -8,7 +8,7 @@ pos_from_aa <- function(aa) {
     gcodes <- grepl("aa", aa)
     dels <- grepl("del", aa)
     inss <- grepl("ins", aa)
-    points <- grepl("^[A-Z][0-9]")
+    points <- grepl("^[A-Z][0-9]", aa)
     others <- !(gcodes | dels | inss | points)
     pos <- double(length(aa))
 
@@ -29,7 +29,7 @@ pos_from_aa <- function(aa) {
 
     pos[gcodes] <- sapply(strsplit(aa[gcodes], ":"),
         function(x) {
-            orf_left[x[2]] + as.numeric(substr(x[3], 2, nchar(x[3]) - 1)) + 1
+            orfs[x[2]][[1]][1] + 3*as.numeric(substr(x[3], 2, nchar(x[3]) - 1)) + 1
         })
     pos[dels] <- sapply(strsplit(aa[dels], ":"), 
         function(x) {
@@ -56,13 +56,13 @@ pos_from_aa <- function(aa) {
 #' @param aa A vector of mutations. aa:orf1a:I300V, ins:28215:3, del:27378:25, or C703T
 #' 
 #' @export
-coverage_at_mutations <- function(coverage, aa) {
+coverage_at_aa <- function(coverage, aa) {
     pos <- pos_from_aa(aa)
     get_three <- grepl("aa", aa)
 
     sapply(1:length(pos), function(i) {
         ifelse(get_three[i], 
             yes = max(coverage$coverage[coverage$position %in% pos[i]:(pos[i] + 3)]),
-            no = coverage$coverage[coverage$position ==pos[i]])
+            no = coverage$coverage[coverage$position == pos[i]])
     })
 }
