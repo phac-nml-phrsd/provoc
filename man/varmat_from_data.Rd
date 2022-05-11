@@ -11,8 +11,12 @@ varmat_from_data(
   aa = NULL,
   data = NULL,
   mutation_format = c("tpa", "aa"),
-  max_n = NULL,
-  top_quantile = NULL
+  max_n = 80,
+  top_quantile = 0.05,
+  matches = 3,
+  start_date = NULL,
+  check_after = TRUE,
+  check_canada = FALSE
 )
 }
 \arguments{
@@ -31,6 +35,16 @@ varmat_from_data(
 \item{max_n}{The maximum number of mutations from a given lineage to retain.}
 
 \item{top_quantile}{Only take mutations that are in the top \code{top_quantile} quantile. E.g. 0.95 gives the mutations that are observed in more than 95\% of the sequences of that lineage.}
+
+\item{matches}{The minimum number of matching mutations in the NextStrain GenBank data.}
+
+\item{start_date}{Earliest date in the study. Must be in ISO-8601 format (as should all dates with no exceptions).}
+
+\item{check_after}{Check if there's an observed sequence after the start of your study? Set FALSE if the start date is recent.}
+
+\item{check_canada}{Checks if the lineage was ever observed in Canada. Default FALSE.}
+
+\item{lineage_names}{A character vector of lineage names. Must match the names in \code{mutations_by_lineage}.}
 }
 \value{
 A variant matrix (rownames are variants, colnames are mutations, entry i,j is 1 if variant i contains mutation j, 0 otherwise).
