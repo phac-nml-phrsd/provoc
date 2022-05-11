@@ -66,3 +66,19 @@ coverage_at_aa <- function(coverage, aa) {
             no = coverage$coverage[coverage$position == pos[i]])
     })
 }
+
+#' Add coverage of missing mutations to a data set
+#' 
+#' @param coco The data set.
+#' @param coverage The coverage filen with position as the first column and coverage as the second.
+#' @param mutation_list The mutations to be added (usually \code{colnames(varmat)}).
+#' 
+#' @return coco, but with added rows.
+#' @export
+add_coverage <- function(coco, coverage, mutation_list) {
+    new_muts <- mutation_list[!mutation_list %in% coco$mutation]
+    cov_new_muts <- coverage_at_aa(coverage, new_muts)
+
+    bind_rows(coco, 
+        data.frame(mutation = new_muts, count = 0, coverage = cov_new_muts))
+}
