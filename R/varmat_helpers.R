@@ -84,13 +84,20 @@ varmat_from_variants <- function(variants,
 #' @param mutation_format "tpa" (default) for \code{type|pos|alt} (e.g. \code{~|2832|G}; note that it includes the pipes "|") or "aa" for amino acid (e.g. \code{aa:orf1a:K856R}).
 #' @param max_n The maximum number of mutations from a given lineage to retain.
 #' @param top_quantile Only take mutations that are in the top \code{top_quantile} quantile. E.g. 0.95 gives the mutations that are observed in more than 95% of the sequences of that lineage.
+#' @param matches The minimum number of matching mutations in the NextStrain GenBank data.
+#' @param lineage_names A character vector of lineage names. Must match the names in \code{mutations_by_lineage}.
+#' @param start_date Earliest date in the study. Must be in ISO-8601 format (as should all dates with no exceptions).
+#' @param check_after Check if there's an observed sequence after the start of your study? Set FALSE if the start date is recent.
+#' @param check_canada Checks if the lineage was ever observed in Canada. Default FALSE.
 #' 
 #' @return A variant matrix (rownames are variants, colnames are mutations, entry i,j is 1 if variant i contains mutation j, 0 otherwise).
 #' @export
 varmat_from_data <- function(type = NULL, pos = NULL, alt = NULL, 
     aa = NULL, data = NULL, 
     mutation_format = c("tpa", "aa"),
-    max_n = NULL, top_quantile = NULL) {
+    max_n = 80, top_quantile = 0.05,
+    matches = 3,
+    start_date = NULL, check_after = TRUE, check_canada = FALSE) {
 
     # TODO: Error checking (same size, not all null, what if type and aa are both specified, etc.)
     if(is.null(max_n) & is.null(top_quantile)) {
@@ -110,37 +117,25 @@ varmat_from_data <- function(type = NULL, pos = NULL, alt = NULL,
         mutations2$mutation <- gsub("-", "d", mutations2$mutation)
     }
 
-
-    
     mutations <- unique(paste(type, pos, alt, sep = "|"))
-    varmat <- dplyr::bind_rows(lapply(unique(mutations_by_lineage$lineage), function(x) {
-        m <- mutations_by_lineage[mutations_by_lineage$lineage == x,]
-        m <- m[m$count <= max_n & m$count <= quantile(m$count, top_quantile), ]
-        mutations_present <- m$mutation[m$mutation %in% mutations]
-        # If no mutations, create a dummy dataframe with two 
-        # columns and column names that can be removed.
-        if(length(mutations_present) == 0) {
-            mutations_present <- c("None", "Found")
-        }
-        res <- as.data.frame(matrix(1, nrow = 1, ncol = length(mutations_present)))
-        names(res) <- mutations_present
-        res
-    }))
 
-    # TODO: Warn about unused mutations
+    all_variants <- unique(mutations_by_lineage$lineage)
+    variants <- lapply(all_variants, function(x) {
+        sum(mutations %in% mutations_by_lineage$mutation[mutations_by_lineage$lineage == x])
+    })
 
-    varmat <- varmat[, !names(varmat) %in% c("None", "Found")]
-    varmat[is.na(varmat)] <- 0
-    varmat <- as.matrix(varmat)
-    rownames(varmat) <- unique(mutations_by_lineage$lineage)
-    varmat <- varmat[rowSums(varmat) > 0, ]
-    if (mutation_format[1] == "aa") {
-        for(col in 1:ncol(varmat)) {
-            tpa <- strsplit(colnames(varmat)[col], split = "\\|")[[1]]
-            colnames(varmat)[col] <- parse_mutation(tpa[1], tpa[2], tpa[3])
-        }
+    variants <- all_variants[variants >= matches]
+    #length(variants)
+
+    if(!is.null(start_date)) {
+        variants <- extant_lineages(lineage_names = variants,
+            start_date = start_date, 
+            check_after = check_after, check_canada = check_canada)
     }
-    varmat
+
+    varmat_from_variants(variants = variants, 
+        max_n = max_n, top_quantile = top_quantile, 
+        mutation_format = mutation_format)
 }
 
 #' Filter lineages active on a given date.
