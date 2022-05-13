@@ -32,8 +32,8 @@ fuse <- function(coco, varmat, min_perc = 0.01, verbose = TRUE) {
         stop("Too few shared mutations. Are they in the same format?")
     } else if(length(shared) <= 10 & ncol(varmat) > 10) {
         warning("Fewer than 10 shared mutations. Results may be very difficult to interpret.")
-    } else if(pre/length(shared) < 0.5) {
-        warning(paste0(length(shared)/pre, 
+    } else if(length(shared)/pre < 0.5) {
+        warning(paste0("Less than ", length(shared)/pre, 
             "% of coco's mutations are being used. Consider a larger variant matrix."))
     }
     if(verbose) {
