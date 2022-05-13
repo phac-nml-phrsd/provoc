@@ -88,20 +88,12 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0) {
     u_sum1 <- rep(-1, length(rho_init))
     c_sum1 <- -1
 
-    # sum(p) > 0
-    u_sum0 <- rep(1, length(rho_init))
-    c_sum0 <- 0
-
     # p_i > 0 => 1p_i + 0p_j > 0
     u_p0 <- diag(length(rho_init))
     c_p0 <- rep(0, length(rho_init))
 
-    # p_i < 1 => -p_i > -1 => -p_i + 1 > 0
-    u_p1 <- diag(length(rho_init))
-    c_p1 <- rep(-1, length(rho_init))
-
-    ui <- rbind(u_sum1, u_sum0, u_p0, u_p1)
-    ci <- c(c_sum1, c_sum0, c_p0, c_p1)
+    ui <- rbind(u_sum1, u_p0)
+    ci <- c(c_sum1, c_p0)
 
 
     res <- stats::constrOptim(rho_init,
