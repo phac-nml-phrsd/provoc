@@ -43,7 +43,7 @@ usethis::use_data(mutations_by_lineage, overwrite = TRUE)
 # gunzip -k metadata.tsv.gz
 
 # WARNING: 4.7GB file. Not for the faint of memory
-mt <- read.csv("../CoCoVoC/data/metadata.tsv", sep = "\t")
+mt <- read.csv("metadata.tsv", sep = "\t")
 names(mt)
 
 facts <- mt %>% 
