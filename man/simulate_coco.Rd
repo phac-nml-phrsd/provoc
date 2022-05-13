@@ -4,7 +4,13 @@
 \alias{simulate_coco}
 \title{Simulate counts and coverage from a variant matrix}
 \usage{
-simulate_coco(varmat, rel_counts = NULL, censoring = NULL, absurd = FALSE)
+simulate_coco(
+  varmat,
+  rel_counts = NULL,
+  censoring = NULL,
+  absurd = FALSE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{varmat}{The variant matrix, with properly named rows (VOCs) and columns (mutations)}
@@ -14,6 +20,8 @@ simulate_coco(varmat, rel_counts = NULL, censoring = NULL, absurd = FALSE)
 \item{censoring}{(Optional) The proportion of observations for each mutation. Must be same length as ncol(varmat).}
 
 \item{absurd}{If true, the counts are completely unrelated to the variant proportions. Useful for Monte Carlo estimation.}
+
+\item{verbose}{Print information about the simulation}
 }
 \value{
 A data frame with counts and coverage of the sampled mutations, ready to be used in \code{copt_binom()}.
