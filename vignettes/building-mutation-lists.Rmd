@@ -1,0 +1,93 @@
+---
+title: "building-mutation-lists"
+output: rmarkdown::html_vignette
+vignette: >
+    %\VignetteIndexEntry{building-mutation-lists}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "#>"
+)
+```
+
+```{r setup}
+library(provoc)
+```
+
+# Overview
+
+There are three ways to build mutation lists provided by ProVoC:
+
+1. Using a mutation list curated by the PANGO team ("Constellations")
+    - These are (mostly) representative mutations - there is very little overlap between the mutation lists for different variants.
+    - The team takes great pains to keep them updated and useful.
+    - This list only a specific subset of variants of concern with a small subset of their mutations and may not be useful for all purposes.
+2. By specifying the variants that are of interest to you and then pruning down the NextStrain GenBank data.
+3. Using variants that contain the same mutations as the ones in your data.
+
+# Constellations
+
+The PANGO team maintains a list of (mostly) representative mutations for Variants of Concern in the github repo [cov-lineages/constellations](https://github.com/cov-lineages/constellations).
+ProVoC has a built-in function to pull from these lists, but relies on the user to keep the list up to date using git commands.
+ProVoC expects to be in the base folder of your project directory and the constellations repo to be in the same parent directory, i.e.
+
+```
+git-projects/
+├── wastewater-voc/
+│   ├── folders
+│   └── stuff
+└── constellations/
+    └── rest-of-constellations-rep
+```
+
+```sh
+ll # check that your project directory is in the current directory
+git clone https://github.com/cov-lineages/constellations
+```
+
+From within R, you can get the variant matrix using the following code:
+
+```{r}
+varmat <- astronomize()
+```
+
+Note that this structure isn't required.
+The `astronomize()` function takes a `path` argument.
+For example, the `here()` package always finds your root directory, so if your constellations repo is in the `~/other/constellations` folder and your project directory is in `~/research/wastewater`, then the R code `astronomize(here("../../other/constellations"))` will work.
+This is a lot of work to say that you should have a `git` folder with all your projects in one place, including the constellations repo.
+
+Thanks to the magic of version control, you can go back in time to previous versions of the constellations repo.
+This allows you to build mutation lists based on what was known at the time.
+This is useful to ensure that you're not looking for BA.4 in samples from early 2021, for instance.
+Running the following git command in a shell (e.g. Konsole, Terminal, or Git Bash) in the constellations repo will revert it to the most recent commit as of 2021-12-01.
+
+```sh
+git checkout `git rev-list -n 1 --first-parent --before="2021-12-01 00:01" master`
+```
+
+The repo can be brought back up to date with a simple `git checkout`.
+
+
+
+# Specifying Variants
+
+ProVoC also contains a function to build mutation lists based on a list of variant names.
+It does so using the NextStrain GenBank metadata, which contains a list of mutations relative to the Wuhan-1 genome sequence.
+
+The function `varmat_by_variants()` allows for a specification of the sample date.
+The mutations in the `mutations_by_lineage` data frame include information about the dates that the mutation was observed.
+For instance, a single sequence assigned to the lineage B.1.1.7 was observed in the summer of 2020, even though this lineage only became a variant of concern in the spring of 2021.
+The lineage had acquired many new mutations by the time it became a variant of concern, and it would thus be inappropriate to assume that wastewater sampled in summer of 2020 would be expected to contain the new mutations.
+
+The data set is separated by lineage, which each lineage having one row dedicated to each mutation observed in that lineage.
+There is a column representing the first time a given mutation was observed in that lineage, and a column representing the last time that mutation was observed in that lineage.
+
+The function also incorporates the date that the database  to ensure that currently circulating variants are not assumed to be missing simply because they haven't been sequenced recently.
+If the last observed date is within the last two months since the GenBank data were accessed, it is assumed that that mutation is still present in that lineage.
+
+
+
