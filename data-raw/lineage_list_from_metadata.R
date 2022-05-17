@@ -31,4 +31,5 @@ while(TRUE){
 }
 close(handle)
 
-saveRDS(lineage_list, file = here("data-raw", "lineage_list.rds"))
+#deprecated
+#saveRDS(lineage_list, file = here("data-raw", "lineage_list.rds"))

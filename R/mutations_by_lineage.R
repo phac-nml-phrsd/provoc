@@ -1,6 +1,6 @@
 #' Lists of mutations by lineage
 #' 
-#' Top 700 most common mutations for each sequence with lineage information in NextStrain GenBank database as of March 2022. Useful for creating a variant matrix (for publications, it is highly recommended that you fully understand how and why you are constructing a variant matrix).
+#' Top 700 most common mutations for each sequence with lineage information in NextStrain GenBank database as of May 05 2022. Useful for creating a variant matrix (for publications, it is highly recommended that you fully understand how and why you are constructing a variant matrix).
 #' 
 #' The mutation lists are imperfect, and it is a good idea to further subset the mutation lists prior to analysis. For instance, by using only lineages with more than 1000 sequences in the database (the largest count for a lineage is a proxy measure for this).
 #' 
