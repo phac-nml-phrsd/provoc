@@ -1,31 +1,53 @@
 library(lubridate)
 library(dplyr)
+library(here)
 
-# wget https://data.nextstrain.org/files/ncov/open/metadata.tsv.gz
-handle <- gzfile("metadata.tsv.gz", "r")
-header <- readLines(handle, n = 1)
+# GET the latest metadata
+# wget --show-progress -O "data-raw/metadata_$(date +"%Y-%m-%d").tsv.gz" https://data.nextstrain.org/files/ncov/open/metadata.tsv.gz
+# USE the latest metadata
+mfiles <- list.files("data-raw", pattern = "^metadata")
+handle <- gzfile(here("data-raw", rev(sort(mfiles))[1]), "r")
+
+header <- readLines(handle, n = 1) 
+header <- strsplit(header, split = "\t")[[1]]
+pango_lineage <- which(header == "pango_lineage")
+mutations <- which(header %in% c("insertions", "deletions", "substitutions"))
+date_submitted <- which(header == "date_submitted")
+country_col <- which(header == "country")
+sra_accession <- which(header == "sra_accession")
 
 # For loops in R are not slow!
 # (Unless, of course, you're growing a list, which is exactly what I'm doing.)
 ll <- list()
+seq_ids <- c()
+if(file.exists(here("data-raw", "ll.rds"))) {
+    ll <- readRDS(here("data-raw", "ll.rds"))
+    seq_ids <- readRDS(here("data-raw", "seq_ids.rds"))
+}
 counter <- 0
 t0 <- Sys.time()
 while(TRUE){
     mtp <- readLines(handle, n = 1000)
     for(i in 1:1000){
         counter <- counter + 1
-        if (!counter %% 5000) print(counter)
         mtpi <- mtp[i]
         if(length(mtpi) == 0) {
             break
         }
         mtpi <- strsplit(mtpi, "\t")[[1]]
 
-        lineage <- mtpi[20]
-        mutations <- unlist(strsplit(mtpi[46:48], ","))
-        date <- as.character(mtpi[28])
-        country <- mtpi[8]
+        this_seq <- mtpi[sra_accession]
+        if(this_seq %in% seq_ids) {
+            next
+        }
+        if (!counter %% 5000) print(counter)
 
+        seq_ids <- c(seq_ids, this_seq)
+
+        lineage <- mtpi[pango_lineage]
+        mutations <- unlist(strsplit(mtpi[mutations], ","))
+        date <- as.character(mtpi[date_submitted])
+        country <- mtpi[country_col]
 
         if(!lineage %in% names(ll)) {
             ll[[lineage]] <- vector(mode = "list", length = length(mutations))
@@ -58,6 +80,7 @@ close(handle)
 Sys.time() - t0
 
 saveRDS(ll, here("data-raw", "ll.rds"))
+saveRDS(seq_ids, here("data-raw", "seq_ids.rds"))
 
 ll_coolj <- lapply(1:length(ll), function(i) {
     if(names(ll)[i] != "?"){
