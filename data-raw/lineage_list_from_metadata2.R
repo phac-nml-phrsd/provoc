@@ -11,98 +11,44 @@ handle <- gzfile(here("data-raw", rev(sort(mfiles))[1]), "r")
 header <- readLines(handle, n = 1) 
 header <- strsplit(header, split = "\t")[[1]]
 pango_lineage <- which(header == "pango_lineage")
-mutations <- which(header %in% c("insertions", "deletions", "substitutions"))
+mutation_cols <- which(header %in% c("insertions", "deletions", "substitutions"))
 date_submitted <- which(header == "date_submitted")
 country_col <- which(header == "country")
 sra_accession <- which(header == "sra_accession")
 
-# For loops in R are not slow!
-# (Unless, of course, you're growing a list, which is exactly what I'm doing.)
-ll <- list()
-seq_ids <- c()
-if(file.exists(here("data-raw", "ll.rds"))) {
-    ll <- readRDS(here("data-raw", "ll.rds"))
-    seq_ids <- readRDS(here("data-raw", "seq_ids.rds"))
-}
+kill_switch <- FALSE
+ll <- data.frame()
 counter <- 0
-t0 <- Sys.time()
-while(TRUE){
-    mtp <- readLines(handle, n = 1000)
-    for(i in 1:1000){
-        counter <- counter + 1
-        mtpi <- mtp[i]
-        if(length(mtpi) == 0) {
-            break
-        }
-        mtpi <- strsplit(mtpi, "\t")[[1]]
-
-        this_seq <- mtpi[sra_accession]
-        if(this_seq %in% seq_ids) {
-            next
-        }
-        if (!counter %% 5000) print(counter)
-
-        seq_ids <- c(seq_ids, this_seq)
-
-        lineage <- mtpi[pango_lineage]
-        mutations <- unlist(strsplit(mtpi[mutations], ","))
-        date <- as.character(mtpi[date_submitted])
-        country <- mtpi[country_col]
-
-        if(!lineage %in% names(ll)) {
-            ll[[lineage]] <- vector(mode = "list", length = length(mutations))
-            names(ll[[lineage]]) <- mutations
-            for(mut in mutations) {
-                ll[[lineage]][[mut]] <- list(
-                    count = 1, 
-                    date1 = date, daten1 = date)
+N <- 10000
+while(!kill_switch) {
+    mtp <- strsplit(readLines(handle, n = N), split = "\t")
+    ml <- bind_rows(lapply(mtp, function(x) {
+        if(length(x) > 0) {
+            mutations <- unlist(strsplit(x[mutation_cols], ","))
+            if(length(mutations) > 0) {
+                data.frame(
+                    lineage = x[pango_lineage],
+                    mutation = mutations,
+                    date1 = as.character(x[date_submitted]),
+                    daten = as.character(x[date_submitted]),
+                    count = 1,
+                    stringsAsFactors = FALSE
+                )
             }
-            ll[[lineage]]$seqs <- 1
         } else {
-            for(mut in mutations) {
-                if(mut %in% names(ll[[lineage]])) {
-                    old <- ll[[lineage]][[mut]]
-                    ll[[lineage]][[mut]] <- list(
-                        count = old$count + 1,
-                        date1 = ifelse(date < old$date1, date, old$date1),
-                        daten1 = ifelse(date > old$daten1, date, old$daten1))
-                } else {
-                ll[[lineage]][[mut]] <- list(
-                    count = 1, 
-                    date1 = date, daten1 = date)
-                }
-            }
-            ll[[lineage]]$seqs <- ll[[lineage]]$seqs + 1
+            kill_switch <<- TRUE
         }
-    }
+    }))
+
+    ll <- summarise(group_by(bind_rows(ll, ml), lineage, mutation),
+        count = sum(count), date1 = min(date1), daten = max(date1),
+        .groups = "drop")
+
+    saveRDS(ll, here("data-raw", "ll-part.rds"))
+    counter <- counter + N
+    print(counter)
 }
-close(handle)
-Sys.time() - t0
 
-saveRDS(ll, here("data-raw", "ll.rds"))
-saveRDS(seq_ids, here("data-raw", "seq_ids.rds"))
-
-ll_coolj <- lapply(1:length(ll), function(i) {
-    if(names(ll)[i] != "?"){
-        x <- ll[[i]]
-        x2 <- bind_rows(sapply(x, as.data.frame))
-        x2$lineage <- as.character(names(ll)[i])
-        x2$mut <- names(x)
-        seq_col <- which(names(x2) == "X[[i]]")
-        x2$seqs <- as.numeric(x2[x2$mut == "seqs", seq_col])
-        x2 <- x2[x2$mut != "seqs", -seq_col]
-        enough <- which(x2$count > quantile(x2$count, 0.1))
-        if(length(enough) > 0.33*nrow(x2)) x2 <- x2[enough,]
-        x2 <- x2[rev(order(x2$count)),]
-        if(nrow(x2) > 500) x2 <- x2[1:500,]
-        x2
-    }
-})
-
-sum(unlist(lapply(ll_coolj, nrow)))
-
-ll2 <- bind_rows(ll_coolj)
-
-mutations_by_lineage <- ll2 
+mutations_by_lineage <- ll 
 
 usethis::use_data(mutations_by_lineage, overwrite = TRUE)
