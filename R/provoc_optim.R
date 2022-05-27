@@ -124,7 +124,7 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0) {
         converged <- FALSE
         while(i < 20 & !converged) {
             i <- i + 1
-            if(!i %% 10) print(paste0("Attempt ", i, " of 50."))
+            if(!i %% 10) print(paste0("Attempt ", i, " of 20."))
 
             # Add noise to previous iteration
             rho_init <- res$par +
@@ -137,16 +137,16 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0) {
                 ui = ui, ci = ci,
                 count = cou2, coverage = cov2, varmat = vari2,
                 control = list(maxit = 1000))
-            }
-            res$init_method <- "Nuclear"
+        }
+        res$init_method <- "Nuclear"
 
-            # Only take the best results out of all nuclear tries
-            if(res$value < bestres$value) {
-                bestres <- res
-            }
+        # Only take the best results out of all nuclear tries
+        if(res$value < bestres$value) {
+            bestres <- res
+        }
 
         converged <- !res$convergence
-        if(bestres$value == res$value) {
+        if(i == 20) {
             print("Nuclear Option failed; going with best results.")
         }
     }
@@ -160,7 +160,6 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0) {
     convergence_note <- paste("Optim results: ", 
         bestres$convergence, 
         "; Initialization: ", bestres$init_method, sep = '')
-
     if(bootstrap_samples > 0) {
         boots <- replicate(bootstrap_samples, {
             tryCatch({
@@ -168,15 +167,15 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0) {
                     coverage = rpois(length(cov2), cov2))
                 # Multiply by 0.999 because sometimes integer/double is larger than 1
                     # even when integer == double
-                coco_boot$count <- rbinom(length(cou2), size = cov2, 
+                coco_boot$count <- rbinom(length(cou2), 
+                    size = coco_boot$coverage, 
                     prob = 0.999*cou2/cov2)
                 coco_boot <- coco_boot[complete.cases(coco_boot), ]
                 varmat_boot <- vari2[, muts]
                 provoc_optim(coco_boot, varmat_boot)$res_df[, "rho"]
             }, error = function(e) rep(NULL, nrow(vari2)))
         })
-
-        ci <- apply(do.call(cbind, boots), 1, quantile, prob = c(0.025, 0.975))
+        ci <- apply(boots, 1, quantile, prob = c(0.025, 0.975))
 
         res_df$ci_low <- ci[1,]
         res_df$ci_high <- ci[2,]
