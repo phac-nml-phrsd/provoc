@@ -44,7 +44,7 @@ re.findall <- function(pat, s) {
 #'     varmat <- astronomize()
 #' }
 #' 
-astronomize <- function(path = "../constellations") {
+astronomize <- function(path = "../constellations/constellations/definitions") {
     orfs <- list(
         'orf1a'= c(265, 13468),
         'orf1b'= c(13467, 21555),
@@ -69,9 +69,7 @@ astronomize <- function(path = "../constellations") {
         'nsp15' = c(19621, 20658)
     )
 
-    stelpath <- paste0(path, "/constellations/definitions")
-
-    sitelist <- lapply(list.files(stelpath, full.names = TRUE), function(stelfile){
+    sitelist <- lapply(list.files(path, full.names = TRUE), function(stelfile){
         stelfile <- stelfile
         lineage <- gsub("^c|\\.json$", "", basename(stelfile))
         constellation <- jsonlite::read_json(stelfile, simplifyVector = TRUE)
@@ -142,7 +140,7 @@ astronomize <- function(path = "../constellations") {
     })))
 
     varmat[is.na(varmat)] <- 0
-    rownames(varmat) <- gsub(".json", "", list.files(stelpath, full.names = FALSE))
+    rownames(varmat) <- gsub(".json", "", list.files(path, full.names = FALSE))
     rownames(varmat) <- gsub("c", "", rownames(varmat))    
 
     varmat <- varmat[, colSums(varmat) > 0]
