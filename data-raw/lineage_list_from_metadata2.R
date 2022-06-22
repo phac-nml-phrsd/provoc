@@ -24,12 +24,12 @@ clusterExport(cl, c("pango_lineage", "mutation_cols", "date_submitted"))
 kill_switch <- FALSE
 ll <- data.frame()
 counter <- 0
-N <- 500000
+N <- 50000
 t1 <- Sys.time()
 while(!kill_switch) {
     t0 <- Sys.time()
     mtp <- strsplit(readLines(handle, n = N), split = "\t")
-    if(length(mtp) == 0) kill_switch <- TRUE
+    if(length(mtp) < N) kill_switch <- TRUE
     ml <- bind_rows(parLapply(cl, mtp, function(x) {
         if(length(x) > 0) {
             mutations <- unlist(strsplit(x[mutation_cols], ","))
