@@ -61,7 +61,6 @@ coverage_at_aa <- function(coverage, aa) {
     get_three <- grepl("aa", aa)
 
     res <- sapply(which(!is.na(pos)), function(i) {
-        if(!is.numeric(pos[i])) print(i)
         ifelse(get_three[i], 
             yes = max(coverage$coverage[coverage$position %in% (pos[i] - 3):(pos[i])]),
             no = coverage$coverage[coverage$position == pos[i]])
