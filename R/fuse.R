@@ -23,7 +23,7 @@ fuse <- function(coco, varmat, min_perc = 0.01, verbose = TRUE) {
     }
 
     pre <- nrow(coco)
-    shared <- intersect(coco$mutation, colnames(varmat))
+    shared <- intersect(unique(coco$mutation), colnames(varmat))
     # We can't say anything about mutations not in varmat.
     coco <- coco[!is.na(coco$mutation),]
     coco <- coco[coco$mutation %in% shared, ]
