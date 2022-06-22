@@ -44,7 +44,8 @@ varmat_from_list <- function(variant_list) {
 #' @return A variant matrix (rownames are variants, colnames are mutations, entry i,j is 1 if variant i contains mutation j, 0 otherwise).
 #' @export
 varmat_from_variants <- function(variants, 
-    max_n = NULL, top_quantile = NULL, mutation_format = c("tpa", "aa")) {
+    max_n = NULL, top_quantile = NULL, mutation_format = c("tpa", "aa"),
+    mutations = provoc::mutations_by_lineage) {
     if(is.null(max_n) & is.null(top_quantile)) {
         warning("Parameters not set, using all mutations (varmat will be massive and estimation will be slow and fraught with correlations)")
         top_quantile <- 0
@@ -56,8 +57,12 @@ varmat_from_variants <- function(variants,
     }
 
     variant_list <- lapply(variants, function(x) {
-        m <- mutations_by_lineage[mutations_by_lineage$lineage == x,]
-        m$mutation[m$count <= max_n & m$count < quantile(m$count, 1 - top_quantile)]
+        m <- mutations[mutations$lineage == x,]
+        m <- m[order(-m$count),]
+        m$top_n <- FALSE
+        m$top_n[1:min(nrow(m), max_n)] <- TRUE
+        m$top_quantile <- m$count < quantile(m$count, 1 - top_quantile)
+        m$mutation[m$top_n & m$top_quantile]
     })
     names(variant_list) <- variants
 
@@ -97,7 +102,8 @@ varmat_from_data <- function(type = NULL, pos = NULL, alt = NULL,
     mutation_format = c("tpa", "aa"),
     max_n = 80, top_quantile = 0.05,
     matches = 3,
-    start_date = NULL, check_after = TRUE, check_canada = FALSE) {
+    start_date = NULL, check_after = TRUE, check_canada = FALSE,
+    mutations = provoc::mutations_by_lineage) {
 
     # TODO: Error checking (same size, not all null, what if type and aa are both specified, etc.)
     if(is.null(max_n) & is.null(top_quantile)) {
@@ -110,7 +116,7 @@ varmat_from_data <- function(type = NULL, pos = NULL, alt = NULL,
         max_n <- 700
     }
 
-    mutations2 <- mutations_by_lineage
+    mutations2 <- mutations
     if("m" %in% type) {
         mutations2$mutation <- gsub("~", "m", mutations2$mutation)
         mutations2$mutation <- gsub("\\+", "i", mutations2$mutation)
@@ -119,9 +125,9 @@ varmat_from_data <- function(type = NULL, pos = NULL, alt = NULL,
 
     mutations <- unique(paste(type, pos, alt, sep = "|"))
 
-    all_variants <- unique(mutations_by_lineage$lineage)
+    all_variants <- unique(mutations$lineage)
     variants <- lapply(all_variants, function(x) {
-        sum(mutations %in% mutations_by_lineage$mutation[mutations_by_lineage$lineage == x])
+        sum(mutations %in% mutations$mutation[mutations$lineage == x])
     })
 
     variants <- all_variants[variants >= matches]
