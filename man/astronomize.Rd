@@ -4,7 +4,7 @@
 \alias{astronomize}
 \title{Extract mutation list from a directory of constellation files.}
 \usage{
-astronomize(path = "../constellations")
+astronomize(path = "../constellations/constellations/definitions")
 }
 \arguments{
 \item{path}{Path to the constellations folder in the cov-lineages/constellations repository. The default assumes that the current project and the constellations repo are in the same directory.}

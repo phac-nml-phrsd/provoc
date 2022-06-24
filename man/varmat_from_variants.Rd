@@ -8,7 +8,8 @@ varmat_from_variants(
   variants,
   max_n = NULL,
   top_quantile = NULL,
-  mutation_format = c("tpa", "aa")
+  mutation_format = c("tpa", "aa"),
+  mutations = provoc::mutations_by_lineage
 )
 }
 \arguments{

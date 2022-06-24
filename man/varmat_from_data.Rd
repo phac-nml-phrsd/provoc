@@ -16,7 +16,8 @@ varmat_from_data(
   matches = 3,
   start_date = NULL,
   check_after = TRUE,
-  check_canada = FALSE
+  check_canada = FALSE,
+  mutations = provoc::mutations_by_lineage
 )
 }
 \arguments{

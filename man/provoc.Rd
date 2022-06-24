@@ -10,6 +10,7 @@ provoc(
   fused = NULL,
   method = c("optim", "runjags"),
   ncores = 1,
+  bootstrap_samples = 0,
   ...
 )
 }
