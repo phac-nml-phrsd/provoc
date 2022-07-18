@@ -70,7 +70,6 @@ astronomize <- function(path = "../constellations/constellations/definitions") {
     )
 
     sitelist <- lapply(list.files(path, full.names = TRUE), function(stelfile){
-        stelfile <- stelfile
         lineage <- gsub("^c|\\.json$", "", basename(stelfile))
         constellation <- jsonlite::read_json(stelfile, simplifyVector = TRUE)
         constellation$sites <- unique(constellation$sites)
@@ -79,11 +78,10 @@ astronomize <- function(path = "../constellations/constellations/definitions") {
 
         # convert constellation to label notation in the mapped files
         sites <- lapply(unique(constellation$sites), function(d) {
-            d <- d
             toks <- toupper(strsplit(d, ":")[[1]])
 
             if (toks[1] != "DEL" && toks[1] != "NUC")
-            toks <- c("aa", toks)
+                toks <- c("aa", toks)
 
             if (toks[2] == "S" || toks[2] == "SPIKE") {
                 toks[[2]] <- "S"
@@ -91,7 +89,7 @@ astronomize <- function(path = "../constellations/constellations/definitions") {
                 toks[[1]] <- "del"
             } else if (toks[1] == "NUC") {
                 toks <- toks[-1]
-                toks[[1]] <- substring(toks[1], 2, nchar(toks[1]))
+                #toks[[1]] <- substring(toks[1], 2, nchar(toks[1]))
             } else if (toks[2] == "8") {
                 toks[[2]] <- "orf8"
             } else if (toks[2] == "ORF1AB" || toks[2] == "1AB") {
