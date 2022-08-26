@@ -144,6 +144,19 @@ astronomize <- function(path = "../constellations/constellations/definitions") {
     rownames(varmat) <- gsub("c", "", rownames(varmat))    
 
     varmat <- varmat[, colSums(varmat) > 0]
+
+    # Manual fixes based on known naming anomalies
+    colnames(varmat)[which(colnames(varmat) == "+22205.GAGCCAGAA")] <- "ins:22205:9"
+    colnames(varmat)[which(colnames(varmat) == "+28262.AACA")] <- "ins:28262:4"
+    colnames(varmat)[which(colnames(varmat) == "28271-")] <- "del:28271:1"
+    colnames(varmat)[which(colnames(varmat) == "A28271-")] <- "del:28271:1"
+    # Spike protein starts at position 21562
+    # Position reported as index of amino acids, hence 3*246
+    colnames(varmat)[which(colnames(varmat) == "aa:S:RSYLTPG246-")] <- paste0("del:", 21562 + 3*246, ":21")
+    colnames(varmat)[which(colnames(varmat) == "aa:S:Y144-")] <- paste0("del:", 21562 + 3*144, ":1")
+    colnames(varmat)[which(colnames(varmat) == "aa:S:HV69-")] <- paste0("del:", 21562 + 3*69, ":2")
+    # ORF 1a starts at 265
+    colnames(varmat)[which(colnames(varmat) == "aa:orf1a:SGF3675-")] <- paste0("del:", 265 + 3*3675 - 1, ":9")
     varmat
 }
 
