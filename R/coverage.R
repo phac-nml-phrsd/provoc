@@ -82,6 +82,6 @@ add_coverage <- function(coco, coverage, mutation_list) {
     new_muts <- mutation_list[!mutation_list %in% coco$mutation]
     cov_new_muts <- coverage_at_aa(coverage, new_muts)
 
-    bind_rows(coco, 
+    dplyr::bind_rows(coco, 
         data.frame(mutation = new_muts, count = 0, coverage = cov_new_muts))
 }
