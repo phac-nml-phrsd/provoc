@@ -45,7 +45,7 @@ pos_from_aa <- function(aa) {
         })
     pos[others] <- NA
 
-    pos
+    as.numeric(pos)
 }
 
 #' Get coverage at mutation positions.
