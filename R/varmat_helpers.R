@@ -15,20 +15,13 @@ varmat_from_list <- function(variant_list) {
         stop("Input must be a named list of character vectors")
     }
 
-    # bind_rows forces all columns to be the same, adds NAs
-    varmat <- dplyr::bind_rows(lapply(variant_list, function(x) {
-        # a data frame of 1s
-        res <- as.data.frame(matrix(1, nrow = 1, ncol = length(x)))
-        names(res) <- x
-        res
-    }))
-
-    # Replace NAs induced by bind_rows
-    varmat[is.na(varmat)] <- 0
-    row.names(varmat) <- names(variant_list)
-    varmat <- as.matrix(varmat)
+    all_mutations <- unique(unlist(variant_list))
+    varmat <- as.data.frame(t(1*sapply(variant_list, 
+        function(x) all_mutations %in% x)))
+    names(varmat) <- all_mutations
     varmat
 }
+
 
 #' Given a vector of lineage names, uses GenBank data to determine the variant matrix.
 #' 
