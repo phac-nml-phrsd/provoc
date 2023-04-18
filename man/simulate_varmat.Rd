@@ -6,8 +6,8 @@
 \usage{
 simulate_varmat(
   VOC = c("BA.1", "BA.2", "B.1.1.529"),
-  mutations = c("m3037T", "m22599A", "d221943", "i22205GAGCCAGAA", "m24469A",
-    "d219879", "m241T")
+  mutations = c("m3037T", "m22599A", "d221943", "i22205GAGCCAGAA", "m24469A", "d219879",
+    "m241T")
 )
 }
 \arguments{

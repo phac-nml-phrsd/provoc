@@ -11,6 +11,7 @@ provoc(
   method = c("optim", "runjags"),
   ncores = 1,
   bootstrap_samples = 0,
+  update_interval = 20,
   ...
 )
 }
@@ -24,6 +25,8 @@ provoc(
 \item{method}{Optimization or Bayesian?}
 
 \item{ncores}{For optim, the number of cores to be used. Requires the parallel package for ncores > 1}
+
+\item{update_interval}{Print message after \code{update_interval} samples. Set to 0 to suppress output.}
 
 \item{...}{Arguments to be passed to \code{provoc_jags()} (ignored for method = "optim"). See \code{?provoc_jags}.}
 }
