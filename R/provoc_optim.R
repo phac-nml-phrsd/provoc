@@ -67,8 +67,8 @@ rho_initializer <- function(varmat) {
 #' coco <- simulate_coco(varmat, rel_counts = c(100, 200, 300)) # expect 1/6, 2/6, and 3/6
 #' res <- copt_binom(coco, varmat)
 #' res$res_df
-provoc_optim <- function(coco, varmat, bootstrap_samples = 0) {
-    #print(coco)
+provoc_optim <- function(coco, varmat, bootstrap_samples = 0, 
+                         verbose = TRUE) {
     muts <- coco$mutation
     cou2 <- coco$count
     cov2 <- coco$coverage
@@ -116,9 +116,11 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0) {
 
     bestres <- res
     if(res$convergence) { 
-        print("Trying the nuclear option for constrOptim.")
-        print("This has never actually worked before.")
-        print("Godspeed.")
+        if(verbose) {
+            print("Trying the nuclear option for constrOptim.")
+            print("This has never actually worked before.")
+            print("Godspeed.")
+        }
         # Uniform inititialization
         i <- 0
         converged <- FALSE
@@ -146,7 +148,7 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0) {
         }
 
         converged <- !res$convergence
-        if(i == 20) {
+        if(i == 20 & verbose) {
             print("Nuclear Option failed; going with best results.")
         }
     }
