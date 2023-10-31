@@ -4,7 +4,7 @@
 \alias{provoc_optim}
 \title{Estimate the proportions of VOCs using Constrained Optimization}
 \usage{
-provoc_optim(coco, varmat, bootstrap_samples = 0)
+provoc_optim(coco, varmat, bootstrap_samples = 0, verbose = TRUE)
 }
 \arguments{
 \item{coco}{A data frame containing columns labelled count, coverage, and mutation.}
