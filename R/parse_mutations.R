@@ -9,7 +9,6 @@
 #' @param reffile The path to the reference file that was used to define mutations. Usually NC_045512.fa except in very particular circumstances.
 #' 
 #' @return e.g. aa:orf1a:K856R
-#' @export
 parse_mutation <- function(type, pos, alt, 
     reffile = system.file("extdata/NC_045512.fa", package = "provoc")) {
     gcode <- list(
@@ -94,7 +93,6 @@ parse_mutation <- function(type, pos, alt,
 #' @param muts A vector of mutations in the format "+50535C", "-43234.2", and "+342234.AC".
 #' 
 #' @return A data frame with columns `label` and `mutation`.
-#' @export
 parse_unique_mutations <- function(muts) {
     unique_muts <- unique(muts)
     new_muts <- character(length(unique_muts))
@@ -103,14 +101,14 @@ parse_unique_mutations <- function(muts) {
         n <- nchar(thismut)
         first_char <- substr(muts[i], 1, 1)
         if (first_char == "~") {
-            new_muts[i] <- provoc::parse_mutation(
+            new_muts[i] <- provoc:::parse_mutation(
                 type = "~",
                 pos = as.numeric(substr(thismut, 2, n - 1)),
                 alt = substr(thismut, n, n)
             )
         } else if (first_char %in% c("-", "+")) {
             splits <- strsplit(x = "+21570.T", split = "[+-]|\\.")[[1]]
-            new_muts[i] <- provoc::parse_mutation(
+            new_muts[i] <- provoc:::parse_mutation(
                 type = first_char,
                 pos = as.numeric(splits[2]),
                 alt = splits[3]
@@ -118,4 +116,17 @@ parse_unique_mutations <- function(muts) {
         }
     }
     data.frame(label = muts, mutation = new_muts)
+}
+
+#' Parse output of the Gromstole pipeline, from SNVs to AAs
+#' 
+#' This function can be slow.
+#' 
+#' @param labels The `labels` column from GromStole output.
+#' 
+#' @return A vector of the same length of `labels`.
+#' @export
+parse_mutations <- function(labels) {
+    unique_aa <- provoc:::parse_unique_mutations(unique(labels))
+    unique_aa$mutation[match(labels, unique_aa$label)]
 }

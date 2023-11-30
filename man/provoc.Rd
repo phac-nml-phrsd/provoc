@@ -12,6 +12,7 @@ provoc(
   ncores = 1,
   bootstrap_samples = 0,
   update_interval = 20,
+  verbose = TRUE,
   ...
 )
 }
