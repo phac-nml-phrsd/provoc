@@ -28,7 +28,7 @@
 #' fused <- fuse(coco, varmat)
 #' res <- provoc(fused)
 #' res$point_est
-provoc <- function (coco, varmat, fused = NULL, method = c("optim", "runjags"), ncores = 1, bootstrap_samples = 0, update_interval = 20, ...) {
+provoc <- function (coco, varmat, fused = NULL, method = c("optim", "runjags"), ncores = 1, bootstrap_samples = 0, update_interval = 20, verbose = TRUE, ...) {
     if(is.null(fused)) fused <- fuse(coco, varmat)
     if("sample" %in% colnames(fused)) {
         samples <- unique(fused$sample)
@@ -78,7 +78,7 @@ provoc <- function (coco, varmat, fused = NULL, method = c("optim", "runjags"), 
 
 
         if(method[1] == "optim") {
-            res_temp <- provoc_optim(coco, varmat, bootstrap_samples = bootstrap_samples)
+            res_temp <- provoc_optim(coco, varmat, bootstrap_samples = bootstrap_samples, verbose = verbose)
             res_df <- res_temp$res_df
             for (ii in seq_len(ncol(sample_info))) {
                 res_df[, names(sample_info)[ii]] <- sample_info[1, ii]
