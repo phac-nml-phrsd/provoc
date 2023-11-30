@@ -44,7 +44,7 @@ re.findall <- function(pat, s) {
 #'     varmat <- astronomize()
 #' }
 #' 
-astronomize <- function(path = "../constellations/constellations/definitions") {
+astronomize <- function(path = "../constellations") {
     orfs <- list(
         'orf1a'= c(265, 13468),
         'orf1b'= c(13467, 21555),
@@ -69,6 +69,9 @@ astronomize <- function(path = "../constellations/constellations/definitions") {
         'nsp15' = c(19621, 20658)
     )
 
+    # Removes posssible trailing slash for consistency, then adds it back
+    path <- gsub("/$", "", path)
+    path <- paste0(path, "/constellations/definitions/")
     sitelist <- lapply(list.files(path, full.names = TRUE), function(stelfile){
         lineage <- gsub("^c|\\.json$", "", basename(stelfile))
         constellation <- jsonlite::read_json(stelfile, simplifyVector = TRUE)
