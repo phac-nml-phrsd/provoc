@@ -6,10 +6,10 @@
 \usage{
 filter_varmat(
   varmat = NULL,
-  variants = c("B.1.1.529", "B.1.1.7", "B.1.351", "B.1.412.7", "B.1.429", "B.1.617.2",
-    "P.1"),
+  variants = c("B.1.526", "B.1.1.7", "B.1.351", "B.1.617.2", "B.1.427", "B.1.429", "P.1"),
   return_df = FALSE,
-  path = NULL
+  path = "../constellations",
+  shared_order = TRUE
 )
 }
 \arguments{
@@ -17,9 +17,11 @@ filter_varmat(
 
 \item{variants}{Vector of variant names (must be in \code{rownmaes(varmat)}). Defaults to variants circulating in 2021-2022.}
 
-\item{return_df}{Should the function return a data frame?}
+\item{return_df}{Should the function return a data frame? Note that returned df is transposed compared to varmat. Default FALSE.}
 
 \item{path}{Passed on to \code{astronomize} if \code{varmat} is NULL.}
+
+\item{shared_order}{Put shared mutations first? Default TRUE.}
 }
 \value{
 A variant matrix with fewer rows and columns than \code{varmat}. If \code{return_df}, the columns represent variant names and a \code{mutations} column is added.
