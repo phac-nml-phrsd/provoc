@@ -6,6 +6,8 @@ development](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](ht
 
 PROportions of Variants of Concern using counts, coverage, and a variant matrix.
 
+Builds and diagnoses a model based on:
+
 - Counts: The number of times a given mutation was observed.
 - Coverage: The number of times the position of a given variant was read.
 - Mutation names: whatever format you want, as long as they match the names in the Variant Matrix.
