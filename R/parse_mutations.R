@@ -107,7 +107,7 @@ parse_unique_mutations <- function(muts) {
                 alt = substr(thismut, n, n)
             )
         } else if (first_char %in% c("-", "+")) {
-            splits <- strsplit(x = "+21570.T", split = "[+-]|\\.")[[1]]
+            splits <- strsplit(x = thismut, split = "[+-]|\\.")[[1]]
             new_muts[i] <- provoc:::parse_mutation(
                 type = first_char,
                 pos = as.numeric(splits[2]),
