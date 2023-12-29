@@ -44,7 +44,16 @@ re.findall <- function(pat, s) {
 #'     varmat <- astronomize()
 #' }
 #' 
-astronomize <- function(path = "../constellations") {
+astronomize <- function(path = NULL) {
+
+    if (is.null(path)) {
+        return(provoc::varmat_from_list(provoc::constellation_lists))
+    }
+
+    if (!dir.exists(path)) {
+        return(provoc::varmat_from_list(provoc::constellation_lists))
+    }
+
     orfs <- list(
         'orf1a'= c(265, 13468),
         'orf1b'= c(13467, 21555),
