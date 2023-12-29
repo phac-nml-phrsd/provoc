@@ -35,7 +35,7 @@ simulate_coco <- function(varmat, rel_counts = NULL, censoring = NULL, absurd = 
 
     total_seqs <- sum(rel_counts)
     rho <- rel_counts / total_seqs
-    p <- rho %*% varmat
+    p <- rho %*% as.matrix(varmat)
     coverage <- round(censoring * sum(rel_counts))
     counts <- stats::rbinom(n = length(p), size = coverage, prob = p)
 
