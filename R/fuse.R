@@ -55,15 +55,15 @@ fuse <- function(coco, varmat, min_perc = 0.01, verbose = TRUE) {
     too_many_zeros <- apply(vari2, 1, sum) <= (ncol(vari2) * min_perc)
     vari2 <- vari2[!too_many_zeros, ]
 
-    # Squash identical lineages
+    # Squash (nearly) identical lineages
     i <- 0
-    while(i < nrow(vari2)) {
+    while (i < nrow(vari2)) {
         i <- i + 1
         this_row <- vari2[i, ]
         dupes <- apply(vari2, 1, function(x) mean(this_row == x))
         dupes[i] <- 0
-        if(any(dupes > 0.99)) {
-            rownames(vari2)[i] <- paste(rownames(vari2)[dupes > 0.99], collapse = "|")
+        if (any(dupes > 0.99)) {
+            rownames(vari2)[i] <- paste(rownames(vari2)[c(i, which(dupes > 0.99))], collapse = "|")
             vari2 <- vari2[dupes <= 0.99, ]
         }
     }
