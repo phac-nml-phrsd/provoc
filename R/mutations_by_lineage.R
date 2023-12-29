@@ -1,27 +1,3 @@
-#' Lists of mutations by lineage
-#' 
-#' Top 700 most common mutations for each sequence with lineage information in NextStrain GenBank database as of May 05 2022. Useful for creating a variant matrix (for publications, it is highly recommended that you fully understand how and why you are constructing a variant matrix).
-#' 
-#' The mutation lists are imperfect, and it is a good idea to further subset the mutation lists prior to analysis. For instance, by using only lineages with more than 1000 sequences in the database (the largest count for a lineage is a proxy measure for this).
-#' 
-#' A python script (written by Dr. Art Poon and his lab) was used to apply \href{https://github.com/lh3/minimap2}{minimap2} to all data in the \href{https://nextstrain.org/sars-cov-2/#datasets}{NextStrain GenBank} collection of sequences. This python script is in the \code{data-raw} folder in the source version of this repo on GitHub. 
-#' TODO: document the usage of retrieve-nsgb.py.
-#' 
-#' The sequence database can be manually downloaded by clicking this link: \url{https://data.nextstrain.org/files/ncov/open/sequences.fasta.xz}
-#' 
-#' The metadata (including assigned lineage) can be downloaded by clicking this link: \url{https://data.nextstrain.org/files/ncov/open/metadata.tsv.gz}
-#' 
-#' @format A data frame with four columns.
-#' \describe{
-#'      \item{lineage}{The designated lineage, as labelled in GenBank. Note that these are imperfect and sequence lineage assignment has changed over time.}
-#'      \item{mutation}{The name of the mutation (relative to \code{NC_045512}), in the format "type|position|alt".}
-#'      \item{count}{As of March 2022, the number of GenBank records labelled with this lineage that contained this mutation.}
-#' }
-#' 
-#' @source \url{https://nextstrain.org}
-"mutations_by_lineage"
-
-
 #' Facts about the lineages
 #' 
 #' Especially useful for checking the earliest/latest sequence date
@@ -39,3 +15,10 @@
 #' 
 #' @source \url{https://github.com/cov-lineages/constellations}
 "constellation_lists"
+
+#' Data from bioproject PRJNA741211, Baaijens et al. (2022)
+#' 
+#' Includes 52 different samples in a single file.
+#' 
+#' @references Baaijens, Jasmijn A., Alessandro Zulli, Isabel M. Ott, Ioanna Nika, Mart J. van der Lugt, Mary E. Petrone, Tara Alpert, Joseph R. Fauver, Chaney C. Kalinich, Chantal B. F. Vogels, Mallery I. Breban, Claire Duvallet, Kyle A. McElroy, Newsha Ghaeli, Maxim Imakaev, Malaika F. Mckenzie-Bennett, Keith Robison, Alex Plocik, Rebecca Schilling, Martha Pierson, Rebecca Littlefield, Michelle L. Spencer, Birgitte B. Simen, Ahmad Altajar, Anderson F. Brito, Anne E. Watkins, Anthony Muyombwe, Caleb Neal, Chen Liu, Christopher Castaldi, Claire Pearson, David R. Peaper, Eva Laszlo, Irina R. Tikhonova, Jafar Razeq, Jessica E. Rothman, Jianhui Wang, Kaya Bilguvar, Linda Niccolai, Madeline S. Wilson, Margaret L. Anderson, Marie L. Landry, Mark D. Adams, Pei Hui, Randy Downing, Rebecca Earnest, Shrikant Mane, Steven Murphy, William P. Hanage, Nathan D. Grubaugh, Jordan Peccia, Michael Baym, and Yale SARS-CoV-2 Genomic Surveillance Initiative. 2022. “Lineage Abundance Estimation for SARS-CoV-2 in Wastewater Using Transcriptome Quantification Techniques.” Genome Biology 23(1):236. doi: 10.1186/s13059-022-02805-9.
+"Baaijens"
