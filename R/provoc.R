@@ -159,5 +159,10 @@ convergence <- function(res, verbose = TRUE) {
 #' @examples
 #' predicted_results <- predict.provoc(provoc_obj)
 predict <- function(provoc_obj) {
-    stop("Not yet implemented")
+    proportions <- provoc_obj$proportions
+    variant_matrix <- provoc_obj$variant_matrix
+    
+    results <- variant_matrix %*% proportions  # Matrix multiplication for predictions
+    
+    return(results)  # Return results in the same order
 }
