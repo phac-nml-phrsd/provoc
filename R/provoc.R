@@ -145,3 +145,19 @@ convergence <- function(res, verbose = TRUE) {
         return(invisible(TRUE))
     }
 }
+
+
+#' Predict using Proportions of Variants of Concern
+#'
+#' Takes a named list with an estimate of the proportions and the
+#' associated variant matrix, performs matrix multiplication to
+#' predict outcomes, and returns results in the same order as the original data.
+#' 
+#' @param provoc_obj Named list with `proportions` and `variant_matrix`.
+#' @return Predicted values in the same order as the input data.
+#' @export
+#' @examples
+#' predicted_results <- predict.provoc(provoc_obj)
+predict <- function(provoc_obj) {
+    stop("Not yet implemented")
+}
