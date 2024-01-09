@@ -159,10 +159,16 @@ convergence <- function(res, verbose = TRUE) {
 #' @examples
 #' predicted_results <- predict.provoc(provoc_obj)
 predict <- function(provoc_obj) {
+    # Check if the required elements are present in the input
+    if (!all(c("proportions", "variant_matrix") %in% names(provoc_obj))) {
+        stop("Input 'provoc_obj' must contain 'proportions' and 'variant_matrix'.")
+    }
+    
     proportions <- provoc_obj$proportions
     variant_matrix <- provoc_obj$variant_matrix
     
-    results <- variant_matrix %*% proportions  # Matrix multiplication for predictions
+    # Perform matrix multiplication for predictions
+    results <- variant_matrix %*% proportions
     
     return(results)  # Return results in the same order
 }
