@@ -89,34 +89,43 @@ parse_mutation <- function(type, pos, alt,
 
 
 #' Parse all unique mutations in a vector
-#' 
+#'
 #' @param muts A vector of mutations in the format "+50535C", "-43234.2", and "+342234.AC".
-#' 
+#'
 #' @return A data frame with columns `label` and `mutation`.
 parse_unique_mutations <- function(muts) {
     unique_muts <- unique(muts)
-    new_muts <- character(length(unique_muts))
+    n <- length(unique_muts)
+    new_muts <- character(n)
+
     for (i in seq_along(unique_muts)) {
-        thismut <- muts[i]
-        n <- nchar(thismut)
-        first_char <- substr(muts[i], 1, 1)
+        thismut <- unique_muts[i]
+        first_char <- substr(thismut, 1, 1)
+
         if (first_char == "~") {
-            new_muts[i] <- provoc:::parse_mutation(
-                type = "~",
-                pos = as.numeric(substr(thismut, 2, n - 1)),
-                alt = substr(thismut, n, n)
-            )
+            # Extract position, 0-indexed
+            pos <- as.numeric(substr(thismut, 2, nchar(thismut) - 1)) - 1
+            # Extract alternate nucleotide
+            alt <- substr(thismut, nchar(thismut), nchar(thismut))
+            # Call parse_mutation
+            new_muts[i] <- paste0("aa:", parse_mutation(pos, alt))
         } else if (first_char %in% c("-", "+")) {
-            splits <- strsplit(x = thismut, split = "[+-]|\\.")[[1]]
-            new_muts[i] <- provoc:::parse_mutation(
-                type = first_char,
-                pos = as.numeric(splits[2]),
-                alt = splits[3]
-            )
+            # Split mutation string
+            splits <- strsplit(thismut, "[+-]|\\.")
+            # Extract mutation type (+ or -)
+            type <- first_char
+            # Extract position
+            pos <- as.numeric(splits[[1]][2])
+            # Extract alternate nucleotide or number of deletions
+            alt <- splits[[1]][3]
+            # Construct mutation string
+            new_muts[i] <- paste0(type, pos + 1, ":", alt)
         }
     }
-    data.frame(label = muts, mutation = new_muts)
+
+    data.frame(label = unique_muts, mutation = new_muts, stringsAsFactors = FALSE)
 }
+
 
 #' Parse output of the Gromstole pipeline, from SNVs to AAs
 #' 
