@@ -39,7 +39,7 @@ parse_mutation <- function(type, pos, alt,
         'M'= c(26522, 27191),
         'orf6'= c(27201, 27387),
         'orf7a'= c(27393, 27759),
-        'orf7b'= c(2775, 27887),
+        'orf7b'= c(27755, 27887),
         'orf8'= c(27893, 28259),
         'N'= c(28273, 29533),
         'orf10'= c(29557, 29674)
@@ -95,35 +95,32 @@ parse_mutation <- function(type, pos, alt,
 #' @return A data frame with columns `label` and `mutation`.
 parse_unique_mutations <- function(muts) {
     unique_muts <- unique(muts)
-    n <- length(unique_muts)
-    new_muts <- character(n)
+    parsed_muts <- vector("character", length(unique_muts))
 
     for (i in seq_along(unique_muts)) {
         thismut <- unique_muts[i]
         first_char <- substr(thismut, 1, 1)
 
         if (first_char == "~") {
-            # Extract position, 0-indexed
-            pos <- as.numeric(substr(thismut, 2, nchar(thismut) - 1)) - 1
-            # Extract alternate nucleotide
+            # Extract position and alternate nucleotide
+            pos <- as.numeric(substr(thismut, 2, nchar(thismut) - 1))
             alt <- substr(thismut, nchar(thismut), nchar(thismut))
-            # Call parse_mutation
-            new_muts[i] <- paste0("aa:", parse_mutation(pos, alt))
+            # Call parse_mutation with "~"
+            new_muts[i] <- parse_mutation("~", pos, alt)
         } else if (first_char %in% c("-", "+")) {
             # Split mutation string
-            splits <- strsplit(thismut, "[+-]|\\.")
-            # Extract mutation type (+ or -)
+            splits <- strsplit(thismut, "[+-]")
             type <- first_char
-            # Extract position
             pos <- as.numeric(splits[[1]][2])
-            # Extract alternate nucleotide or number of deletions
-            alt <- splits[[1]][3]
-            # Construct mutation string
-            new_muts[i] <- paste0(type, pos + 1, ":", alt)
+            alt <- ifelse(type == "+", splits[[1]][3], nchar(splits[[1]][3]))
+            # Call parse_mutation with type "-" or "+"
+            new_muts[i] <- parse_mutation(type, pos, alt)
+        } else {
+            new_muts[i] <- thismut
         }
     }
 
-    data.frame(label = unique_muts, mutation = new_muts, stringsAsFactors = FALSE)
+    data.frame(label = unique_muts, mutation = parsed_muts, stringsAsFactors = FALSE)
 }
 
 
@@ -136,6 +133,6 @@ parse_unique_mutations <- function(muts) {
 #' @return A vector of the same length of `labels`.
 #' @export
 parse_mutations <- function(labels) {
-    unique_aa <- provoc:::parse_unique_mutations(unique(labels))
-    unique_aa$mutation[match(labels, unique_aa$label)]
+    unique_aa <- parse_unique_mutations(unique(labels))
+    return(unique_aa$mutation[match(labels, unique_aa$label)])
 }
