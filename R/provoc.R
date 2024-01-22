@@ -1,104 +1,93 @@
-#' Proportions of Variants of Concern
-#' 
-#' Un-fuses coco and varmat and applies the appropriate estimation technique. If a column labelled "sample" is present, applies the analysis to each sample separately.
-#' 
-#' @param coco The counts and coverage data frame. Ignored if \code{fused} is supplied.
-#' @param varmat The matrix of variant mutations. Ignored if \code{fused} is supplied.
-#' @param fused The fused data frame of coco and varmat. The fusion ensures that the mutations are properly joined and varmat contains only the most pertinent mutations.
-#' @param ncores For optim, the number of cores to be used. Requires the parallel package for ncores > 1
-#' @param update_interval Print message after \code{update_interval} samples. Set to 0 to suppress output.
-#' 
-#' @return Results of the estimation. Regardless of the technique used, the results are as follows.
-#' 
-#' \describe{
-#'      \item{point_est}{A data frame with columns labelled rho, ci_low, ci_high, and the name of the variant. These are the estimates (bootstrap CI not yet implemented).}
-#'      \item{convergence}{True if the algorithm converged.}
-#'      \item{convergence_notes}{the message returned from \code{optim} as well as the initialization method for rho.}
-#'      \item{note}{A brief note about the method.}
-#'      \item{loglik}{The log likelihood value. This may be changed in future updates.}
-#'      \item{sample_info}{The function checks for any columns that have exactly one unique value within a given sample. The unique value of each is returned in a data frame. Very useful if samples have columns such as "date" or "location".}
-#' }
-#' @export
-#' 
+# Imports
+source("R/astronomize.R")
+
+
+#' Proportions of Variants of Concern (provoc) Analysis
+#'
+#' Applies a binomial GLM to analyze COVID-19 Variant of Concern proportions. 
+#' It allows flexible lineage and mutation definitions.
+#'
+#' @param formula A formula for the binomial model, like cbind(count, coverage) ~ . 
+#' @param data Data frame containing count, coverage, and lineage columns.
+#' @param mutation_defs Optional mutation definitions; if NULL, uses astronomize().
+#' @param by Column name to group and process data.
+#' @param update_interval Interval for progress messages (0 to suppress).
+#' @param verbose TRUE to print detailed messages.
+#'
+#' @return An object of class 'provoc' with GLM results per group.
+#'
 #' @examples
-#' varmat <- simulate_varmat()
-#' coco <- simulate_coco(varmat)
-#' fused <- fuse(coco, varmat)
-#' res <- provoc(fused)
-#' res$point_est
-provoc <- function (coco, varmat, fused = NULL, ncores = 1, bootstrap_samples = 0, update_interval = 20, verbose = TRUE) {
-    if(is.null(fused)) fused <- fuse(coco, varmat)
-    if("sample" %in% colnames(fused)) {
-        samples <- unique(fused$sample)
-        sample_table <- table(fused$sample)
-        if(any(sample_table < 5)) {
-            if(mean(sample_table < 5) < 0.5) {
-                print(sample_table)
-                stop("Too few samples")
-            } else {
-                samples <- names(sample_table[sample_table > 5])
-                warning("Some samples have fewer than 5 observations and have been removed from analysis.")
-                print(table(samples))
-            }
-        }
-        if(any(sample_table < 10)) {
-            warning("At least one of the samples has fewer than 10 observations.")
-            print(sample_table)
-        }
-    } else {
-        fused$sample <- 1
-        samples <- 1
+#' # Example usage with data frame 'mydata'
+#' res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2,
+#'               data = mydata, by = "sample_id")
+#'
+#' @export
+provoc <- function(formula, data, mutation_defs = NULL, by = "sra", update_interval = 20, verbose = TRUE) {
+    # Validate inputs
+    if (!inherits(formula, "formula")) {
+        stop("Argument 'formula' must be a formula.")
+    }
+    if (!is.data.frame(data)) {
+        stop("Argument 'data' must be a data frame.")
     }
 
-    res_list <- vector(mode = "list", length = length(samples))
-    convergence_note <- character(length(samples))
-    convergence <- logical(length(samples))
-    t0s <- double(length(samples))
-    names(res_list) <- samples
-    if (update_interval) message(paste0("Fitting ", length(samples), " samples."))
-    for (i in seq_along(res_list)) { # TODO: Parallelize (for optim)
-        t0 <- Sys.time()
-        if (update_interval){
-            if (!i %% update_interval) {
-                cat("\n")
-                message(paste0("Fitting sample ", samples[i], ", ",
-                    which(samples == samples[i]), " of ",
-                    length(samples)))
-            }
-        }
-        fissed <- fission(fused, sample = samples[i])
-        coco <- fissed$coco
-        varmat <- fissed$varmat
-
-        # Guaranteed to include a column called "sample"
-        sample_info <- apply(coco, 2, function(x) length(unique(x)) == 1)
-        sample_info <- coco[1, sample_info, drop = FALSE]
-        
-        res_temp <- provoc_optim(coco, varmat, bootstrap_samples = bootstrap_samples, verbose = verbose)
-        res_df <- res_temp$res_df
-        for (ii in seq_len(ncol(sample_info))) {
-            res_df[, names(sample_info)[ii]] <- sample_info[1, ii]
-        }
-        convergence[i] <- res_temp$convergence
-        convergence_note[i] <- res_temp$convergence_note
-        res_list[[i]] <- res_df
-        # TODO: Add methods (for both single results and lists): summary, plot
-            # Only print top variants; include columns that are constant within samples; convergence status; log-Likelihood
-            # Autoplot (gg) for res and res_list objects?
-                # Bonus: colour schemes that respect variant names? Could be another repo that other labs might enjoy.
-        # TODO: Replace processing in provoc() with separate processing functions for optim and jags; user can choose how to process.
-        # TODO: Include median read depth, quality measures
-
-        t0s[i] <- difftime(Sys.time(), t0, units = "mins")
+    # Use the astronomize function if mutation_defs is NULL
+    if (is.null(mutation_defs)) {
+        mutation_defs <- astronomize()
     }
 
-    res <- dplyr::bind_rows(res_list)
-    attr(res, "convergence") <- data.frame(sample = samples, 
-        convergence = convergence, 
-        convergence_note = convergence_note,
-        time = t0s)
-    res
+    # Prepare data based on formula and mutation_defs
+    response_vars <- all.vars(formula)[1:2] # Extract count and coverage column names from formula
+    lineage_vars <- setdiff(names(mutation_defs), response_vars)
+
+    # Check for required columns in data
+    if (!all(c(response_vars, lineage_vars) %in% names(data))) {
+        stop("Not all required columns found in 'data'.")
+    }
+
+    # Process the formula
+    model_formula <- as.formula(paste("cbind(", paste(response_vars, collapse = ", "), ") ~ ."))
+
+    # Group data based on 'by' argument
+    if (!by %in% names(data)) {
+        stop("Column specified in 'by' not found in data.")
+    }
+    grouped_data <- split(data, data[[by]])
+
+    # Initialize results
+    res_list <- vector(mode = "list", length = length(grouped_data))
+    names(res_list) <- names(grouped_data)
+
+    # Process each group
+    for (group_name in names(grouped_data)) {
+        group_data <- grouped_data[[group_name]]
+
+        # Apply binomial glm model
+        fit <- glm(model_formula, data = group_data, family = binomial())
+
+        # Extract relevant results
+        summary_fit <- summary(fit)
+        point_est <- data.frame(coef(summary_fit))
+        convergence <- summary_fit$convergence
+
+        # Store results
+        res_list[[group_name]] <- list(point_est = point_est, convergence = convergence)
+
+        if (verbose && update_interval > 0 && !((i - 1) %% update_interval)) {
+            message(sprintf("Processed %d / %d groups", i, length(grouped_data)))
+        }
+    }
+
+    # Combine results
+    final_results <- do.call(rbind, res_list)
+
+    # Ensure object is of class 'provoc'
+    class(final_results) <- "provoc"
+
+    return(final_results)
 }
+
+
 
 #' Check if provoc converged
 #' 
@@ -110,16 +99,20 @@ provoc <- function (coco, varmat, fused = NULL, ncores = 1, bootstrap_samples = 
 #' @return Invisbly returns TRUE if all samples converged, false otherwise. 
 #' @export
 convergence <- function(res, verbose = TRUE) {
-    if(!"convergence" %in% attributes(attributes(res))$names) {
+    if (!"convergence" %in% attributes(attributes(res))$names) {
         stop("Not a result of provoc - does not have correct attributes")
     }
+    
     conv <- attr(res, "convergence")
+
     if(any(!as.logical(conv$convergence))) {
         if(verbose) print(conv[which(!as.logical(conv$convergence)), -2])
         return(invisible(FALSE))
+
     } else {
         if(verbose) cat("All samples converged\n")
         return(invisible(TRUE))
+
     }
 }
 

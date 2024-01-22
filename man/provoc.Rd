@@ -2,54 +2,40 @@
 % Please edit documentation in R/provoc.R
 \name{provoc}
 \alias{provoc}
-\title{Proportions of Variants of Concern}
+\title{Proportions of Variants of Concern (provoc) Analysis}
 \usage{
 provoc(
-  coco,
-  varmat,
-  fused = NULL,
-  method = c("optim", "runjags"),
-  ncores = 1,
-  bootstrap_samples = 0,
+  formula,
+  data,
+  mutation_defs = NULL,
+  by = "sra",
   update_interval = 20,
-  verbose = TRUE,
-  ...
+  verbose = TRUE
 )
 }
 \arguments{
-\item{coco}{The counts and coverage data frame. Ignored if \code{fused} is supplied.}
+\item{formula}{A formula for the binomial model, like cbind(count, coverage) ~ .}
 
-\item{varmat}{The matrix of variant mutations. Ignored if \code{fused} is supplied.}
+\item{data}{Data frame containing count, coverage, and lineage columns.}
 
-\item{fused}{The fused data frame of coco and varmat. The fusion ensures that the mutations are properly joined and varmat contains only the most pertinent mutations.}
+\item{mutation_defs}{Optional mutation definitions; if NULL, uses astronomize().}
 
-\item{method}{Optimization or Bayesian?}
+\item{by}{Column name to group and process data.}
 
-\item{ncores}{For optim, the number of cores to be used. Requires the parallel package for ncores > 1}
+\item{update_interval}{Interval for progress messages (0 to suppress).}
 
-\item{update_interval}{Print message after \code{update_interval} samples. Set to 0 to suppress output.}
-
-\item{...}{Arguments to be passed to \code{provoc_jags()} (ignored for method = "optim"). See \code{?provoc_jags}.}
+\item{verbose}{TRUE to print detailed messages.}
 }
 \value{
-Results of the estimation. Regardless of the technique used, the results are as follows.
-
-\describe{
-\item{point_est}{A data frame with columns labelled rho, ci_low, ci_high, and the name of the variant. For \code{optim}, these are the estimates (bootstrap CI not yet implemented). For \code{runjags}, these are the medians and quantiles.}
-\item{convergence}{True if the algorithm converged.}
-\item{convergence_notes}{For \code{optim}, the message returned from \code{optim} as well as the initialization method for rho. For \code{runjags}, the gelman-rubin statistics for each parameter.}
-\item{note}{A brief note about the method.}
-\item{loglik}{The log likelihood value. For \code{runjags}, this is calculated for the medians of all parameters. This may be changed in future updates.}
-\item{sample_info}{The function checks for any columns that have exactly one unique value within a given sample. The unique value of each is returned in a data frame. Very useful if samples have columns such as "date" or "location".}
-}
+An object of class 'provoc' with GLM results per group.
 }
 \description{
-Un-fuses coco and varmat and applies the appropriate estimation technique. If a column labelled "sample" is present, applies the analysis to each sample separately.
+Applies a binomial GLM to analyze COVID-19 Variant of Concern proportions.
+It allows flexible lineage and mutation definitions.
 }
 \examples{
-varmat <- simulate_varmat()
-coco <- simulate_coco(varmat)
-fused <- fuse(coco, varmat)
-res <- provoc(fused)
-res$point_est
+# Example usage with data frame 'mydata'
+res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2,
+              data = mydata, by = "sample_id")
+
 }
