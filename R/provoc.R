@@ -141,7 +141,7 @@ convergence <- function(res, verbose = TRUE) {
 #' @export
 #' @examples
 #' predicted_results <- predict.provoc(provoc_obj)
-predict <- function(provoc_obj, newdata = NULL, type = NULL, se.fit = NULL,
+predict.provoc <- function(provoc_obj, newdata = NULL, type = NULL, se.fit = NULL,
                     dispersion = NULL, terms = NULL, na.action = NULL) {
                         
     # Ensure that provoc_obj is a list and not NULL
