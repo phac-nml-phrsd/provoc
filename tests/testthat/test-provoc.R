@@ -19,3 +19,30 @@ test_that("Ensure estimate is within the bootstrap confidence interval.", {
     j = j + 1
   }
 })
+
+test_that("rho total equals 1", {
+  rho_test <- function(converg_info){
+    epsilon = 0.005
+    i = 1
+    rho_total = 0
+    while(i <= nrow(converg_info)){
+      expect_lt(converg_info$rho[i], 1)
+      expect_gt(converg_info$rho[i], 0)
+      rho_total = rho_total + converg_info$rho[i]
+      i = i + 1
+    }
+    expect_lt(rho_total, 1+epsilon)
+    expect_gt(rho_total, 1-epsilon)
+  }
+  create_provoc_table <- function(rel_counts){
+    varmat <- simulate_varmat() #simulates a new variant matrix
+    coco <- simulate_coco(varmat, rel_counts)
+    converg_info <- provoc(coco, varmat, NULL, 1, 0, 20, TRUE) #don't need bootstrap samples for this unit test 
+    rho_test(converg_info)
+  }
+  j = 0
+  while (j < 10){
+    create_provoc_table(sample.int(1000,3,replace=TRUE))
+    j = j+1
+  }
+})
