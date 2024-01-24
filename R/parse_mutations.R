@@ -39,7 +39,7 @@ parse_mutation <- function(type, pos, alt,
         'M'= c(26522, 27191),
         'orf6'= c(27201, 27387),
         'orf7a'= c(27393, 27759),
-        'orf7b'= c(2775, 27887),
+        'orf7b'= c(27755, 27887),
         'orf8'= c(27893, 28259),
         'N'= c(28273, 29533),
         'orf10'= c(29557, 29674)
@@ -89,34 +89,40 @@ parse_mutation <- function(type, pos, alt,
 
 
 #' Parse all unique mutations in a vector
-#' 
+#'
 #' @param muts A vector of mutations in the format "+50535C", "-43234.2", and "+342234.AC".
-#' 
+#'
 #' @return A data frame with columns `label` and `mutation`.
 parse_unique_mutations <- function(muts) {
     unique_muts <- unique(muts)
-    new_muts <- character(length(unique_muts))
+    parsed_muts <- vector("character", length(unique_muts))
+
     for (i in seq_along(unique_muts)) {
-        thismut <- muts[i]
-        n <- nchar(thismut)
-        first_char <- substr(muts[i], 1, 1)
+        thismut <- unique_muts[i]
+        first_char <- substr(thismut, 1, 1)
+
         if (first_char == "~") {
-            new_muts[i] <- provoc:::parse_mutation(
-                type = "~",
-                pos = as.numeric(substr(thismut, 2, n - 1)),
-                alt = substr(thismut, n, n)
-            )
+            # Extract position and alternate nucleotide
+            pos <- as.numeric(substr(thismut, 2, nchar(thismut) - 1))
+            alt <- substr(thismut, nchar(thismut), nchar(thismut))
+            # Call parse_mutation with "~"
+            new_muts[i] <- parse_mutation("~", pos, alt)
         } else if (first_char %in% c("-", "+")) {
-            splits <- strsplit(x = thismut, split = "[+-]|\\.")[[1]]
-            new_muts[i] <- provoc:::parse_mutation(
-                type = first_char,
-                pos = as.numeric(splits[2]),
-                alt = splits[3]
-            )
+            # Split mutation string
+            splits <- strsplit(thismut, "[+-]")
+            type <- first_char
+            pos <- as.numeric(splits[[1]][2])
+            alt <- ifelse(type == "+", splits[[1]][3], nchar(splits[[1]][3]))
+            # Call parse_mutation with type "-" or "+"
+            new_muts[i] <- parse_mutation(type, pos, alt)
+        } else {
+            new_muts[i] <- thismut
         }
     }
-    data.frame(label = muts, mutation = new_muts)
+
+    data.frame(label = unique_muts, mutation = parsed_muts, stringsAsFactors = FALSE)
 }
+
 
 #' Parse output of the Gromstole pipeline, from SNVs to AAs
 #' 
@@ -127,6 +133,6 @@ parse_unique_mutations <- function(muts) {
 #' @return A vector of the same length of `labels`.
 #' @export
 parse_mutations <- function(labels) {
-    unique_aa <- provoc:::parse_unique_mutations(unique(labels))
-    unique_aa$mutation[match(labels, unique_aa$label)]
+    unique_aa <- parse_unique_mutations(unique(labels))
+    return(unique_aa$mutation[match(labels, unique_aa$label)])
 }
