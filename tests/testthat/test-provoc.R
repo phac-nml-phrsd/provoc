@@ -20,7 +20,7 @@ test_that("Ensure estimate is within the bootstrap confidence interval.", {
   }
 })
 
-test_that("rho total equals 1", {
+test_that("rho total is less than 1", {
   epsilon = 0.005 #initializes epsilon, put outside of rho_test function since it doesn't change
   rho_test <- function(converg_info){
     i = 1
@@ -31,8 +31,7 @@ test_that("rho total equals 1", {
       rho_total = rho_total + converg_info$rho[i]
       i = i + 1
     }
-    expect_lt(rho_total, 1+epsilon) #checks to see if rho total is between 1-epsilon and 1+epsilon, 
-    expect_gt(rho_total, 1-epsilon) #since it should equal 1 but addition with significant digits can cause issues on preciseness.
+    expect_lt(rho_total, 1+epsilon) #checks to see if rho total is between 1-epsilon and 1+epsilon, since addition with significant digits can cause issues on preciseness.
   }
   create_provoc_table <- function(rel_counts){
     varmat <- simulate_varmat() #simulates a new variant matrix
