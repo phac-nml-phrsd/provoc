@@ -1,7 +1,3 @@
-# Imports
-source("R/astronomize.R")
-
-
 #' Proportions of Variants of Concern (provoc) Analysis
 #'
 #' Applies a binomial GLM to analyze COVID-19 Variant of Concern proportions. 
@@ -17,12 +13,25 @@ source("R/astronomize.R")
 #' @return An object of class 'provoc' with GLM results per group.
 #'
 #' @examples
-#' # Example usage with data frame 'mydata'
+#' Example using the 'Baaijens' dataset and 'astronomize' mutation definitions.
+#' library(provoc)
+#'
+#' # Load the Baaijens dataset
+#' data("Baaijens")
+#'
+#' # In this example mutation_defs is NULL, so the default 'astronomize' function is used
+#'
+#' Baaijens$mutation <- parse_mutations(Baaijens$label)
+#'
+#' # Fit the model using 'provoc'
 #' res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2,
-#'               data = mydata, by = "sample_id")
+#'               data = Baaijens, by = "sample_id", mutation_defs = NULL)
+#'
+#' # Check convergence
+#' print(convergence(res))
 #'
 #' @export
-provoc <- function(formula, data, mutation_defs = NULL, by = "sra", update_interval = 20, verbose = TRUE) {
+provoc <- function(formula, data, mutation_defs = NULL, by = NULL, update_interval = 20, verbose = TRUE) {
     # Validate inputs
     if (!inherits(formula, "formula")) {
         stop("Argument 'formula' must be a formula.")
@@ -33,11 +42,11 @@ provoc <- function(formula, data, mutation_defs = NULL, by = "sra", update_inter
 
     # Use the astronomize function if mutation_defs is NULL
     if (is.null(mutation_defs)) {
-        mutation_defs <- astronomize()
+        mutation_defs <- provoc:::astronomize()
     }
 
     # Prepare data based on formula and mutation_defs
-    response_vars <- all.vars(formula)[1:2] # Extract count and coverage column names from formula
+    response_vars <- all.vars(formula)[1:2]  # Extract count and coverage column names from formula
     lineage_vars <- setdiff(names(mutation_defs), response_vars)
 
     # Check for required columns in data
@@ -48,31 +57,47 @@ provoc <- function(formula, data, mutation_defs = NULL, by = "sra", update_inter
     # Process the formula
     model_formula <- as.formula(paste("cbind(", paste(response_vars, collapse = ", "), ") ~ ."))
 
-    # Group data based on 'by' argument
-    if (!by %in% names(data)) {
-        stop("Column specified in 'by' not found in data.")
+    # Conditional data grouping
+    if (is.null(by)) {
+        # Treat entire dataset as a single group
+        grouped_data <- list(all_data = data)
+    } else {
+        if (!by %in% names(data)) {
+            stop("Column specified in 'by' not found in data.")
+        }
+        grouped_data <- split(data, data[[by]])
     }
-    grouped_data <- split(data, data[[by]])
 
     # Initialize results
     res_list <- vector(mode = "list", length = length(grouped_data))
     names(res_list) <- names(grouped_data)
 
-    # Process each group
+    # Group counter i that have been processed / total groups
+    i <- 0
+
+    # Process each group or the entire dataset
     for (group_name in names(grouped_data)) {
         group_data <- grouped_data[[group_name]]
 
-        # Apply binomial glm model
-        fit <- glm(model_formula, data = group_data, family = binomial())
+        # Prepare coco df for provoc_optim
+        coco <- group_data[, c("count", "coverage", "mutation")]
+        varmat <- mutation_defs
+        
+        optim_results <- provoc:::provoc_optim(coco = coco, varmat = varmat)
+        
+        # Process optim_results to extract data for res_list
+        point_est <- optim_results$res_df
+        convergence <- optim_results$convergence
 
         # Extract relevant results
-        summary_fit <- summary(fit)
-        point_est <- data.frame(coef(summary_fit))
-        convergence <- summary_fit$convergence
-
+        point_est <- optim_results$res_df
+        convergence <- optim_results$convergence
+        
         # Store results
         res_list[[group_name]] <- list(point_est = point_est, convergence = convergence)
-
+        
+        # Increment counter and display progress message
+        i <- i + 1
         if (verbose && update_interval > 0 && !((i - 1) %% update_interval)) {
             message(sprintf("Processed %d / %d groups", i, length(grouped_data)))
         }
@@ -86,7 +111,6 @@ provoc <- function(formula, data, mutation_defs = NULL, by = "sra", update_inter
 
     return(final_results)
 }
-
 
 
 #' Check if provoc converged
