@@ -95,7 +95,7 @@ parse_mutation <- function(type, pos, alt,
 #' @return A data frame with columns `label` and `mutation`.
 parse_unique_mutations <- function(muts) {
     unique_muts <- unique(muts)
-    parsed_muts <- vector("character", length(unique_muts))
+    new_muts <- vector("character", length(unique_muts))  # new_muts vector
 
     for (i in seq_along(unique_muts)) {
         thismut <- unique_muts[i]
@@ -109,10 +109,10 @@ parse_unique_mutations <- function(muts) {
             new_muts[i] <- provoc:::parse_mutation("~", pos, alt)
         } else if (first_char %in% c("-", "+")) {
             # Split mutation string
-            splits <- strsplit(thismut, "[+-]")
+            splits <- strsplit(thismut, "[+-]", perl=TRUE)[[1]]
             type <- first_char
-            pos <- as.numeric(splits[[1]][2])
-            alt <- ifelse(type == "+", splits[[1]][3], nchar(splits[[1]][3]))
+            pos <- as.numeric(splits[2])
+            alt <- splits[3]
             # Call parse_mutation with type "-" or "+"
             new_muts[i] <- provoc:::parse_mutation(type, pos, alt)
         } else {
@@ -120,7 +120,8 @@ parse_unique_mutations <- function(muts) {
         }
     }
 
-    data.frame(label = unique_muts, mutation = parsed_muts, stringsAsFactors = FALSE)
+    # Turn new_muts into a dataframe
+    data.frame(label = unique_muts, mutation = new_muts, stringsAsFactors = FALSE)
 }
 
 

@@ -1,104 +1,156 @@
-#' Proportions of Variants of Concern
-#' 
-#' Un-fuses coco and varmat and applies the appropriate estimation technique. If a column labelled "sample" is present, applies the analysis to each sample separately.
-#' 
-#' @param coco The counts and coverage data frame. Ignored if \code{fused} is supplied.
-#' @param varmat The matrix of variant mutations. Ignored if \code{fused} is supplied.
-#' @param fused The fused data frame of coco and varmat. The fusion ensures that the mutations are properly joined and varmat contains only the most pertinent mutations.
-#' @param ncores For optim, the number of cores to be used. Requires the parallel package for ncores > 1
-#' @param update_interval Print message after \code{update_interval} samples. Set to 0 to suppress output.
-#' 
-#' @return Results of the estimation. Regardless of the technique used, the results are as follows.
-#' 
-#' \describe{
-#'      \item{point_est}{A data frame with columns labelled rho, ci_low, ci_high, and the name of the variant. These are the estimates (bootstrap CI not yet implemented).}
-#'      \item{convergence}{True if the algorithm converged.}
-#'      \item{convergence_notes}{the message returned from \code{optim} as well as the initialization method for rho.}
-#'      \item{note}{A brief note about the method.}
-#'      \item{loglik}{The log likelihood value. This may be changed in future updates.}
-#'      \item{sample_info}{The function checks for any columns that have exactly one unique value within a given sample. The unique value of each is returned in a data frame. Very useful if samples have columns such as "date" or "location".}
-#' }
-#' @export
-#' 
+#' Proportions of Variants of Concern (provoc) Analysis
+#'
+#' Applies provoc_optim to analyze COVID-19 Variant of Concern proportions. 
+#' It allows flexible lineage and mutation definitions.
+#'
+#' @param formula A formula for the binomial model, like cbind(count, coverage) ~ . 
+#' @param data Data frame containing count, coverage, and lineage columns.
+#' @param mutation_defs Optional mutation definitions; if NULL, uses astronomize().
+#' @param by Column name to group and process data.
+#' @param update_interval Interval for progress messages (0 to suppress).
+#' @param verbose TRUE to print detailed messages.
+#'
+#' @return Returns an object of class 'provoc' with results from applying `provoc_optim` to the input data. The object contains the following attributes:
+#'  - proportions: Estimated proportions vector for each variant of concern.
+#'  - variant_matrix: Mutation definitions used for analysis, provided `mutation_defs` or default `astronomize()`.
+#'
+#' Outputs necessary information for subsequent analysis, including the use of the `predict.provoc()`.
+#'
 #' @examples
-#' varmat <- simulate_varmat()
-#' coco <- simulate_coco(varmat)
-#' fused <- fuse(coco, varmat)
-#' res <- provoc(fused)
-#' res$point_est
-provoc <- function (coco, varmat, fused = NULL, ncores = 1, bootstrap_samples = 0, update_interval = 20, verbose = TRUE) {
-    if(is.null(fused)) fused <- fuse(coco, varmat)
-    if("sample" %in% colnames(fused)) {
-        samples <- unique(fused$sample)
-        sample_table <- table(fused$sample)
-        if(any(sample_table < 5)) {
-            if(mean(sample_table < 5) < 0.5) {
-                print(sample_table)
-                stop("Too few samples")
-            } else {
-                samples <- names(sample_table[sample_table > 5])
-                warning("Some samples have fewer than 5 observations and have been removed from analysis.")
-                print(table(samples))
-            }
+#' library(provoc)
+#' # Load a dataset
+#' data("Baaijens")
+#' # Prepare the dataset
+#' Baaijens$mutation <- parse_mutations(Baaijens$label)
+#'
+#' # Analyze the dataset using the default mutation definitions
+#' res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2,
+#'               data = Baaijens, by = "sample_id")
+#'
+#' # Check for analysis convergence
+#' print(convergence(res))
+#'
+#' # Use the results for prediction
+#' predicted_values <- predict.provoc(res)
+#'
+#' @export
+
+provoc <- function(formula, data, mutation_defs = NULL, by = NULL, update_interval = 20, verbose = TRUE) {
+    # Initial validation and processing
+    validate_inputs(formula, data)
+    mutation_defs <- process_mutation_defs(mutation_defs)
+    
+    # Fuse data with mutation definitions
+    data <- provoc:::fuse(data, mutation_defs, verbose = verbose)
+    
+    # Group the fused data for processing
+    if (!is.null(by)) {
+        if (!by %in% names(data)) {
+            stop("Column specified in 'by' not found in data.")
         }
-        if(any(sample_table < 10)) {
-            warning("At least one of the samples has fewer than 10 observations.")
-            print(sample_table)
-        }
+        grouped_data <- split(data, data[[by]])
     } else {
-        fused$sample <- 1
-        samples <- 1
+        # If no grouping is specified, treat the entire fused dataset as a single group
+        grouped_data <- list(all_data = data)
     }
 
-    res_list <- vector(mode = "list", length = length(samples))
-    convergence_note <- character(length(samples))
-    convergence <- logical(length(samples))
-    t0s <- double(length(samples))
-    names(res_list) <- samples
-    if (update_interval) message(paste0("Fitting ", length(samples), " samples."))
-    for (i in seq_along(res_list)) { # TODO: Parallelize (for optim)
-        t0 <- Sys.time()
-        if (update_interval){
-            if (!i %% update_interval) {
-                cat("\n")
-                message(paste0("Fitting sample ", samples[i], ", ",
-                    which(samples == samples[i]), " of ",
-                    length(samples)))
-            }
-        }
-        fissed <- fission(fused, sample = samples[i])
-        coco <- fissed$coco
-        varmat <- fissed$varmat
+    # Proceed with processing each group
+    res_list <- process_optim(grouped_data, mutation_defs)
+    
+    # Combine results and ensure object is of class 'provoc'
+    final_results <- do.call(rbind, res_list)
+    class(final_results) <- "provoc"
 
-        # Guaranteed to include a column called "sample"
-        sample_info <- apply(coco, 2, function(x) length(unique(x)) == 1)
-        sample_info <- coco[1, sample_info, drop = FALSE]
-        
-        res_temp <- provoc_optim(coco, varmat, bootstrap_samples = bootstrap_samples, verbose = verbose)
-        res_df <- res_temp$res_df
-        for (ii in seq_len(ncol(sample_info))) {
-            res_df[, names(sample_info)[ii]] <- sample_info[1, ii]
-        }
-        convergence[i] <- res_temp$convergence
-        convergence_note[i] <- res_temp$convergence_note
-        res_list[[i]] <- res_df
-        # TODO: Add methods (for both single results and lists): summary, plot
-            # Only print top variants; include columns that are constant within samples; convergence status; log-Likelihood
-            # Autoplot (gg) for res and res_list objects?
-                # Bonus: colour schemes that respect variant names? Could be another repo that other labs might enjoy.
-        # TODO: Replace processing in provoc() with separate processing functions for optim and jags; user can choose how to process.
-        # TODO: Include median read depth, quality measures
-
-        t0s[i] <- difftime(Sys.time(), t0, units = "mins")
-    }
-
-    res <- dplyr::bind_rows(res_list)
-    attr(res, "convergence") <- data.frame(sample = samples, 
-        convergence = convergence, 
-        convergence_note = convergence_note,
-        time = t0s)
-    res
+    # 'provoc' object attributes with attributes nessessary for predict.provoc()
+    return(list(
+        proportions = final_results,
+        variant_matrix = mutation_defs
+    ))
 }
+
+
+#' Validate Inputs for provoc
+#'
+#' Checks if the provided formula and data frame are valid for analysis.
+#'
+#' @param formula [stats]{formula}, specifying the model to be fitted.
+#' @param data A data frame containing the variables in the model.
+#'
+#' @return None
+#' @examples
+#' # This function is internally used and not typically called by the user.
+validate_inputs <- function(formula, data) {
+    if (!inherits(formula, "formula")) stop("Argument 'formula' must be a formula.")
+    if (!is.data.frame(data)) stop("Argument 'data' must be a data frame.")
+}
+
+
+#' Process Mutation Definitions
+#'
+#' Handles mutation definitions by using the provided matrix or generating it using \code{astronomize()}.
+#'
+#' @param mutation_defs A matrix of mutation definitions or NULL to use the default generated by \code{astronomize()}.
+#'
+#' @return A matrix of mutation definitions ready for analysis.
+#' @examples
+#' # This function is internally used and not typically called by the user.
+process_mutation_defs <- function(mutation_defs) {
+    if (is.null(mutation_defs)) {
+        return(provoc:::astronomize())
+    }
+    if (!is.matrix(mutation_defs)) {
+        stop("mutation_defs must be a matrix with appropriate dimension names.")
+    }
+    return(mutation_defs)
+}
+
+
+#' Prepare and Fuse Data
+#'
+#' Prepares the data based on the grouping variable and applies the \code{fuse} function.
+#'
+#' @param data A data frame containing the variables in the model.
+#' @param mutation_defs A matrix of mutation definitions.
+#' @param by An optional string specifying the column name to group the data by.
+#' @param verbose
+#'
+#' @return A list containing the fused data frame and the grouped data as a list (if applicable).
+#' @examples
+#' # This function is internally used and not typically called by the user.
+prepare_and_fuse_data <- function(data, mutation_defs, by, verbose) {
+    if (!is.null(by)) {
+        if (!by %in% names(data)) stop("Column specified in 'by' not found in data.")
+        grouped_data <- split(data, data[[by]])
+    } else {
+        grouped_data <- list(all_data = data)  # Treat entire dataset as a single group
+    }
+    return(list(fused_data = provoc:::fuse(data, mutation_defs, verbose = verbose), grouped_data = grouped_data))
+}
+
+
+#' Process Optimization
+#'
+#' Processes each group or the entire dataset through \code{provoc_optim} and collects results.
+#'
+#' @param grouped_data A list containing data frames for each group to be processed.
+#' @param mutation_defs A matrix of mutation definitions.
+#'
+#' @return A list of results for each group, including point estimates and convergence information.
+#' @examples
+#' # This function is internally used and not typically called by the user.
+process_optim <- function(grouped_data, mutation_defs) {
+    res_list <- vector("list", length = length(grouped_data))
+    names(res_list) <- names(grouped_data)
+
+    for (group_name in names(grouped_data)) {
+        group_data <- grouped_data[[group_name]]
+        coco <- group_data[, c("count", "coverage", "mutation")]
+        optim_results <- provoc:::provoc_optim(coco = coco, varmat = mutation_defs)
+        res_list[[group_name]] <- list(point_est = optim_results$res_df, convergence = optim_results$convergence)
+    }
+    return(res_list)
+}
+
 
 #' Check if provoc converged
 #' 
@@ -110,16 +162,20 @@ provoc <- function (coco, varmat, fused = NULL, ncores = 1, bootstrap_samples = 
 #' @return Invisbly returns TRUE if all samples converged, false otherwise. 
 #' @export
 convergence <- function(res, verbose = TRUE) {
-    if(!"convergence" %in% attributes(attributes(res))$names) {
+    if (!"convergence" %in% attributes(attributes(res))$names) {
         stop("Not a result of provoc - does not have correct attributes")
     }
+    
     conv <- attr(res, "convergence")
+
     if(any(!as.logical(conv$convergence))) {
         if(verbose) print(conv[which(!as.logical(conv$convergence)), -2])
         return(invisible(FALSE))
+
     } else {
         if(verbose) cat("All samples converged\n")
         return(invisible(TRUE))
+
     }
 }
 
