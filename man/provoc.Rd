@@ -8,7 +8,7 @@ provoc(
   formula,
   data,
   mutation_defs = NULL,
-  by = "sra",
+  by = NULL,
   update_interval = 20,
   verbose = TRUE
 )
@@ -27,15 +27,33 @@ provoc(
 \item{verbose}{TRUE to print detailed messages.}
 }
 \value{
-An object of class 'provoc' with GLM results per group.
+Returns an object of class 'provoc' with results from applying \code{provoc_optim} to the input data. The object contains the following attributes:
+\itemize{
+\item proportions: Estimated proportions vector for each variant of concern.
+\item variant_matrix: Mutation definitions used for analysis, provided \code{mutation_defs} or default \code{astronomize()}.
+}
+
+Outputs necessary information for subsequent analysis, including the use of the \code{predict.provoc()}.
 }
 \description{
-Applies a binomial GLM to analyze COVID-19 Variant of Concern proportions.
+Applies provoc_optim to analyze COVID-19 Variant of Concern proportions.
 It allows flexible lineage and mutation definitions.
 }
 \examples{
-# Example usage with data frame 'mydata'
+library(provoc)
+# Load a dataset
+data("Baaijens")
+# Prepare the dataset
+Baaijens$mutation <- parse_mutations(Baaijens$label)
+
+# Analyze the dataset using the default mutation definitions
 res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2,
-              data = mydata, by = "sample_id")
+              data = Baaijens, by = "sample_id")
+
+# Check for analysis convergence
+print(convergence(res))
+
+# Use the results for prediction
+predicted_values <- predict.provoc(res)
 
 }

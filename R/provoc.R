@@ -1,6 +1,6 @@
 #' Proportions of Variants of Concern (provoc) Analysis
 #'
-#' Applies a binomial GLM to analyze COVID-19 Variant of Concern proportions. 
+#' Applies provoc_optim to analyze COVID-19 Variant of Concern proportions. 
 #' It allows flexible lineage and mutation definitions.
 #'
 #' @param formula A formula for the binomial model, like cbind(count, coverage) ~ . 
@@ -10,106 +10,145 @@
 #' @param update_interval Interval for progress messages (0 to suppress).
 #' @param verbose TRUE to print detailed messages.
 #'
-#' @return An object of class 'provoc' with GLM results per group.
+#' @return Returns an object of class 'provoc' with results from applying `provoc_optim` to the input data. The object contains the following attributes:
+#'  - proportions: Estimated proportions vector for each variant of concern.
+#'  - variant_matrix: Mutation definitions used for analysis, provided `mutation_defs` or default `astronomize()`.
+#'
+#' Outputs necessary information for subsequent analysis, including the use of the `predict.provoc()`.
 #'
 #' @examples
-#' Example using the 'Baaijens' dataset and 'astronomize' mutation definitions.
 #' library(provoc)
-#'
-#' # Load the Baaijens dataset
+#' # Load a dataset
 #' data("Baaijens")
-#'
-#' # In this example mutation_defs is NULL, so the default 'astronomize' function is used
-#'
+#' # Prepare the dataset
 #' Baaijens$mutation <- parse_mutations(Baaijens$label)
 #'
-#' # Fit the model using 'provoc'
+#' # Analyze the dataset using the default mutation definitions
 #' res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2,
-#'               data = Baaijens, by = "sample_id", mutation_defs = NULL)
+#'               data = Baaijens, by = "sample_id")
 #'
-#' # Check convergence
+#' # Check for analysis convergence
 #' print(convergence(res))
 #'
+#' # Use the results for prediction
+#' predicted_values <- predict.provoc(res)
+#'
 #' @export
+
 provoc <- function(formula, data, mutation_defs = NULL, by = NULL, update_interval = 20, verbose = TRUE) {
-    # Validate inputs
-    if (!inherits(formula, "formula")) {
-        stop("Argument 'formula' must be a formula.")
-    }
-    if (!is.data.frame(data)) {
-        stop("Argument 'data' must be a data frame.")
-    }
-
-    # Use the astronomize function if mutation_defs is NULL
-    if (is.null(mutation_defs)) {
-        mutation_defs <- provoc:::astronomize()
-    }
-
-    # Prepare data based on formula and mutation_defs
-    response_vars <- all.vars(formula)[1:2]  # Extract count and coverage column names from formula
-    lineage_vars <- setdiff(names(mutation_defs), response_vars)
-
-    # Check for required columns in data
-    if (!all(c(response_vars, lineage_vars) %in% names(data))) {
-        stop("Not all required columns found in 'data'.")
-    }
-
-    # Process the formula
-    model_formula <- as.formula(paste("cbind(", paste(response_vars, collapse = ", "), ") ~ ."))
-
-    # Conditional data grouping
-    if (is.null(by)) {
-        # Treat entire dataset as a single group
-        grouped_data <- list(all_data = data)
-    } else {
+    # Initial validation and processing
+    validate_inputs(formula, data)
+    mutation_defs <- process_mutation_defs(mutation_defs)
+    
+    # Fuse data with mutation definitions
+    data <- provoc:::fuse(data, mutation_defs, verbose = verbose)
+    
+    # Group the fused data for processing
+    if (!is.null(by)) {
         if (!by %in% names(data)) {
             stop("Column specified in 'by' not found in data.")
         }
         grouped_data <- split(data, data[[by]])
+    } else {
+        # If no grouping is specified, treat the entire fused dataset as a single group
+        grouped_data <- list(all_data = data)
     }
 
-    # Initialize results
-    res_list <- vector(mode = "list", length = length(grouped_data))
-    names(res_list) <- names(grouped_data)
-
-    # Group counter i that have been processed / total groups
-    i <- 0
-
-    # Process each group or the entire dataset
-    for (group_name in names(grouped_data)) {
-        group_data <- grouped_data[[group_name]]
-
-        # Prepare coco df for provoc_optim
-        coco <- group_data[, c("count", "coverage", "mutation")]
-        varmat <- mutation_defs
-        
-        optim_results <- provoc:::provoc_optim(coco = coco, varmat = varmat)
-        
-        # Process optim_results to extract data for res_list
-        point_est <- optim_results$res_df
-        convergence <- optim_results$convergence
-
-        # Extract relevant results
-        point_est <- optim_results$res_df
-        convergence <- optim_results$convergence
-        
-        # Store results
-        res_list[[group_name]] <- list(point_est = point_est, convergence = convergence)
-        
-        # Increment counter and display progress message
-        i <- i + 1
-        if (verbose && update_interval > 0 && !((i - 1) %% update_interval)) {
-            message(sprintf("Processed %d / %d groups", i, length(grouped_data)))
-        }
-    }
-
-    # Combine results
+    # Proceed with processing each group
+    res_list <- process_optim(grouped_data, mutation_defs)
+    
+    # Combine results and ensure object is of class 'provoc'
     final_results <- do.call(rbind, res_list)
-
-    # Ensure object is of class 'provoc'
     class(final_results) <- "provoc"
 
-    return(final_results)
+    # 'provoc' object attributes with attributes nessessary for predict.provoc()
+    return(list(
+        proportions = final_results,
+        variant_matrix = mutation_defs
+    ))
+}
+
+
+#' Validate Inputs for provoc
+#'
+#' Checks if the provided formula and data frame are valid for analysis.
+#'
+#' @param formula [stats]{formula}, specifying the model to be fitted.
+#' @param data A data frame containing the variables in the model.
+#'
+#' @return None
+#' @examples
+#' # This function is internally used and not typically called by the user.
+validate_inputs <- function(formula, data) {
+    if (!inherits(formula, "formula")) stop("Argument 'formula' must be a formula.")
+    if (!is.data.frame(data)) stop("Argument 'data' must be a data frame.")
+}
+
+
+#' Process Mutation Definitions
+#'
+#' Handles mutation definitions by using the provided matrix or generating it using \code{astronomize()}.
+#'
+#' @param mutation_defs A matrix of mutation definitions or NULL to use the default generated by \code{astronomize()}.
+#'
+#' @return A matrix of mutation definitions ready for analysis.
+#' @examples
+#' # This function is internally used and not typically called by the user.
+process_mutation_defs <- function(mutation_defs) {
+    if (is.null(mutation_defs)) {
+        return(provoc:::astronomize())
+    }
+    if (!is.matrix(mutation_defs)) {
+        stop("mutation_defs must be a matrix with appropriate dimension names.")
+    }
+    return(mutation_defs)
+}
+
+
+#' Prepare and Fuse Data
+#'
+#' Prepares the data based on the grouping variable and applies the \code{fuse} function.
+#'
+#' @param data A data frame containing the variables in the model.
+#' @param mutation_defs A matrix of mutation definitions.
+#' @param by An optional string specifying the column name to group the data by.
+#' @param verbose
+#'
+#' @return A list containing the fused data frame and the grouped data as a list (if applicable).
+#' @examples
+#' # This function is internally used and not typically called by the user.
+prepare_and_fuse_data <- function(data, mutation_defs, by, verbose) {
+    if (!is.null(by)) {
+        if (!by %in% names(data)) stop("Column specified in 'by' not found in data.")
+        grouped_data <- split(data, data[[by]])
+    } else {
+        grouped_data <- list(all_data = data)  # Treat entire dataset as a single group
+    }
+    return(list(fused_data = provoc:::fuse(data, mutation_defs, verbose = verbose), grouped_data = grouped_data))
+}
+
+
+#' Process Optimization
+#'
+#' Processes each group or the entire dataset through \code{provoc_optim} and collects results.
+#'
+#' @param grouped_data A list containing data frames for each group to be processed.
+#' @param mutation_defs A matrix of mutation definitions.
+#'
+#' @return A list of results for each group, including point estimates and convergence information.
+#' @examples
+#' # This function is internally used and not typically called by the user.
+process_optim <- function(grouped_data, mutation_defs) {
+    res_list <- vector("list", length = length(grouped_data))
+    names(res_list) <- names(grouped_data)
+
+    for (group_name in names(grouped_data)) {
+        group_data <- grouped_data[[group_name]]
+        coco <- group_data[, c("count", "coverage", "mutation")]
+        optim_results <- provoc:::provoc_optim(coco = coco, varmat = mutation_defs)
+        res_list[[group_name]] <- list(point_est = optim_results$res_df, convergence = optim_results$convergence)
+    }
+    return(res_list)
 }
 
 
