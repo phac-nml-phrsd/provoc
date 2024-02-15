@@ -79,7 +79,7 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         prob <- as.numeric(rho %*% varmat)
         prob[coverage == 0] <- 0
         prob[prob == 0 & count != 0] <- 0.000001
-        -sum(stats::dbinom(x = count, size = coverage, prob = prob,
+        -sum(stats::dbinom(x = as.numeric(count), size = as.numeric(coverage), prob = as.numeric(prob),
             log = TRUE))
     }
 
