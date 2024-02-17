@@ -163,24 +163,22 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         bestres$convergence, 
         "; Initialization: ", bestres$init_method, sep = '')
     if(bootstrap_samples > 0) {
-        boots <- replicate(bootstrap_samples, {
-            tryCatch({
-                coco_boot <- data.frame(mutation = muts,
-                    coverage = rpois(length(cov2), cov2))
-                # Multiply by 0.999 because sometimes integer/double is larger than 1
-                    # even when integer == double
-                coco_boot$count <- rbinom(length(cou2), 
-                    size = coco_boot$coverage, 
-                    prob = 0.999*cou2/cov2)
-                coco_boot <- coco_boot[complete.cases(coco_boot), ]
-                varmat_boot <- vari2[, muts]
-                provoc_optim(coco_boot, varmat_boot)$res_df[, "rho"]
-            }, error = function(e) rep(NULL, nrow(vari2)))
-        })
-        ci <- apply(boots, 1, quantile, prob = c(0.025, 0.975))
-
-        res_df$ci_low <- ci[1,]
-        res_df$ci_high <- ci[2,]
+        resampled_coverage <- rmultinom(bootstrap_samples,
+                           size = sum(cov2),
+                           prob = cov2/sum(cov2)) |>
+                    as.numeric()
+        resampled_counts <- rbinom(length(resampled_coverage),
+                         size = resampled_coverage,
+                         prob = rep(cou2/cov2, bootstrap_samples))
+        resamples <- data.frame(count = resampled_counts,
+                              coverage = resampled_coverage,
+                              mut = rep(muts, bootstrap_samples),
+                              iteration = rep(1:bootstrap_samples, each = length(muts)))
+      
+        #ci <- apply(boots, 1, quantile, prob = c(0.025, 0.975))
+        
+        #res_df$ci_low <- ci[1,]
+        #res_df$ci_high <- ci[2,]
     }
 
     return(list(res_df = res_df, convergence = convergence, convergence_note = convergence_note))
