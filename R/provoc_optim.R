@@ -174,11 +174,18 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
                               coverage = resampled_coverage,
                               mut = rep(muts, bootstrap_samples),
                               iteration = rep(1:bootstrap_samples, each = length(muts)))
-      
-        #ci <- apply(boots, 1, quantile, prob = c(0.025, 0.975))
+        boots <- data.frame(matrix(nrow = nrow(vari2), ncol = bootstrap_samples))
+        i <- 1
+        for (iteration in split(resamples, resamples[["iteration"]])){
+            boots_column <- paste("X",i,sep="")
+            boots[boots_column] <- provoc_optim(iteration, vari2[,muts])$res_df[,"rho"]
+            i <- i + 1
+        }
         
-        #res_df$ci_low <- ci[1,]
-        #res_df$ci_high <- ci[2,]
+        ci <- apply(boots, 1, quantile, prob = c(0.025, 0.975))
+        
+        res_df$ci_low <- ci[1,]
+        res_df$ci_high <- ci[2,]
     }
 
     return(list(res_df = res_df, convergence = convergence, convergence_note = convergence_note))
