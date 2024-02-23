@@ -3,5 +3,5 @@ linters: linters_with_defaults(
         indent = 4L,
         hanging_indent_style = c("never")
     )
-)
+ )
 exclude: "^#'.*"
