@@ -30,8 +30,7 @@ predict.provoc <- function(provoc_obj,
         stop("Variant matrix does not match variants in results")
     }
 
-    results <- variant_matrix[provoc_obj$variant, ] %*% proportions
-    names(results) <- colnames(variant_matrix)
+    results <- proportions %*% variant_matrix[provoc_obj$variant, ]
 
-    return(results)  # Return results in the same order
+    return(results)
 }

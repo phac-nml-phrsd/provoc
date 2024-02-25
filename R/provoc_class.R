@@ -4,10 +4,15 @@ print.provoc <- function(provoc_obj, n = 6) {
     cat("Convergence: ")
     print(!is.null(attributes(provoc_obj)$convergence))
     cat("\n")
+    n <- min(n, nrow(provoc_obj))
+    provoc_df <- provoc_obj[order(-provoc_obj$rho), ]
+    provoc_df$rho <- ifelse(provoc_df$rho < 0.001,
+        "<0.001", round(provoc_df$rho, 3))
     cat("Top", n, "variants:\n")
-    print.data.frame(provoc_obj[order(-provoc_obj$rho), ][1:n, ])
+    print.data.frame(provoc_df[1:n, ], digits = 3)
 }
 
+#' Summarise results of model fitting
 summary.provoc <- function(provoc_obj) {
     cat("Call: ")
     print(attributes(provoc_obj)$formula)
@@ -20,7 +25,7 @@ summary.provoc <- function(provoc_obj) {
 #' Extract the variant matrix used to fit the model
 #' @export
 get_varmat <- function(provoc_obj) {
-    attributes(provoc_obj)$varmat
+    attributes(provoc_obj)$variant_matrix
 }
 
 
