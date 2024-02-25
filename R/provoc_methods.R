@@ -34,3 +34,7 @@ predict.provoc <- function(provoc_obj,
 
     return(results)
 }
+
+resids.provoc <- function(provoc_obj, type = "deviance") {
+    # TODO: Calculate deviance residuals
+}

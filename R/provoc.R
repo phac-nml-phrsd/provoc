@@ -65,6 +65,7 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     provoc_obj <- final_results
     attr(provoc_obj, "variant_matrix") <- mutation_defs
     attr(provoc_obj, "formula") <- formula
+    # TODO: Include data? Just mutation names, or count/coverage as well?
     class(provoc_obj) <- c("provoc", "data.frame")
 
     return(provoc_obj)
