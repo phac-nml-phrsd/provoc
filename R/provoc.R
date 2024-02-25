@@ -1,9 +1,9 @@
 #' Proportions of Variants of Concern (provoc) Analysis
 #'
-#' Applies provoc_optim to analyze COVID-19 Variant of Concern proportions. 
+#' Applies provoc_optim to analyze COVID-19 Variant of Concern proportions.
 #' It allows flexible lineage and mutation definitions.
 #'
-#' @param formula A formula for the binomial model, like cbind(count, coverage) ~ . 
+#' @param formula A formula for the binomial model, like cbind(count, coverage) ~ .
 #' @param data Data frame containing count, coverage, and lineage columns.
 #' @param mutation_defs Optional mutation definitions; if NULL, uses astronomize().
 #' @param by Column name to group and process data.
@@ -35,14 +35,15 @@
 #'
 #' @export
 
-provoc <- function(formula, data, mutation_defs = NULL, by = NULL, update_interval = 20, verbose = TRUE) {
+provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
+    update_interval = 20, verbose = TRUE) {
     # Initial validation and processing
     validate_inputs(formula, data)
     mutation_defs <- as.matrix(process_mutation_defs(mutation_defs))
-    
+
     # Fuse data with mutation definitions
-    data <- provoc:::fuse(data, mutation_defs, verbose = verbose)
-    
+    data <- fuse(data, mutation_defs, verbose = verbose)
+
     # Group the fused data for processing
     if (!is.null(by)) {
         if (!by %in% names(data)) {
@@ -50,22 +51,23 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL, update_interv
         }
         grouped_data <- split(data, data[[by]])
     } else {
-        # If no grouping is specified, treat the entire fused dataset as a single group
+        # If no grouping is specified, treat the entire dataset as one group
         grouped_data <- list(all_data = data)
     }
 
     # Proceed with processing each group
     res_list <- process_optim(grouped_data, mutation_defs)
-    
+
     # Combine results and ensure object is of class 'provoc'
     final_results <- do.call(rbind, res_list)
-    class(final_results) <- "provoc"
+    row.names(final_results) <- NULL
 
-    # 'provoc' object attributes with attributes nessessary for predict.provoc()
-    return(list(
-        proportions = final_results,
-        variant_matrix = mutation_defs
-    ))
+    provoc_obj <- final_results
+    attr(provoc_obj, "variant_matrix") <- mutation_defs
+    attr(provoc_obj, "formula") <- formula
+    class(provoc_obj) <- c("provoc", "data.frame")
+
+    return(provoc_obj)
 }
 
 
@@ -80,7 +82,9 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL, update_interv
 #' @examples
 #' # This function is internally used and not typically called by the user.
 validate_inputs <- function(formula, data) {
-    if (!inherits(formula, "formula")) stop("Argument 'formula' must be a formula.")
+    if (!inherits(formula, "formula"))
+        stop("Argument 'formula' must be a formula.")
+
     if (!is.data.frame(data)) stop("Argument 'data' must be a data frame.")
 }
 
@@ -119,12 +123,18 @@ process_mutation_defs <- function(mutation_defs) {
 #' # This function is internally used and not typically called by the user.
 prepare_and_fuse_data <- function(data, mutation_defs, by, verbose) {
     if (!is.null(by)) {
-        if (!by %in% names(data)) stop("Column specified in 'by' not found in data.")
+        if (!by %in% names(data))
+            stop("Column specified in 'by' not found in data.")
+
         grouped_data <- split(data, data[[by]])
     } else {
-        grouped_data <- list(all_data = data)  # Treat entire dataset as a single group
+        # Treat entire dataset as a single group
+        grouped_data <- list(all_data = data)
     }
-    return(list(fused_data = provoc:::fuse(data, mutation_defs, verbose = verbose), grouped_data = grouped_data))
+    return(list(
+        fused_data = provoc:::fuse(data, mutation_defs,
+            verbose = verbose),
+        grouped_data = grouped_data))
 }
 
 
@@ -141,41 +151,45 @@ prepare_and_fuse_data <- function(data, mutation_defs, by, verbose) {
 process_optim <- function(grouped_data, mutation_defs) {
     res_list <- vector("list", length = length(grouped_data))
     names(res_list) <- names(grouped_data)
+    convergence_list <- vector("list", length = length(grouped_data))
+    names(convergence_list) <- names(grouped_data)
 
     for (group_name in names(grouped_data)) {
         group_data <- grouped_data[[group_name]]
-        coco <- group_data[, c("count", "coverage", "mutation")]
-        optim_results <- provoc:::provoc_optim(coco = coco, varmat = mutation_defs)
-        res_list[[group_name]] <- list(point_est = optim_results$res_df, convergence = optim_results$convergence)
+        coco <- group_data[, c("count", "coverage", "mutation", by)]
+        optim_results <- provoc:::provoc_optim(coco = coco,
+            varmat = mutation_defs)
+        res_list[[group_name]] <- optim_results$res_df
+        convergence_list[[group_name]] <- optim_results$convergence
     }
+    attr(res_list, "convergence") <- convergence_list
     return(res_list)
 }
 
 
 #' Check if provoc converged
-#' 
+#'
 #' If converged, returns True and prints a message. Otherwise, prints the samples and the note giving hints as to why it didn't converge.
-#' 
+#'
 #' @param res The result of \code{provoc()}
-#' @param verbose Print a message to the screen? 
-#' 
-#' @return Invisbly returns TRUE if all samples converged, false otherwise. 
+#' @param verbose Print a message to the screen?
+#'
+#' @return Invisbly returns TRUE if all samples converged, false otherwise.
 #' @export
 convergence <- function(res, verbose = TRUE) {
     if (!"convergence" %in% attributes(attributes(res))$names) {
         stop("Not a result of provoc - does not have correct attributes")
     }
-    
+
     conv <- attr(res, "convergence")
 
-    if(any(!as.logical(conv$convergence))) {
-        if(verbose) print(conv[which(!as.logical(conv$convergence)), -2])
+    if (any(!as.logical(conv$convergence))) {
+        if (verbose) print(conv[which(!as.logical(conv$convergence)), -2])
         return(invisible(FALSE))
 
     } else {
-        if(verbose) cat("All samples converged\n")
+        if (verbose) cat("All samples converged\n")
         return(invisible(TRUE))
-
     }
 }
 
@@ -196,15 +210,16 @@ convergence <- function(res, verbose = TRUE) {
 #' @return Predicted values in the same order as the input data.
 #' @export
 #' @examples
-#' predicted_results <- predict.provoc(provoc_obj)
-predict.provoc <- function(provoc_obj, newdata = NULL, type = NULL, se.fit = NULL,
-                    dispersion = NULL, terms = NULL, na.action = NULL) {
-                        
+#' predicted_results <- predict(provoc_obj)
+predict.provoc <- function(provoc_obj,
+    newdata = NULL, type = NULL, se.fit = NULL,
+    dispersion = NULL, terms = NULL, na.action = NULL) {
+
     # Ensure that provoc_obj is a list and not NULL
     if (is.null(provoc_obj) || !is.list(provoc_obj)) {
         stop("Input 'provoc_obj' must be a non-null list.")
     }
-    
+
     # Check if the required elements are present in the input
     if (!all(c("proportions", "variant_matrix") %in% names(provoc_obj))) {
         stop("Input 'provoc_obj' must contain 'proportions' and 'variant_matrix'.")
@@ -225,9 +240,9 @@ predict.provoc <- function(provoc_obj, newdata = NULL, type = NULL, se.fit = NUL
     if (ncol(variant_matrix) != length(proportions)) {
         stop("Dimensions of 'variant_matrix' and 'proportions' do not match.")
     }
-    
+
     # Perform matrix multiplication for predictions
     results <- variant_matrix %*% proportions
-    
+
     return(results)  # Return results in the same order
 }
