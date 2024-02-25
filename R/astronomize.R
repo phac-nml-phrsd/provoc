@@ -169,7 +169,7 @@ astronomize <- function(path = NULL) {
     colnames(varmat)[which(colnames(varmat) == "aa:S:HV69-")] <- paste0("del:", 21562 + 3*69, ":2")
     # ORF 1a starts at 265
     colnames(varmat)[which(colnames(varmat) == "aa:orf1a:SGF3675-")] <- paste0("del:", 265 + 3*3675 - 1, ":9")
-    varmat
+    as.matrix(varmat)
 }
 
 #' Filter varmat for specific variants, keeping mutations that are present in at least one variant

@@ -38,7 +38,7 @@
 provoc <- function(formula, data, mutation_defs = NULL, by = NULL, update_interval = 20, verbose = TRUE) {
     # Initial validation and processing
     validate_inputs(formula, data)
-    mutation_defs <- process_mutation_defs(mutation_defs)
+    mutation_defs <- as.matrix(process_mutation_defs(mutation_defs))
     
     # Fuse data with mutation definitions
     data <- provoc:::fuse(data, mutation_defs, verbose = verbose)
@@ -101,7 +101,7 @@ process_mutation_defs <- function(mutation_defs) {
     if (!is.matrix(mutation_defs)) {
         stop("mutation_defs must be a matrix with appropriate dimension names.")
     }
-    return(mutation_defs)
+    return(as.matrix(mutation_defs))
 }
 
 
