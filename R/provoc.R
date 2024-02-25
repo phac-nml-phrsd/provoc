@@ -56,7 +56,7 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     }
 
     # Proceed with processing each group
-    res_list <- process_optim(grouped_data, mutation_defs)
+    res_list <- process_optim(grouped_data, mutation_defs, by)
 
     # Combine results and ensure object is of class 'provoc'
     final_results <- do.call(rbind, res_list)
@@ -148,7 +148,7 @@ prepare_and_fuse_data <- function(data, mutation_defs, by, verbose) {
 #' @return A list of results for each group, including point estimates and convergence information.
 #' @examples
 #' # This function is internally used and not typically called by the user.
-process_optim <- function(grouped_data, mutation_defs) {
+process_optim <- function(grouped_data, mutation_defs, by) {
     res_list <- vector("list", length = length(grouped_data))
     names(res_list) <- names(grouped_data)
     convergence_list <- vector("list", length = length(grouped_data))
