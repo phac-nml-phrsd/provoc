@@ -111,8 +111,8 @@ parse_unique_mutations <- function(muts) {
             # Split mutation string
             splits <- strsplit(thismut, "[+-]", perl=TRUE)[[1]]
             type <- first_char
-            pos <- as.numeric(splits[2])
-            alt <- splits[3]
+            pos <- as.numeric(gsub(".*?([0-9]+).*", "\\1", splits[2]))
+            alt <- gsub("[^a-zA-Z]", "", splits[2])
             # Call parse_mutation with type "-" or "+"
             new_muts[i] <- provoc:::parse_mutation(type, pos, alt)
         } else {
