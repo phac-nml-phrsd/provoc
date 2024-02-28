@@ -18,3 +18,9 @@ test_that("parse_mutations from various output of Art's function", {
     expect_equal(parse_mutation("+", "27804", "C"), "ins:27804:1")
     expect_equal(parse_mutation("+", "27953", "TAGTTTACAGTCATGTACTCAACACCAACCATATT"), "ins:27953:35")
 })
+
+test_that("parse_mutations returns the correct vector", {
+  expect_equal(parse_mutations(c("~2832G", "~22942C", "~5797G")), c("aa:orf1a:K856R", "T22942C", "T5797G"))
+  expect_equal(parse_mutations(c("~27785A","-27782.4", "+27966:G")), c("aa:orf7b:Y10*", "del:27782:4", "ins:27966:1"))
+  expect_equal(parse_mutations(c("~27895G", "-12339.1", "+27804:C", "+27953:ABCD")), c("aa:orf8:M1R", "del:12339:1", "ins:27804:1", "ins:27953:4"))
+})
