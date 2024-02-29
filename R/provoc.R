@@ -94,9 +94,9 @@ validate_inputs <- function(formula, data) {
 #' @examples
 #' # This function is internally used and not typically called by the user.
 remove_identical_variants <- function(fused_df){
-  subset_of_variants <- dplyr::select(fused_df,contains("var_"))
-  unique_subset_of_variants <- unique(subset_of_variants)
-  return(fused_df[rownames(fused_df) %in% as.character(rownames(unique_subset_of_variants)), ])
+    subset_of_variants <- dplyr::select(fused_df,contains("var_"))
+    unique_subset_of_variants <- unique(subset_of_variants)
+    return(fused_df[rownames(fused_df) %in% as.character(rownames(unique_subset_of_variants)), ])
 }
 
 
