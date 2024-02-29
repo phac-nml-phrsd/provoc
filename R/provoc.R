@@ -84,6 +84,19 @@ validate_inputs <- function(formula, data) {
     if (!is.data.frame(data)) stop("Argument 'data' must be a data frame.")
 }
 
+#' Remove Identical variants
+#'
+#' To ensure the predictor matrix is singular, the function returns all the mutations with a unique combination of variants
+#'
+#' @param fused_df The fused data frame from the \code{fuse()} function
+#'
+#' @return A data frame with no mutations that have a duplicate combination of variants
+#' @examples
+#' # This function is internally used and not typically called by the user.
+remove_identical_variants <- function(fused_df){
+  
+}
+
 
 #' Process Mutation Definitions
 #'
