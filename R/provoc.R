@@ -43,6 +43,9 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL, update_interv
     # Fuse data with mutation definitions
     data <- provoc:::fuse(data, mutation_defs, verbose = verbose)
     
+    #remove identical variants
+    data <- remove_identical_variants(data)
+    
     # Group the fused data for processing
     if (!is.null(by)) {
         if (!by %in% names(data)) {
