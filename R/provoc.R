@@ -90,7 +90,7 @@ validate_inputs <- function(formula, data) {
 
 #' Remove Identical variants
 #'
-#' To ensure the predictor matrix is singular, the function returns all the mutations with a unique combination of variants
+#' To ensure the predictor matrix is singular, if annihilate is TRUE the function returns all the mutations with a unique combination of variants. If FALSE it warns user of duplicate variants
 #'
 #' @param fused_df The fused data frame from the \code{fuse()} function
 #' @param annihilate if TRUE will remove all duplicate variants, if FALSE will warn user if there is duplicate variants
@@ -115,6 +115,7 @@ remove_identical_variants <- function(fused_df, annihilate){
                 }
             }
             warning("Variants ", paste(duplicated_with_var, collapse = ", "), " are duplicates of eachother")
+            return(fused_df)
         }
     }
 }
