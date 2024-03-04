@@ -4,7 +4,7 @@
 \alias{process_optim}
 \title{Process Optimization}
 \usage{
-process_optim(grouped_data, mutation_defs)
+process_optim(grouped_data, mutation_defs, by)
 }
 \arguments{
 \item{grouped_data}{A list containing data frames for each group to be processed.}
