@@ -24,8 +24,7 @@
 #' Baaijens$mutation <- parse_mutations(Baaijens$label)
 #'
 #' # Analyze the dataset using the default mutation definitions
-#' res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2,
-#'               data = Baaijens, by = "sample_id")
+#' res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2, data = Baaijens, by = "sample_id")
 #'
 #' # Check for analysis convergence
 #' print(convergence(res))
@@ -41,8 +40,13 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     validate_inputs(formula, data)
     mutation_defs <- as.matrix(process_mutation_defs(mutation_defs))
 
+    # Extract components from the formula
+    components <- extract_formula_components(formula, data, mutation_defs)
+    data <- components$data
+    mutation_defs <- components$mutation_defs
+
     # Fuse data with mutation definitions
-    data <- fuse(data, mutation_defs, verbose = verbose)
+    data <- provoc:::fuse(data, mutation_defs, verbose = verbose)
 
     # Group the fused data for processing
     if (!is.null(by)) {
@@ -87,6 +91,37 @@ validate_inputs <- function(formula, data) {
         stop("Argument 'formula' must be a formula.")
 
     if (!is.data.frame(data)) stop("Argument 'data' must be a data frame.")
+}
+
+
+#' Extract Formula Components
+#'
+#' Extracts and processes components from the formula provided to the provoc function.
+#'
+#' @param formula The formula input by the user.
+#' @param data The dataframe containing the dataset.
+#' @param mutation_defs A matrix containing mutation definitions.
+#'
+#' @return A list containing `data`, a dataframe filtered based on the formula's LHS
+#' and `mutation_defs`, a matrix filtered to only include mutations on the formula's RHS
+#' @examples
+#' This function is internally used and not typically called by the user.
+extract_formula_components <- function(formula, data, mutation_defs) {
+  response_vars <- all.vars(formula[[2]])
+  variant_names <- all.vars(formula[[3]])
+  necessary_data <- data[, response_vars, drop = FALSE]
+  
+  if (!is.null(mutation_defs) && !is.null(variant_names)) {
+    missing_variants <- setdiff(variant_names, colnames(mutation_defs))
+    if (length(missing_variants) > 0) {
+      stop("The following variants from the formula are not present in mutation_defs: ", paste(missing_variants, collapse = ", "), ".")
+    }
+    necessary_mutation_defs <- mutation_defs[, variant_names, drop = FALSE]
+  } else {
+    necessary_mutation_defs <- mutation_defs
+  }
+  
+  return(list(data = necessary_data, mutation_defs = necessary_mutation_defs))
 }
 
 
