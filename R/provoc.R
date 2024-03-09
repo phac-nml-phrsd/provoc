@@ -115,8 +115,8 @@ remove_identical_variants <- function(fused_df, annihilate){
                 }
             }
             warning("Variants ", paste(duplicated_with_var, collapse = ", "), " are duplicates of eachother")
-            return(fused_df)
         }
+        return(fused_df)
     }
 }
 
