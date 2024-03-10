@@ -107,11 +107,22 @@ validate_inputs <- function(formula, data) {
 #' @examples
 #' This function is internally used and not typically called by the user.
 extract_formula_components <- function(formula, data, mutation_defs) {
-  response_vars <- all.vars(formula[[2]])
-  variant_names <- all.vars(formula[[3]])
-  necessary_data <- data[, response_vars, drop = FALSE]
+  # Extract LHS and RHS of the formula
+  formula_str <- deparse(formula)
+  formula_parts <- strsplit(formula_str, "~")[[1]]
+  lhs <- trimws(formula_parts[1])
+  rhs <- trimws(formula_parts[2])
   
-  if (!is.null(mutation_defs) && !is.null(variant_names)) {
+  # Split RHS by '+' and trim whitespace
+  variant_names <- strsplit(rhs, "\\+")[[1]]
+  variant_names <- sapply(variant_names, trimws)
+  
+  # Extract necessary data based on LHS
+  response_vars <- all.vars(formula[[2]])
+  necessary_data <- data[, response_vars, drop = FALSE]
+
+  # Validate and subset mutation definitions based on RHS variants
+  if (!is.null(mutation_defs) && length(variant_names) > 0) {
     missing_variants <- setdiff(variant_names, colnames(mutation_defs))
     if (length(missing_variants) > 0) {
       stop("The following variants from the formula are not present in mutation_defs: ", paste(missing_variants, collapse = ", "), ".")
@@ -123,6 +134,7 @@ extract_formula_components <- function(formula, data, mutation_defs) {
   
   return(list(data = necessary_data, mutation_defs = necessary_mutation_defs))
 }
+
 
 
 #' Process Mutation Definitions
