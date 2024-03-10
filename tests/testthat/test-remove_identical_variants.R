@@ -11,3 +11,17 @@ test_that("ensuring only unique variants are kept", {
   updated_fused_df <- provoc:::remove_identical_variants(fused_df, annihilate = TRUE)
   expect_equal(ncol(updated_fused_df), 6)
 })
+
+test_that("ensuring when annilihate is false, no columns are removed", {
+  varmat <- simulate_varmat()
+  coco <- simulate_coco(varmat)
+  vardf <- as.data.frame(t(varmat))
+  names(vardf) <- paste0("var_", names(vardf))
+  vardf$mutation <- rownames(vardf)
+  fused_df <- dplyr::left_join(coco, vardf, by = "mutation")
+  fused_df$var_BA.3 <- as.vector(fused_df$var_BA.1)
+  fused_df$var_BA.4 <- as.vector(fused_df$var_BA.2)
+  fused_df$var_BA.5 <- as.vector(fused_df$var_BA.2)
+  updated_fused_df <- provoc:::remove_identical_variants(fused_df, annihilate = FALSE)
+  expect_equal(ncol(updated_fused_df), 9)
+})
