@@ -1,5 +1,6 @@
 ---
 title: "ProVoC Features"
+author: "Devan Becker"
 format: 
     pdf:
         number-sections: true
@@ -53,10 +54,10 @@ b2[c(1, 10, 11, 18), c(1,2,12,3,4,5,6)] |>
 Note a couple of things:
 
 - "count" is the number of times a mutation was observed. "coverage" is the read depth at the loci of a mutation. 
-- There is both a "label" and "mutation" column. ProVoC includes some functions to create standardized names for mutations to ensure smooth modelling. (Also note that position is 0-indexed, but label and mutation are one-indexed. Not a requirement, but important to keep in mind.)
+- There is both a "label" and "mutation" column. ProVoC includes some functions to create standardized names for mutations to ensure smooth modelling. (Also note that position is 0-indexed, but label and mutation are one-indexed. This is not a requirement, but important to keep in mind.)
 - There are multiple samples in the same data frame. ProVoC is set up to work with this - it will apply the model separately to each unique sample.
-- These data have some mutations with a frequency of zero. These data were processed specifically to include mutations that were common in at least one sample, even if they weren't observed in other samples. This is not a requirement of the package, but it's recommended.
-- The column names are not require to be the same as above. ProVoC is compatible with the output of the iVar pipeline.
+- These data have some mutations with a frequency of zero. These data were processed specifically to include mutations that were common in at least one sample, even if they weren't observed in other samples. This is not a requirement of the package, but it's recommended practice when there are multiple samples.
+- The column names are not required to be the same as above. ProVoC is compatible with the output of the iVar pipeline.
 
 ProVoC also requires the definition of lineages such as:
 
@@ -68,15 +69,15 @@ varmat[,c("C913T", "aa:S:N501Y", "aa:orf1a:K1795Q",
     knitr::kable(caption = "Lineage definitions in a format (a matrix) compatible with common modelling frameworks.")
 ```
 
-There are hard-coded historical definitions based on [constellations](https://github.com/cov-lineages/constellations) from the team that defined the PANGO lineages, and there is a function to download and store the Usher Barcodes used by Freyja.
+Within `provoc` there are hard-coded historical definitions based on [constellations](https://github.com/cov-lineages/constellations) from the team that defined the PANGO lineages, and there is a function to download and store the Usher Barcodes used by Freyja.
 
-The user can specify their own definitions as well. For most of the functions and all estimation techniques, the values can be fractional. That is, a mutation can be in 30\% of all B.1.1.7 cases.
+The user can specify their own definitions as well. For most of the functions and all estimation techniques, the values can be fractional. That is, a mutation can be in 30\% of all B.1.1.7 cases. This is not discussed in this document, but a future version of the package will account for this.
 
 # Modelling
 
 ## Basic Modelling
 
-All models that we have come across are generalizations of a linear modelling framework. 
+All models for wastewater data that we have come across are generalizations of a linear modelling framework. 
 
 Essentially, the estimate of a proportion for B.1.1.7 amounts to fitting a linear model of frequency versus the lineage definitions, i.e. using `frequency` as the response variable and `B.1.1.7`, `B.1.617.2`, and `P.1` as the covariates.
 
@@ -129,7 +130,7 @@ The methods described in this section are applicable if we only have access to t
 
 ### Matching Data to Lineage Definitions
 
-We can only model mutations for which we have a lineage definition. Conversely, we can only use lineage definitions for mutations in the model. For the data above, there are 773 unique mutations in the data and 51 mutations for which we have lineage assignments for. In an ideal world, this would mean that we are modelling based on 51 mutations. However, 
+We can only model mutations for which we have a lineage definition. Conversely, we can only use lineage definitions for mutations in the model. For the data above, there are 773 unique mutations in the data and 51 mutations for which we have lineage assignments. In an ideal world, this would mean that we are modelling based on 51 mutations. However, 
 
 - There are 749 mutations in the data don't appear in the lineage definitions.
 - There are 27 mutations that we have lineage definitions for which do not appear in the data.
@@ -142,23 +143,25 @@ A separate problem occurs when the lineage definitions are too similar. Suppose 
 
 ## Model and Data
 
-These methods apply if we have access to the data and can re-run the analyses as needed.
+The methods in this section apply if we have access to the data and can re-run the analyses as needed. Note that the `provoc()` function works similarly to other methods and can be used for many of these investigations even if other methods are used.
 
 ### Confidence Intervals for Model Parameters
 
-For the normal linear model with no constraints, we can obtain the variance of the regression coefficients ($\underline\beta$) using the formula $(X^TX)^{-1}\sigma^2$, where $X$ is the lineage definition matrix above and $\sigma^2$ is the variance of the response variable. This can be used to create confidence intervals, but only if we assume that the response is normally distributed. This is not the case for these models. 
+For the normal linear model with no constraints, we can obtain the variance of the regression coefficients ($\underline\beta$) using the formula $(X^TX)^{-1}\sigma^2$, where $X$ is the lineage definition matrix above and $\sigma^2$ is the variance of the response variable. This can be used to create confidence intervals, but only if we assume that the response is normally distributed. This is not the case for the models discussed here. 
 
-Instead, we have two options: either use these anyway and check them after the model has been fit, or use bootstrapping. For this package, we are using bootstrapping, with closed form CIs being investigated.
+Instead, we have two options: either use these anyway and check them after the model has been fit, or use bootstrapping. For this package, we are using bootstrapping.
 
 In general, bootstrapping refers to re-sampling from your original data to create synthetic data sets with similar statistical properties, then fitting the model to these new data sets. The parameter estimates are recorded, and the variance in these estimates should be practical for construction of a CI.
 
-We *cannot* simply bootstrap the rows of the data in table 1. Each row represents a varying number of observations of the original reads. For example, mutation C913T was observed 1191 times out of 2734 total short reads, and T16176C was observed 0 times out of 16765 short reads. Randomly removing one of those rows would remove very different amounts of information depending on which row is removed, and the resulting estimates will not properly capture the confidence interval.
+We *cannot* simply bootstrap the rows of the data in Table 1. Each row represents a varying number of observations of the original reads. For example, mutation C913T was observed 1191 times out of 2734 total short reads, and T16176C was observed 0 times out of 16765 short reads. Randomly removing one of those rows would remove very different amounts of information depending on which row is removed, and the resulting estimates will not properly capture the confidence interval.
 
 Instead, the data should ideally be resampled on the original scale. The row for mutation C913T should be converted into 2,734 rows, with 1,191 of those rows labelled TRUE and the rest false. This represents the coverage of 2734 reads, of which 1191 had the mutation of interest. This should be done for each mutation, then the resulting data frame would be bootstrapped to find CI estimates.
 
 This is computationally expensive, and a statistically equivalent procedure is as follows. From the total number of reads in the data, sample coverages proportionally using a multinomial distribution. If the coverages for the positions of three mutations were 2,000, 2,000, 6,000 for three mutations, we would sample 10,000 observations from a multinomial with probability of position 1 set to 20%, position 2 set to 20% and the third position set to 60%. This may result in, say, a re-sampled coverage of 1953 at the first position, 2004 at the second, and 6043 at the third. This is statistically equivalent to randomly resampling a data set that has 2000 rows for position 1,2000 for position 2, and 6000 for position 3.
 
 The counts are then generated from a binomial distribution. In the present example, suppose that 800 of the reads at position 1 contained the mutation of interest, giving a frequency of 0.4%. The re-sampled coverage is 1953, so we would sample a value from a binomial distribution with 1953 trials and probability of success 0.4. This procedure is implemented in `provoc`, and is equivalent to the procedure implemented in Freyja (but developed independently).
+
+To calculate a CI, this procedure is run at least 100 times. A 95%CI is constructed by finding the middle 95% of each parameter estimate.
 
 ### Bias Due to Improper Lineage Specification
 
@@ -211,7 +214,7 @@ These methods apply if we only have access to the model outputs, not the origina
 
 ### In-Sample Predictive Accuracy
 
-We can express our predictions according to all possible combinations of the lineages. For three lineages, we have predictions for mutations present in the first, second, or third lineage, but also for mutations in the first and second, first and third, second and third, and all three. Linear modelling assumes equal variance in the response for all values of the response, and we can use our discrete set of responses to directly assess this. From previous studies, it is known that there is generally variation in excess of our model assumptions, especially when normal distributions are assumed but also with binomial distributions. 
+We can express our predictions according to all possible combinations of the lineages. For three lineages, we have predictions for mutations present in the first, second, or third lineage, but also for mutations in the first and second, first and third, second and third, and all three. Linear modelling assumes equal variance in the response for all values of the response, and we can use our discrete set of responses to directly assess this. From previous studies, it is known that there is generally variation in excess of what our model would assume, especially when normal distributions are assumed but also with binomial distributions. 
 
 ### Out-of-Sample Predictive Accuracy
 
