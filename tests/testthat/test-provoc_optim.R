@@ -24,6 +24,6 @@ test_that("output is of correct type",{
   varmat <- simulate_varmat()
   coco <- simulate_coco(varmat)
   res <- provoc_optim(coco, varmat, 0, FALSE)
-  expect_type(res$res_df, "data.frame")
+  expect_s3_class(res$res_df, "data.frame")
   expect_type(res$convergence, "logical")
 })
