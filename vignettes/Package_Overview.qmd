@@ -16,7 +16,7 @@ library(dplyr)
 
 # Purpose 
 
-ProVoC is intended as an exploratory tool to investigate and validate the results of a lineage proportion estimation pipeline. This tool implements various diagnostic tests for the input data and the model results.
+ProVoC is intended as an exploratory tool to investigate and validate the input and results of a lineage proportion estimation pipeline. This tool implements various diagnostic tests for the input data and the model results.
 
 The primary aims of the package are:
 
@@ -165,7 +165,7 @@ To calculate a CI, this procedure is run at least 100 times. A 95%CI is construc
 
 ### Bias Due to Improper Lineage Specification
 
-If we have too many lineages, there is bound to be a false positive. Since the sum of the proportions cannot exceed 1, a false positive in one place will necessarily take away from a false positive in another. In other words, *bias increases with excess lineages.*
+If we have too many lineages, there is bound to be a false positive. Since the sum of the proportions cannot exceed 1, a false positive in one place will necessarily take away from a positive (whether true or false) in another. In other words, *bias increases with excess lineages.*
 
 Conversely, suppose we are missing a lineage that should be present. Under the assumption that this lineage shares mutations with another lineage, the estimate of the other lineage will be biased upwards. In other words, *bias increases with missing lineages.* 
 
@@ -182,7 +182,9 @@ In this example, we can guess that A and B have a proportion of 0.25, while C ha
 
 Conversely, suppose we included varC in our estimation. If the proportion is estimated to be above 0, then the prediction for m1 would be too high, so instead the model would need to reduce the estimate for varA. The erroneous inlusion of C has biased A's estimate downwards.
 
-To detect these issues, `provoc` facilitates re-running the analysis with different predictors to see the effect on the remaining estimates.
+There is a another potential issue with including or excluding lineages. In the table above we looked at mutations 1 through 4 because they were present in variants A, B, and C. If we introduced variant D which also included mutation 5, then we would be using another mutation in the estimation procedure.
+
+To detect these issues, `provoc` facilitates re-running the analysis with different lineages to see the effect on the remaining estimates.
 
 
 
@@ -222,7 +224,13 @@ If we have the model outputs and access to a new data set, we can make predictio
 
 In the example above, there were 27 mutations in the definitions that were not used in the estimation. If these were present in a new data set, we could still make predictions on them. This is an example of extrapolation, and we have to be very careful that the proportions are expected to be the same (i.e. we expect the same lineages to be circulating at the same rate), and we must be careful when calculating the variance (which depends on the coverage).
 
+# Notes on Implementation
 
+We end this document with some notes on the implementation of the methods described above. The philosophy of the package is to work similar to generalized linear models using the `mgcv` package. We have created object classes so that users who are familiar with the mgcv package are able to analyze the data as they would expect, well also extending the analysis to the diagnostics that are particular to lineage abundance estimation. We have created our own classes so that methods work as expected and can easily be interoperated. 
+
+For example, results of Freyja can be loaded into our as a object of type provoc, then all of the model-based diagnostics can be applied as expected. We have implemented simplified versions of other modeling approaches so that we can get approximate results using the exact same methodology, including bootstrap confidence intervals and measures of influence.
+
+In conclusion, this package will make it easy to investigate the input and output for models of lineage abundances from wastewater data. This extends to models beyond the ones that we have developed, and the package will be maintained and extended according to user feedback.
 
 
 
