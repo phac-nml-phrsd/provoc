@@ -106,14 +106,15 @@ fission <- function(fused, sample = NULL) {
 variants_simularity <- function(data) { 
     subset_of_variants <- data %>% dplyr::select_if(~ all(. %in% c(0,1)))
     for (i in 1:ncol(subset_of_variants)) {
-        for (j in i+1:ncol(subset_of_variants)) {
-          print("here")
+        j <- i + 1
+        while (j <= ncol(subset_of_variants)) {
           # check to see if the varaints differ by one mutation
           variants_difference <- subset_of_variants[i] == subset_of_variants[j]
-          if (sum(variants_difference) == length(as.vector(subset_of_variants[i])) - 1) {
+          if (sum(variants_difference) == nrow(subset_of_variants[i]) - 1) {
               print(paste0("Varaints ", colnames(subset_of_variants[i]), " and ", colnames(subset_of_variants[j]),
-                           "differ by only one mutation"))
+                           " differ by only one mutation"))
           }
+          j <- j + 1
       }
     }
 }
