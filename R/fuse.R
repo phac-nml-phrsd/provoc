@@ -114,6 +114,14 @@ variants_simularity <- function(data) {
               print(paste0("Varaints ", colnames(subset_of_variants[i]), " and ", colnames(subset_of_variants[j]),
                            " differ by only one mutation"))
           }
+          else{
+              # checks to see Jaccard similarity
+              decimal_of_variants_difference <- sum(variants_difference) / length(variants_difference)
+              if (decimal_of_variants_difference > 0.7){
+                print(paste0("Variants ", colnames(subset_of_variants[i]), " and ", colnames(subset_of_variants[j]),
+                      " have a Jaccard simularity of ", decimal_of_variants_difference))
+              }
+          }
           j <- j + 1
       }
     }
