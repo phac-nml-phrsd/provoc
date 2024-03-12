@@ -107,9 +107,9 @@ variants_simularity <- function(data) {
     subset_of_variants <- data %>% dplyr::select_if(~ all(. %in% c(0,1)))
     for (i in 1:ncol(subset_of_variants)) {
         for (j in i+1:ncol(subset_of_variants)) {
-          
+          print("here")
           # check to see if the varaints differ by one mutation
-          variants_difference <- as.vector(subset_of_variants[i]) == as.vector(subset_of_variants[j])
+          variants_difference <- subset_of_variants[i] == subset_of_variants[j]
           if (sum(variants_difference) == length(as.vector(subset_of_variants[i])) - 1) {
               print(paste0("Varaints ", colnames(subset_of_variants[i]), " and ", colnames(subset_of_variants[j]),
                            "differ by only one mutation"))
