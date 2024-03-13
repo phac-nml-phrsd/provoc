@@ -125,15 +125,24 @@ variants_simularity <- function(data, Jaccard_threshold = 0.7) {
               }
           }
           # checks if one variant is a subset of another
-          subset <- is_subset(subset_of_variants[i], subset_of_variants[j])
-          if (subset == TRUE) {
-            print(paste0("Variant ", colnames(subset_of_variants[j]), " is a subset of ", colnames(subset_of_variants[i])))
+          subset1 <- is_subset(subset_of_variants[i], subset_of_variants[j])
+          subset2 <- is_subset(subset_of_variants[j], subset_of_variants[i])
+          if (subset1 == TRUE && subset2 != TRUE) {
+              print(paste0("Variant ", colnames(subset_of_variants[j]), " is a subset of ", colnames(subset_of_variants[i])))
           }
-          else{
-            subset <- is_subset(subset_of_variants[j], subset_of_variants[i])
-            if (subset == TRUE) {
+          else if (subset1 != TRUE && subset2 == TRUE) {
               print(paste0("Variant ", colnames(subset_of_variants[i]), " is a subset of ", colnames(subset_of_variants[j])))
-            }
+          }
+          else {
+              # checks if one variant is almost a subset of another
+              almost_subset1 <- is_almost_subset(subset_of_variants[i], subset_of_variants[j])
+              almost_subset2 <- is_almost_subset(subset_of_variants[j], subset_of_variants[i])
+              if (almost_subset1 == TRUE) {
+                  print(paste0("Variant ", colnames(subset_of_variants[j]), " is almost a subset of ", colnames(subset_of_variants[i])))
+              }
+              else {
+                  print(paste0("Variant ", colnames(subset_of_variants[i]), " is almost a subset of ", colnames(subset_of_variants[j])))
+              }
           }
           j <- j + 1
       }
@@ -142,20 +151,45 @@ variants_simularity <- function(data, Jaccard_threshold = 0.7) {
 
 #' Finds if one variant is a subset of another
 #' 
-#' @param V1 vector for comparison
-#' @param V2 vector for comparison
+#' @param v1 vector for comparison
+#' @param v2 vector for comparison
 #' 
-#' @return Result, TRUE if V2 is a subset of V1
-is_subset <- function(V1,V2){
+#' @return Result, TRUE if v2 is a subset of v1
+is_subset <- function(v1,v2){
   result <- TRUE
   i <- 1
-  while (i < nrow(V1) & result == TRUE) {
-    if(V1[i,] == 0) {
-      if(V2[i,] == 1) {
+  while (i <= nrow(v1) & result == TRUE) {
+    if(v1[i,] == 0) {
+      if(v2[i,] == 1) {
         result <- FALSE
       }
     }
     i <- i + 1
+  }
+  return(result)
+}
+
+#' Finds if one variant is almost a subset of another
+#' 
+#' @param v1 vector for comparison
+#' @param v2 vector for comparison
+#' 
+#' @return Result, TRUE if v2 is almost a subset of v1
+is_almost_subset <- function(v1,v2){
+  result <- FALSE
+  not_subset_count <- 0
+  i <- 1
+  while (i <= nrow(v1)) {
+    if(v1[i,] == 0) {
+      if(v2[i,] == 1) {
+        not_subset_count <- not_subset_count + 1
+      }
+    }
+    i <- i + 1 
+  }
+  #some work needs to be done on this part
+  if ((not_subset_count)/i < 0.2) {
+    result <- TRUE
   }
   return(result)
 }
