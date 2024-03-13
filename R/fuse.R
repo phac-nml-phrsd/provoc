@@ -124,7 +124,38 @@ variants_simularity <- function(data, Jaccard_threshold = 0.7) {
                       " have a Jaccard similarity of ", decimal_of_variants_difference))
               }
           }
+          # checks if one variant is a subset of another
+          subset <- is_subset(subset_of_variants[i], subset_of_variants[j])
+          if (subset == TRUE) {
+            print(paste0("Variant ", colnames(subset_of_variants[j]), " is a subset of ", colnames(subset_of_variants[i])))
+          }
+          else{
+            subset <- is_subset(subset_of_variants[j], subset_of_variants[i])
+            if (subset == TRUE) {
+              print(paste0("Variant ", colnames(subset_of_variants[i]), " is a subset of ", colnames(subset_of_variants[j])))
+            }
+          }
           j <- j + 1
       }
     }
+}
+
+#' Finds if one variant is a subset of another
+#' 
+#' @param V1 vector for comparison
+#' @param V2 vector for comparison
+#' 
+#' @return Result, TRUE if V2 is a subset of V1
+is_subset <- function(V1,V2){
+  result <- TRUE
+  i <- 1
+  while (i < nrow(V1) & result == TRUE) {
+    if(V1[i,] == 0) {
+      if(V2[i,] == 1) {
+        result <- FALSE
+      }
+    }
+    i <- i + 1
+  }
+  return(result)
 }
