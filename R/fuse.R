@@ -104,7 +104,13 @@ fission <- function(fused, sample = NULL) {
 #' @param Jaccard_Threshold If two variants have a Jaccard similarity above set threshold, user will be notified
 #' 
 #' @return none
-variants_simularity <- function(data, Jaccard_threshold = 0.7) { 
+variants_simularity <- function(data, Jaccard_threshold = 0.7) {
+    #initializing lists for easier message printing
+    differ_by_one_messages <- list()
+    jaccard_simularity_messages <- list()
+    full_subsbet_messages <- list()
+    almost_subset_messages <- list()
+    
     subset_of_variants <- data %>% dplyr::select_if(~ all(. %in% c(0,1)))
     for (i in 1:ncol(subset_of_variants)) {
         j <- i + 1
@@ -112,40 +118,57 @@ variants_simularity <- function(data, Jaccard_threshold = 0.7) {
           # check to see if the varaints differ by one mutation
           variants_difference <- subset_of_variants[i] == subset_of_variants[j]
           if (sum(variants_difference) == nrow(subset_of_variants[i]) - 1) {
-              print(paste0("Varaints ", colnames(subset_of_variants[i]), " and ", colnames(subset_of_variants[j]),
-                           " differ by only one mutation"))
+            differ_by_one_messages <- append(differ_by_one_messages,(paste0("Varaints ", colnames(subset_of_variants[i]), " and ", colnames(subset_of_variants[j]),
+                           " differ by only one mutation")))
           }
           else{
               # checks to see Jaccard similarity
               # part of the else statement because if they differ by one mutation they would have a high Jaccard simularity
               decimal_of_variants_difference <- sum(variants_difference) / length(variants_difference)
               if (decimal_of_variants_difference > Jaccard_threshold) {
-                print(paste0("Variants ", colnames(subset_of_variants[i]), " and ", colnames(subset_of_variants[j]),
-                      " have a Jaccard similarity of ", decimal_of_variants_difference))
+                jaccard_simularity_messages <- append(jaccard_simularity_messages, paste0("Variants ", colnames(subset_of_variants[i]), " and ", colnames(subset_of_variants[j]),
+                      " have a Jaccard similarity of: ", round(decimal_of_variants_difference, 3)))
               }
           }
           # checks if one variant is a subset of another
           subset1 <- is_subset(subset_of_variants[i], subset_of_variants[j])
           subset2 <- is_subset(subset_of_variants[j], subset_of_variants[i])
           if (subset1 == TRUE && subset2 != TRUE) {
-              print(paste0("Variant ", colnames(subset_of_variants[j]), " is a subset of ", colnames(subset_of_variants[i])))
+            full_subsbet_messages <- append(full_subsbet_messages, paste0("Variant ", colnames(subset_of_variants[j]), " is a subset of ", colnames(subset_of_variants[i])))
           }
           else if (subset1 != TRUE && subset2 == TRUE) {
-              print(paste0("Variant ", colnames(subset_of_variants[i]), " is a subset of ", colnames(subset_of_variants[j])))
+            full_subsbet_messages <- append(full_subsbet_messages, paste0("Variant ", colnames(subset_of_variants[i]), " is a subset of ", colnames(subset_of_variants[j])))
           }
           else {
               # checks if one variant is almost a subset of another
               almost_subset1 <- is_almost_subset(subset_of_variants[i], subset_of_variants[j])
               almost_subset2 <- is_almost_subset(subset_of_variants[j], subset_of_variants[i])
               if (almost_subset1 == TRUE) {
-                  print(paste0("Variant ", colnames(subset_of_variants[j]), " is almost a subset of ", colnames(subset_of_variants[i])))
+                almost_subset_messages <- append(almost_subset_messages, paste0("Variant ", colnames(subset_of_variants[j]), " is almost a subset of ", colnames(subset_of_variants[i])))
               }
-              else {
-                  print(paste0("Variant ", colnames(subset_of_variants[i]), " is almost a subset of ", colnames(subset_of_variants[j])))
+              if (almost_subset2 == TRUE) {
+                almost_subset_messages <- append(almost_subset_messages, paste0("Variant ", colnames(subset_of_variants[i]), " is almost a subset of ", colnames(subset_of_variants[j])))
               }
           }
           j <- j + 1
       }
+    }
+    #print messages
+    writeLines("Variants that differ by one mutation: \n")
+    for (i in differ_by_one_messages) {
+      print(i)
+    }
+    writeLines("\nVariants that have a high jaccard simularity: \n")
+    for (i in jaccard_simularity_messages) {
+      print(i)
+    }
+    writeLines("\nVariants where one is a full susbet of another: \n")
+    for (i in full_subsbet_messages) {
+      print(i)
+    }
+    writeLines("\nVariants where one is almost a full susbet of another: \n")
+    for (i in almost_subset_messages) {
+      print(i)
     }
 }
 
@@ -188,7 +211,7 @@ is_almost_subset <- function(v1,v2){
     i <- i + 1 
   }
   #some work needs to be done on this part
-  if ((not_subset_count)/i < 0.2) {
+  if ((not_subset_count)/i < 0.1) {
     result <- TRUE
   }
   return(result)
