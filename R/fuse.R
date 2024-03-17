@@ -18,28 +18,28 @@
 #' 
 #' Duplicate mutation names in coco are NOT removed. It is safe to use this function on a data frame that contains multiple samples.
 fuse <- function(coco, varmat, min_perc = 0.01, verbose = TRUE) {
-    if(any(colnames(coco) %in% paste0("var_", rownames(varmat)))) {
+    if (any(colnames(coco) %in% paste0("var_", rownames(varmat)))) {
         stop("coco should not contain column names that are names of lineages. Is this object already fused?")
     }
 
     pre <- nrow(coco)
     shared <- intersect(unique(coco$mutation), colnames(varmat))
     # We can't say anything about mutations not in varmat.
-    coco <- coco[!is.na(coco$mutation),]
+    coco <- coco[!is.na(coco$mutation), ]
     coco <- coco[coco$mutation %in% shared, ]
 
-    if(length(shared) < 3) {
+    if (length(shared) < 3) {
         stop("Too few shared mutations. Are they in the same format?")
-    } else if(length(shared) <= 10 & ncol(varmat) > 10) {
+    } else if (length(shared) <= 10 && ncol(varmat) > 10 && verbose) {
         warning("Fewer than 10 shared mutations. Results may be very difficult to interpret.")
-    } else if(length(shared)/pre < 0.5) {
-        warning(paste0("Less than ", length(shared)/pre, 
+    } else if (length(shared) / pre < 0.5 && verbose) {
+        warning(paste0("Less than ", length(shared) / pre,
             "% of coco's mutations are being used. Consider a larger variant matrix."))
     }
-    if(verbose) {
+    if (verbose) {
         perc_rm <- 1 - round(length(shared) / pre, 3)
-        print(paste0(100 * perc_rm, 
-            "% of the rows of coco have been removed."))
+        print(paste0(100 * perc_rm,
+                "% of the rows of coco have been removed."))
         coco_only <- coco$mutation[!coco$mutation %in% shared]
         varmat_only <- colnames(varmat)[!colnames(varmat) %in% shared]
         print("coco-only mutations removed:")
@@ -63,7 +63,8 @@ fuse <- function(coco, varmat, min_perc = 0.01, verbose = TRUE) {
         dupes <- apply(vari2, 1, function(x) mean(this_row == x))
         dupes[i] <- 0
         if (any(dupes > 0.99)) {
-            rownames(vari2)[i] <- paste(rownames(vari2)[c(i, which(dupes > 0.99))], collapse = "|")
+            squashed <- rownames(vari2)[c(i, which(dupes > 0.99))]
+            rownames(vari2)[i] <- paste(squashed, collapse = "|")
             vari2 <- vari2[dupes <= 0.99, ]
         }
     }
@@ -84,7 +85,7 @@ fuse <- function(coco, varmat, min_perc = 0.01, verbose = TRUE) {
 #' 
 #' @return A list containing coco and varmat.
 fission <- function(fused, sample = NULL) {
-    if(!is.null(sample)) fused <- fused[fused$sample == sample, ]
+    if (!is.null(sample)) fused <- fused[fused$sample == sample, ]
     variants <- startsWith(names(fused), "var_")
     varnames <- names(fused)[variants]
     coco <- fused[, !variants]
@@ -97,4 +98,3 @@ fission <- function(fused, sample = NULL) {
 
     return(list(coco = coco, varmat = varmat))
 }
-
