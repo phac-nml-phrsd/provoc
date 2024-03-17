@@ -40,8 +40,20 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     validate_inputs(formula, data)
     mutation_defs <- as.matrix(process_mutation_defs(mutation_defs))
 
+    # Find out which column might define the mutations
+    mutation_col <- NULL
+    for (col in colnames(data)) {
+        if (any(colnames(mutation_defs) %in% data[, col])) {
+            mutation_col <- col
+        }
+    }
+    if (is.null(mutation_col)) {
+        stop("No column contains the mutations in mutation_defs.")
+    }
+
     # Extract components from the formula
-    components <- extract_formula_components(formula, data, mutation_defs)
+    components <- extract_formula_components(formula, data,
+        mutation_defs, mutation_col, by)
     data <- components$data
     mutation_defs <- components$mutation_defs
 
@@ -106,33 +118,35 @@ validate_inputs <- function(formula, data) {
 #' and `mutation_defs`, a matrix filtered to only include mutations on the formula's RHS
 #' @examples
 #' This function is internally used and not typically called by the user.
-extract_formula_components <- function(formula, data, mutation_defs) {
-  # Extract LHS and RHS of the formula
-  formula_str <- deparse(formula)
-  formula_parts <- strsplit(formula_str, "~")[[1]]
-  lhs <- trimws(formula_parts[1])
-  rhs <- trimws(formula_parts[2])
-  
-  # Split RHS by '+' and trim whitespace
-  variant_names <- strsplit(rhs, "\\+")[[1]]
-  variant_names <- sapply(variant_names, trimws)
-  
-  # Extract necessary data based on LHS
-  response_vars <- all.vars(formula[[2]])
-  necessary_data <- data[, response_vars, drop = FALSE]
+extract_formula_components <- function(formula, data, mutation_defs, mutation_col, by_col) {
+    # Extract LHS and RHS of the formula
+    formula_str <- deparse(formula)
+    formula_parts <- strsplit(formula_str, "~")[[1]]
+    lhs <- trimws(formula_parts[1])
+    rhs <- trimws(formula_parts[2])
 
-  # Validate and subset mutation definitions based on RHS variants
-  if (!is.null(mutation_defs) && length(variant_names) > 0) {
-    missing_variants <- setdiff(variant_names, colnames(mutation_defs))
-    if (length(missing_variants) > 0) {
-      stop("The following variants from the formula are not present in mutation_defs: ", paste(missing_variants, collapse = ", "), ".")
+    # Split RHS by '+' and trim whitespace
+    variant_names <- strsplit(rhs, "\\+")[[1]]
+    variant_names <- sapply(variant_names, trimws)
+
+    # Extract necessary data based on LHS
+    response_vars <- all.vars(formula[[2]])
+    necessary_data <- data[, c(mutation_col, response_vars, by_col), drop = FALSE]
+    colnames(necessary_data) <- c("mutation", "count", "coverage", by_col)
+
+    # Validate and subset mutation definitions based on RHS variants
+    if (!is.null(mutation_defs) && length(variant_names) > 0) {
+        missing_variants <- setdiff(variant_names, rownames(mutation_defs))
+        if (length(missing_variants) > 0) {
+            stop("These variants from the formula are not in mutation_defs: ",
+                paste(missing_variants, collapse = ", "), ".")
+        }
+        necessary_mutation_defs <- mutation_defs[variant_names, , drop = FALSE]
+    } else {
+        necessary_mutation_defs <- mutation_defs
     }
-    necessary_mutation_defs <- mutation_defs[, variant_names, drop = FALSE]
-  } else {
-    necessary_mutation_defs <- mutation_defs
-  }
-  
-  return(list(data = necessary_data, mutation_defs = necessary_mutation_defs))
+
+    return(list(data = necessary_data, mutation_defs = necessary_mutation_defs))
 }
 
 
@@ -151,7 +165,9 @@ process_mutation_defs <- function(mutation_defs) {
         return(provoc:::astronomize())
     }
     if (!is.matrix(mutation_defs)) {
-        stop("mutation_defs must be a matrix with appropriate dimension names.")
+        mutation_defs <- tryCatch(as.matrix(mutation_defs), error = function(e) e)
+        if ("error" %in% class(mutation_defs)) {
+            stop("mutation_defs must be a matrix or something coercible into a matrix")}
     }
     return(as.matrix(mutation_defs))
 }
@@ -179,10 +195,7 @@ prepare_and_fuse_data <- function(data, mutation_defs, by, verbose) {
         # Treat entire dataset as a single group
         grouped_data <- list(all_data = data)
     }
-    return(list(
-        fused_data = provoc:::fuse(data, mutation_defs,
-            verbose = verbose),
-        grouped_data = grouped_data))
+    return(grouped_data)
 }
 
 
@@ -205,8 +218,12 @@ process_optim <- function(grouped_data, mutation_defs, by) {
     for (group_name in names(grouped_data)) {
         group_data <- grouped_data[[group_name]]
         coco <- group_data[, c("count", "coverage", "mutation", by)]
-        optim_results <- provoc:::provoc_optim(coco = coco,
-            varmat = mutation_defs)
+        fused <- provoc:::fuse(coco, mutation_defs, verbose = FALSE)
+        fissed <- fission(fused)
+        coco <- fissed$coco
+        varmat <- fissed$varmat
+
+        optim_results <- provoc:::provoc_optim(coco = coco, varmat = varmat)
         res_list[[group_name]] <- optim_results$res_df
         convergence_list[[group_name]] <- optim_results$convergence
     }
