@@ -7,12 +7,12 @@
 validate_inputs(formula, data)
 }
 \arguments{
-\item{formula}{An object of class \code{\link[stats]{formula}}, specifying the model to be fitted.}
+\item{formula}{[stats]{formula}, specifying the model to be fitted.}
 
 \item{data}{A data frame containing the variables in the model.}
 }
 \value{
-None; this function is used for its side effect of stopping execution with an error message if validation fails.
+None
 }
 \description{
 Checks if the provided formula and data frame are valid for analysis.

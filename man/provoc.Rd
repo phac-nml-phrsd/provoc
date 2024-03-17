@@ -47,8 +47,7 @@ data("Baaijens")
 Baaijens$mutation <- parse_mutations(Baaijens$label)
 
 # Analyze the dataset using the default mutation definitions
-res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2,
-              data = Baaijens, by = "sample_id")
+res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2, data = Baaijens, by = "sample_id")
 
 # Check for analysis convergence
 print(convergence(res))

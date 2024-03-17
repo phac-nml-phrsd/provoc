@@ -13,7 +13,7 @@ prepare_and_fuse_data(data, mutation_defs, by, verbose)
 
 \item{by}{An optional string specifying the column name to group the data by.}
 
-\item{verbose}{Logical; if TRUE, additional information is printed during processing.}
+\item{verbose}{}
 }
 \value{
 A list containing the fused data frame and the grouped data as a list (if applicable).
