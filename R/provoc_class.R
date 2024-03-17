@@ -1,8 +1,10 @@
 #' Print the results of lineage abundance estimation
 #' @export
 print.provoc <- function(provoc_obj, n = 6) {
-    cat("Convergence: ")
-    print(!is.null(attributes(provoc_obj)$convergence))
+    cat("Call: ", as.character(attributes(provoc_obj)$formula))
+    cat("\n\n")
+    cat("Convergence:\n")
+    print(unlist(attributes(provoc_obj)$convergence))
     cat("\n")
     n <- min(n, nrow(provoc_obj))
     provoc_df <- provoc_obj[order(-provoc_obj$rho), ]

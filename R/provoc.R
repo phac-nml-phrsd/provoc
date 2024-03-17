@@ -76,17 +76,27 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
 
     # Combine results and ensure object is of class 'provoc'
     final_results <- do.call(rbind, res_list)
+    for (i in seq_along(res_list)) {
+        if (i == 1) {
+            final_results <- as.data.frame(res_list[[1]])
+            if (!is.null(by)) {
+                final_results$group <- unique(data[, by])[1]
+            }
+        } else {
+            res_list[[i]]$group <- unique(data[, by])[i]
+            final_results <- rbind(final_results, res_list[[i]])
+        }
+    }
     row.names(final_results) <- NULL
 
     provoc_obj <- final_results
     attr(provoc_obj, "variant_matrix") <- mutation_defs
     attr(provoc_obj, "formula") <- formula
-    # TODO: Include data? Just mutation names, or count/coverage as well?
+    attr(provoc_obj, "convergence") <- attributes(res_list)$convergence
     class(provoc_obj) <- c("provoc", "data.frame")
 
     return(provoc_obj)
 }
-
 
 #' Validate Inputs for provoc
 #'
