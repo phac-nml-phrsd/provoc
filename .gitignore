@@ -1,3 +1,6 @@
 *rds
 *tsv.gz
 inst/doc
+working/
+*usher_barcodes*
+*pdf

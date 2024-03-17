@@ -9,6 +9,7 @@
 #' @param by Column name to group and process data.
 #' @param update_interval Interval for progress messages (0 to suppress).
 #' @param verbose TRUE to print detailed messages.
+#' @param annihilate TRUE to remove duplicate variants from the data
 #'
 #' @return Returns an object of class 'provoc' with results from applying `provoc_optim` to the input data. The object contains the following attributes:
 #'  - proportions: Estimated proportions vector for each variant of concern.
@@ -34,8 +35,9 @@
 #'
 #' @export
 
-provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
-    update_interval = 20, verbose = TRUE) {
+provoc <- function(formula, data, mutation_defs = NULL, by = NULL, 
+                   update_interval = 20, verbose = TRUE, annihilate = FALSE) {
+
     # Initial validation and processing
     validate_inputs(formula, data)
     mutation_defs <- as.matrix(process_mutation_defs(mutation_defs))
@@ -60,6 +62,9 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     # Fuse data with mutation definitions
     data <- provoc:::fuse(data, mutation_defs, verbose = verbose)
 
+    #remove identical variants
+    data <- remove_identical_variants(data, annihilate)
+  
     # Group the fused data for processing
     if (!is.null(by)) {
         if (!by %in% names(data)) {
@@ -115,6 +120,39 @@ validate_inputs <- function(formula, data) {
     if (!is.data.frame(data)) stop("Argument 'data' must be a data frame.")
 }
 
+#' Remove Identical variants
+#'
+#' To ensure the predictor matrix is singular, if annihilate is TRUE the function returns all the mutations with a unique combination of variants. If FALSE it warns user of duplicate variants
+#'
+#' @param fused_df The fused data frame from the \code{fuse()} function
+#' @param annihilate if TRUE will remove all duplicate variants, if FALSE will warn user if there is duplicate variants
+#'
+#' @return A data frame with no mutations that have a duplicate combination of variants
+#' @examples
+#' # This function is internally used and not typically called by the user.
+remove_identical_variants <- function(fused_df, annihilate){
+    subset_of_variants <- dplyr::select(fused_df,contains("var_"))
+    if (annihilate) {
+        unique_subset_of_variants <- t(unique(t(subset_of_variants)))
+        print(paste0("Variant ", colnames(subset_of_variants)[!(colnames(subset_of_variants) %in% colnames(unique_subset_of_variants))],
+                       " is a duplicate variant and has been removed from the dateframe"))
+        return(cbind(dplyr::select(fused_df, !contains("var_")), unique_subset_of_variants))
+    }
+    else {
+        names_of_duplicate_var <- names(which(duplicated(t(fused_df))))
+        for (var in names_of_duplicate_var) {
+            other_variants <- dplyr::select(subset_of_variants,!contains(var))
+            duplicated_with_var <- c(var)
+            for (var_i in colnames(other_variants)) {
+                if (all(other_variants[[var_i]] == subset_of_variants[[var]])) {
+                    duplicated_with_var <- append(duplicated_with_var, var_i)
+                }
+            }
+            warning("Variants ", paste(duplicated_with_var, collapse = ", "), " are duplicates of eachother")
+        }
+        return(fused_df)
+    }
+}
 
 #' Extract Formula Components
 #'

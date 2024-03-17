@@ -1,0 +1,236 @@
+---
+title: "ProVoC Features"
+author: "Devan Becker"
+format: 
+    pdf:
+        number-sections: true
+---
+
+```{r}
+#| echo: false
+suppressPackageStartupMessages({
+library(provoc)
+library(dplyr)
+})
+```
+
+# Purpose 
+
+ProVoC is intended as an exploratory tool to investigate and validate the input and results of a lineage proportion estimation pipeline. This tool implements various diagnostic tests for the input data and the model results.
+
+The primary aims of the package are:
+
+1. Exploration of the data 
+    - mutation frequency, coverage, lineage defining mutations
+2. Exploration of the discoverability of lineages within wastewater
+    - For example, whether the mutations required to differentiate BA.1 from BA.2 are present in the wastewater in large enough quantities.
+3. Estimation of proportions of variants of concern
+4. Model diagnostics that work for any of the common estimation procedures (Freyja, Alcov, etc.).
+
+Our intent is to facilitate a standardized approach to the assessment of model results for wastewater data.
+
+
+# Input Data
+
+ProVoC is designed for data with the following format: 
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+
+varmat <- astronomize()[c("B.1.1.7", "B.1.617.2", "P.1"), ]
+varmat <- varmat[, apply(varmat, 2, function(x) {sum(x) != 0})]
+
+data(Baaijens)
+b1 <- Baaijens
+b1$mutation <- parse_mutations(b1$label)
+b2 <- fuse(b1, varmat, verbose = FALSE)
+
+b2[c(1, 10, 11, 18), c(1,2,12,3,4,5,6)] |>
+    knitr::kable(row.names = 0, caption = "Input data, as processed from short read sequencing of wastewater samples.")
+```
+
+Note a couple of things:
+
+- "count" is the number of times a mutation was observed. "coverage" is the read depth at the loci of a mutation. 
+- There is both a "label" and "mutation" column. ProVoC includes some functions to create standardized names for mutations to ensure smooth modelling. (Also note that position is 0-indexed, but label and mutation are one-indexed. This is not a requirement, but important to keep in mind.)
+- There are multiple samples in the same data frame. ProVoC is set up to work with this - it will apply the model separately to each unique sample.
+- These data have some mutations with a frequency of zero. These data were processed specifically to include mutations that were common in at least one sample, even if they weren't observed in other samples. This is not a requirement of the package, but it's recommended practice when there are multiple samples.
+- The column names are not required to be the same as above. ProVoC is compatible with the output of the iVar pipeline.
+
+ProVoC also requires the definition of lineages such as:
+
+```{r}
+#| echo: false
+varmat[,c("C913T", "aa:S:N501Y", "aa:orf1a:K1795Q", 
+        "T16176C")] |>
+    t() |>
+    knitr::kable(caption = "Lineage definitions in a format (a matrix) compatible with common modelling frameworks.")
+```
+
+Within `provoc` there are hard-coded historical definitions based on [constellations](https://github.com/cov-lineages/constellations) from the team that defined the PANGO lineages, and there is a function to download and store the Usher Barcodes used by Freyja.
+
+The user can specify their own definitions as well. For most of the functions and all estimation techniques, the values can be fractional. That is, a mutation can be in 30\% of all B.1.1.7 cases. This is not discussed in this document, but a future version of the package will account for this.
+
+# Modelling
+
+## Basic Modelling
+
+All models for wastewater data that we have come across are generalizations of a linear modelling framework. 
+
+Essentially, the estimate of a proportion for B.1.1.7 amounts to fitting a linear model of frequency versus the lineage definitions, i.e. using `frequency` as the response variable and `B.1.1.7`, `B.1.617.2`, and `P.1` as the covariates.
+
+```{r}
+#| echo: false
+b3 <- filter(b1, date == b1$date[1])
+v2 <- varmat |> t() |> as.data.frame()
+v2$mutation <- rownames(v2)
+rownames(v2) <- NULL
+f1 <- full_join(select(b3, mutation, frequency, coverage), v2, by = "mutation") |>
+    filter(!is.na(B.1.1.7))
+rownames(f1) <- f1$mutation
+f1$mutation <- NULL
+head(f1) |> knitr::kable(caption = "Data format useful for basic linear regression")
+```
+
+The regression equation from a linear regression becomes:
+$$
+f = \beta_\alpha B.1.1.7 + \beta_\delta B.1.617.2 + \beta_\gamma P.1
+$$
+In other words, a mutation that is present in only B.1.1.7 (i.e., when B.1.617.2 and P.1 are both 0) is estimated to have a frequency equal to $\beta_\alpha$, which amounts to saying that $\beta_\alpha$ represents the proportion of B.1.1.7 in the sample. The linear modelling framework accounts for shared mutations, adjusting the estimates of proportions appropriately. Note that there is no intercept in this model - there is no physical interpretation of an intercept, and no model should include it.
+
+There are two main problems with this approach, along with a bonus third problem:
+
+1. The estimates can be negative, which should not be allowed for proportions.
+2. The estimates might add to something more than 1, which again is invalid for proportions.
+3. (Bonus) most of the modelling diagnostics for a linear regression model are based on the normality assumption. Since the frequency of a mutation must be between 0 and 1, this assumption is not valid. This is not a problem with the estimates, but means we can't use the usual linear regression tools for checking our model's fits.
+
+## ProVoC, Alcov, and Freyja
+
+The extensions to linear models are as follows:
+
+- The main `provoc` function fits a Binomial GLM with constraints on the parameters. 
+    - The number of observed mutations (count) is assumed to come from a binomial distribution, where the number of trials comes from the coverage and the probability of success is estimated the same as the linear model. That is, the count of a mutation in B.1.1.7 should be approximately equal to the proportion of B.1.1.7 times the coverage of the mutation. 
+    - The binomial distribution accounts for the coverage of each mutation, while estimating the proportions in the same way as other models.
+    - The estimation routine ensures that the proportions are positive and sum to less than 1.
+- Freyja adjusts the frequencies and lineage definitions according to the coverage and then fits a Lasso model, which attempts to "shrink" proportions of the lineages to 0.
+    - The adjustment for coverage essentially gives mutations with more coverage a higher "weight"; errors in estimating mutations with low coverage are not penalized as much when fitting the model.
+    - LASSO regression implementation ensures proportions are positive. It adjusts the proportions if they happen to sum to more than 1.
+- Alcov fits a robust linear regression model, essentially modelling the median of the frequency for each mutation while accounting for mutations that are shared between lineages.
+    - Uses non-negative regression to ensure positive parameter estimates and uses a jacknife-like scheme to find parameter estimates that satisfy the "sum-to-less-than-one" constraing.
+
+Currently, only ProVoC is implemented, but base versions of Freyja and Alcov are being implemented to allow comparison across models. 
+
+# Diagnostics for Lineage Proportion Estimation
+
+## Data-Only
+
+The methods described in this section are applicable if we only have access to the input data.
+
+### Matching Data to Lineage Definitions
+
+We can only model mutations for which we have a lineage definition. Conversely, we can only use lineage definitions for mutations in the model. For the data above, there are 773 unique mutations in the data and 51 mutations for which we have lineage assignments. In an ideal world, this would mean that we are modelling based on 51 mutations. However, 
+
+- There are 749 mutations in the data don't appear in the lineage definitions.
+- There are 27 mutations that we have lineage definitions for which do not appear in the data.
+
+We are left with only 24 mutations from the data that also appear in the lineage definitions. This is important information to know prior to modelling.
+
+A separate problem occurs when the lineage definitions are too similar. Suppose lineage X contains mutations m1, m2, and m3, and lineage Y contains mutations m2, m3, and m4. These two lineages both contain m2 and m3, so we need to know about m1 and m4 to distinguish them. If mutations m1 and m4 have no coverage in the data, then lineages X and Y are indistinguishable.
+
+`provoc` includes a function `fuse()` that presents this information to the user to help them make informed decisions about the modelling process. 
+
+## Model and Data
+
+The methods in this section apply if we have access to the data and can re-run the analyses as needed. Note that the `provoc()` function works similarly to other methods and can be used for many of these investigations even if other methods are used.
+
+### Confidence Intervals for Model Parameters
+
+For the normal linear model with no constraints, we can obtain the variance of the regression coefficients ($\underline\beta$) using the formula $(X^TX)^{-1}\sigma^2$, where $X$ is the lineage definition matrix above and $\sigma^2$ is the variance of the response variable. This can be used to create confidence intervals, but only if we assume that the response is normally distributed. This is not the case for the models discussed here. 
+
+Instead, we have two options: either use these anyway and check them after the model has been fit, or use bootstrapping. For this package, we are using bootstrapping.
+
+In general, bootstrapping refers to re-sampling from your original data to create synthetic data sets with similar statistical properties, then fitting the model to these new data sets. The parameter estimates are recorded, and the variance in these estimates should be practical for construction of a CI.
+
+We *cannot* simply bootstrap the rows of the data in Table 1. Each row represents a varying number of observations of the original reads. For example, mutation C913T was observed 1191 times out of 2734 total short reads, and T16176C was observed 0 times out of 16765 short reads. Randomly removing one of those rows would remove very different amounts of information depending on which row is removed, and the resulting estimates will not properly capture the confidence interval.
+
+Instead, the data should ideally be resampled on the original scale. The row for mutation C913T should be converted into 2,734 rows, with 1,191 of those rows labelled TRUE and the rest false. This represents the coverage of 2734 reads, of which 1191 had the mutation of interest. This should be done for each mutation, then the resulting data frame would be bootstrapped to find CI estimates.
+
+This is computationally expensive, and a statistically equivalent procedure is as follows. From the total number of reads in the data, sample coverages proportionally using a multinomial distribution. If the coverages for the positions of three mutations were 2,000, 2,000, 6,000 for three mutations, we would sample 10,000 observations from a multinomial with probability of position 1 set to 20%, position 2 set to 20% and the third position set to 60%. This may result in, say, a re-sampled coverage of 1953 at the first position, 2004 at the second, and 6043 at the third. This is statistically equivalent to randomly resampling a data set that has 2000 rows for position 1,2000 for position 2, and 6000 for position 3.
+
+The counts are then generated from a binomial distribution. In the present example, suppose that 800 of the reads at position 1 contained the mutation of interest, giving a frequency of 0.4%. The re-sampled coverage is 1953, so we would sample a value from a binomial distribution with 1953 trials and probability of success 0.4. This procedure is implemented in `provoc`, and is equivalent to the procedure implemented in Freyja (but developed independently).
+
+To calculate a CI, this procedure is run at least 100 times. A 95%CI is constructed by finding the middle 95% of each parameter estimate.
+
+### Bias Due to Improper Lineage Specification
+
+If we have too many lineages, there is bound to be a false positive. Since the sum of the proportions cannot exceed 1, a false positive in one place will necessarily take away from a positive (whether true or false) in another. In other words, *bias increases with excess lineages.*
+
+Conversely, suppose we are missing a lineage that should be present. Under the assumption that this lineage shares mutations with another lineage, the estimate of the other lineage will be biased upwards. In other words, *bias increases with missing lineages.* 
+
+For a concrete example, consider variants A, B, and C with mutations m1, m2, m3, and m4, as follows:
+
+| mutation | frequency | varA | varB | varC |
+|----------|-----------|------|------|------|
+| m1       | 0.25      | yes  | no   | yes  |
+| m2       | 0.5       | yes  | yes  | no   |
+| m3       | 0.25      | no   | yes  | no   |
+| m4       | 0         | no   | no   | yes  |
+
+In this example, we can guess that A and B have a proportion of 0.25, while C has a proportion of 0. When A and B are both present, any mutations they share are expected to be in 50\% of the samples. However, if we were to exlcude A, then we would get an estimate of 0.375 (the average of the frequencies of mutations in variant B). The erroneous exclusion of A means that B's estimate is biased upwards.
+
+Conversely, suppose we included varC in our estimation. If the proportion is estimated to be above 0, then the prediction for m1 would be too high, so instead the model would need to reduce the estimate for varA. The erroneous inlusion of C has biased A's estimate downwards.
+
+There is a another potential issue with including or excluding lineages. In the table above we looked at mutations 1 through 4 because they were present in variants A, B, and C. If we introduced variant D which also included mutation 5, then we would be using another mutation in the estimation procedure.
+
+To detect these issues, `provoc` facilitates re-running the analysis with different lineages to see the effect on the remaining estimates.
+
+
+
+### Lineage Importance Measures
+
+In standard modelling approaches, Variance Inflation Factor is often used to determine whether multiple predictors are measuring the same thing. For example, if both height and weight are present in the data set, both are measuring the size of the subject and the individual effect of height or weight are difficult to ascertain.
+
+For our present circumstances, all of our covariates are either 0 or 1, so the standard VIF caclulation does not apply. Instead, we check similarity via various comparisons between two binary variables. We will also extend this concept into groups of more than two lineages to check whether one lineage can be expressed as a linear combination of other lineages.
+
+
+### Sensitivity to Lineage Definitions
+
+In addition to being sensitive to the similarity between lineages, the model results are sensitive to whether lineages were defined correctly. The inclusion of, say C913T in B.1.1.7 may have been based on 99% of the lineages assigned to B.1.1.7 containing that mutation, or it might come from 50% of lineages containing that mutation.
+
+In usual linear regression diagnostics, there is a concept of "influence" which measures how much an individual observation affects the resultant parameters. In the bootstrap section, we were careful to note that each row in Table 1 represents a varying amount of observations, so it is inappropriate to use individual rows to test the effects of observations.
+
+We have two options: use the same concepts as the bootstrap method (assume a multinomial for the coverage and then a binomial for the counts, conditional on the coverage), or we can use the common diagnostics and adjust them according to coverage. 
+
+For now, we take this second view. The influence of a mutation on the parameter estimates can be calculated according to the so-called "hat" matrix, which is $X(X^TX)^{-1}X^T$. The resulting influence can be divided by the count for a given mutation, giving the influence per observation. This provides a single value per mutation that can be interpreted according to the many reads.
+
+Future versions of this package will implement a "bagging" estimate that properly addresses the aggregated nature of the data (a count represents many observations), which allows for the calculation of the influence of a mutation across many scenarios. This estimate is inspired by random forests, in which the columns and the rows are bootstrapped.
+
+### Missing Lineages 
+
+
+## Model-Only Diagnostics
+
+These methods apply if we only have access to the model outputs, not the original data.
+
+### In-Sample Predictive Accuracy
+
+We can express our predictions according to all possible combinations of the lineages. For three lineages, we have predictions for mutations present in the first, second, or third lineage, but also for mutations in the first and second, first and third, second and third, and all three. Linear modelling assumes equal variance in the response for all values of the response, and we can use our discrete set of responses to directly assess this. From previous studies, it is known that there is generally variation in excess of what our model would assume, especially when normal distributions are assumed but also with binomial distributions. 
+
+### Out-of-Sample Predictive Accuracy
+
+If we have the model outputs and access to a new data set, we can make predictions on that new data. We can use the full lineage definitions matrix - even if a mutation was not present in the data used to fit the model, the definition allows us to extrapolate to other mutations.
+
+In the example above, there were 27 mutations in the definitions that were not used in the estimation. If these were present in a new data set, we could still make predictions on them. This is an example of extrapolation, and we have to be very careful that the proportions are expected to be the same (i.e. we expect the same lineages to be circulating at the same rate), and we must be careful when calculating the variance (which depends on the coverage).
+
+# Notes on Implementation
+
+We end this document with some notes on the implementation of the methods described above. The philosophy of the package is to work similar to generalized linear models using the `mgcv` package. We have created object classes so that users who are familiar with the mgcv package are able to analyze the data as they would expect, well also extending the analysis to the diagnostics that are particular to lineage abundance estimation. We have created our own classes so that methods work as expected and can easily be interoperated. 
+
+For example, results of Freyja can be loaded into our as a object of type provoc, then all of the model-based diagnostics can be applied as expected. We have implemented simplified versions of other modeling approaches so that we can get approximate results using the exact same methodology, including bootstrap confidence intervals and measures of influence.
+
+In conclusion, this package will make it easy to investigate the input and output for models of lineage abundances from wastewater data. This extends to models beyond the ones that we have developed, and the package will be maintained and extended according to user feedback.
+
+
+

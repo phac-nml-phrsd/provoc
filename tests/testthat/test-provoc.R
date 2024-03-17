@@ -10,7 +10,9 @@ test_that("Ensure estimate is within the bootstrap confidence interval.", {
   test_bootstrap <- function(rel_counts){
     varmat <- simulate_varmat() #simulates a new variant matrix
     coco <- simulate_coco(varmat, rel_counts)
-    converg_info <- provoc(coco, varmat, NULL, 1, 1000, 20, TRUE) #estimates the proportions of VOCs with 1000 bootstrap samples
+    data <- as.data.frame(Baaijens)
+    data$mutation <- parse_mutations(data$label)
+    converg_info <- provoc(cbind(data$count, data$coverage) ~ B.1.1.7 + B.1.617.2, data = data, by = "sample_name")
     expect_results(converg_info)
   }
   j = 0
@@ -36,7 +38,9 @@ test_that("rho total is less than 1", {
   create_provoc_table <- function(rel_counts){
     varmat <- simulate_varmat() #simulates a new variant matrix
     coco <- simulate_coco(varmat, rel_counts)
-    converg_info <- provoc(coco, varmat, NULL, 1, 0, 20, TRUE) #don't need bootstrap samples for this unit test 
+    data <- as.data.frame(Baaijens)
+    data$mutation <- parse_mutations(data$label)
+    converg_info <- provoc(cbind(data$count, data$coverage) ~ B.1.1.7 + B.1.617.2, data = data, by = "sample_name")
     rho_test(converg_info)
   }
   j = 0
