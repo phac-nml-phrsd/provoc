@@ -102,15 +102,20 @@ fission <- function(fused, sample = NULL) {
 #' Finds and prints all similarities among variants
 #' 
 #' @param data A dataframe either before or after it has been fused with varmat
+#' @param is_varmat TRUE if data is a varaint matrix, FALSE if data is a fused dataframe
 #' @param Jaccard_Threshold If two variants have a Jaccard similarity above set threshold, user will be notified
 #' 
 #' @return none
-variants_simularity <- function(data, Jaccard_threshold = 0.7) {
+variants_simularity <- function(data, is_varmat, Jaccard_threshold = 0.7) {
     #initializing lists for easier message printing
     differ_by_one_messages <- list()
     jaccard_simularity_messages <- list()
     full_subsbet_messages <- list()
     almost_subset_messages <- list()
+    
+    if (is_varmat) {
+      data <- as.data.frame(t(data))
+    }
     
     subset_of_variants <- data %>% dplyr::select_if(~ all(. %in% c(0,1)))
     for (i in 1:ncol(subset_of_variants)) {
