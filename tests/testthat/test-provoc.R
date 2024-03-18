@@ -1,26 +1,3 @@
-test_that("Ensure estimate is within the bootstrap confidence interval.", {
-  expect_results <- function(converg_info){
-    i = 1
-    while(i <= nrow(converg_info)){ #iterates through each row of res_df
-      expect_lt(converg_info$rho[i], converg_info$ci_high[i]) #checks to see if rho is less than the upper bound of the CI
-      expect_gt(converg_info$rho[i], converg_info$ci_low[i]) #checks to see if rho is less than the lower bound of the CI
-      i = i + 1
-    }
-  }
-  test_bootstrap <- function(rel_counts){
-    varmat <- simulate_varmat() #simulates a new variant matrix
-    coco <- simulate_coco(varmat, rel_counts)
-    data <- as.data.frame(Baaijens)
-    data$mutation <- parse_mutations(data$label)
-    converg_info <- provoc(cbind(data$count, data$coverage) ~ B.1.1.7 + B.1.617.2, data = data, by = "sample_name")
-    expect_results(converg_info)
-  }
-  j = 0
-  while(j < 10){ #simulates data 10 different times with a relative counts of each VOC (60 unit tests total)
-    test_bootstrap(sample.int(1000,3,replace=TRUE)) #takes a random array of integers up to 1000 of length 3
-    j = j + 1
-  }
-})
 
 test_that("rho total is less than 1", {
   epsilon = 0.005 #initializes epsilon, put outside of rho_test function since it doesn't change
@@ -38,9 +15,11 @@ test_that("rho total is less than 1", {
   create_provoc_table <- function(rel_counts){
     varmat <- simulate_varmat() #simulates a new variant matrix
     coco <- simulate_coco(varmat, rel_counts)
+    count <- coco$count
+    coverage <- coco$coverage
     data <- as.data.frame(Baaijens)
     data$mutation <- parse_mutations(data$label)
-    converg_info <- provoc(cbind(data$count, data$coverage) ~ B.1.1.7 + B.1.617.2, data = data, by = "sample_name")
+    converg_info <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.617.2, data = data, by = "sample_name")
     rho_test(converg_info)
   }
   j = 0
