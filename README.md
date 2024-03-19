@@ -11,162 +11,125 @@ Builds and diagnoses a model based on:
 - Counts: The number of times a given mutation was observed.
 - Coverage: The number of times the position of a given variant was read.
 - Mutation names: whatever format you want, as long as they match the names in the Variant Matrix.
-- Variant Matrix: A matrix where the row names are variants, the column names are mutations, and the entries are 1 if the row variant has the column mutation and 0 otherwise.
+- Variant Matrix: A matrix where the row names are variants, the column names are mutations, and the entries are 1 if the row variant has the column mutation and 0 otherwise. 
+    - For example: Usher Barcodes
+    - All current methods accept fectional entries.
 
 # Usage
 
-There are two steps to using this software: create the variant matrix and run the model(s).
+There are two steps to using this software: create the mutation definitions and run the model(s).
 
-The variant matrix can be created several ways:
+If not specified, the mutation definitions uses hardcoded definitions from the [cov-lineages/constellations](https://github.com/cov-lineages/constellations) repo, which contains the representative mutations that were identified by the PANGO team. The mutation definitions must have names that match what exists in the data.
 
-1. User-specified. The columns must be labelled with mutations (in the same format as the ones in your data), and the row names must be the names of the variant.
-2. Specify variants of concern, and use Nextstrain Genbank data to determine the mutations and "nuisance" lineages.
-    - A nuisance lineage is a lineage that shares a pre-specified percent of mutations with your VoCs.
-    - This is still a work-in-progress. It might be best to store the mutation lists in a separate location and construct matrices from them.
+The functions are designed to mimic `glm()`, with formula notation that emphasizes the connection to binomial GLM models.
 
-Data must be specified as follows.
-There must be a column labelled `count`, a column labelled `coverage`, and a column labelled `mutation`.
-There can be an optional column labelled `sample`, which will be interpreted as a grouping variable and the analysis will be run once for each unique value of `sample`.
-Any other columns will be ignored, so you are free to leave them in your data for future purposes (e.g. location and date will still be tied to unique sample ids).
-
-Here is an overview of the basic functionality of the package. TODO: Vignettes.
-It may be helpful to look at the structure of the simulated objects to know what the primary functions expect.
-
-```R
+```r
 library(provoc)
-
-# Siumlate with defaul parameters
-# (Omicron sublineages with a handful of mutations chosen haphazardly)
-varmat <- simulate_varmat()
-varmat
+data(Baaijens)
+b1 <- Baaijens [Baaijens$sra == Baaijens$sra[1], ]
+b1$mutations <- parse_mutations(b1$label)
+head(b1[, c("count", "coverage", "mutation", "label")])
 ```
 
 ```
-##           m3037T m22599A d221943 i22205GAGCCAGAA m24469A d219879 m241T
-## BA.1           1       1       0               0       1       1     0
-## BA.2           0       1       0               1       1       0     1
-## B.1.1.529      0       1       1               1       1       1     1
+  count coverage       mutations   label
+1 14458    14818      aa:S:D614G ~23403G
+2 10431    32699         C12025T ~12025T
+3   759     9577         G29266A ~29266A
+4 23329    23690  aa:orf1a:T265I  ~1059T
+5  6935    32631       aa:M:R44S ~26654T
+6 13866    27715 aa:orf1a:L3352F ~10319T
 ```
 
-
-```R
-# Simulate COunts and COverage (with censoring/ RNA degredation)
-# Expect 1/6 BA.1, 2/6 BA.2, and 3/6 B.1.1.529
-coco <- simulate_coco(varmat, rel_counts = c(100, 200, 300))
-coco
-```
-
-```
-##   count coverage        mutation
-## 1    79      401          m3037T
-## 2    60       60         m22599A
-## 3   246      520         d221943
-## 4   407      478 i22205GAGCCAGAA
-## 5   473      473         m24469A
-## 6   114      176         d219879
-## 7   434      517           m241T
-```
-
-The `fuse` function is basically a left join on `mutation` that sets up column names nicely. In future iterations of this package this behaviour will be changed. 
-
-The `provoc` function expects column names `count`, `coverage`, and `var_*` (which `fuse()` provides). It then fits the model.
-
-```R
-fused <- fuse(coco, varmat)
-copt <- provoc(fused = fused, method = "optim")
-copt
+```{r}
+res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2,
+    data = b1, verbose = FALSE)
+res
 ```
 
 ```
-##         rho ci_low ci_high   variant sample
-## 1 0.1673370     NA      NA      BA.1      1
-## 2 0.3573876     NA      NA      BA.2      1
-## 3 0.4752754     NA      NA B.1.1.529      1
+Call:  ~ cbind(count, coverage) B.1.1.7 + B.1.429 + B.1.617.2
+
+Convergence:
+all_data 
+    TRUE 
+
+Top 3 variants:
+     rho ci_low ci_high   variant
+2  0.453     NA      NA   B.1.429
+1  0.008     NA      NA   B.1.1.7
+3 <0.001     NA      NA B.1.617.2
 ```
 
+The following R code makes a nice plot:
 
-I have included static versions of the "constellations" mutation lists; these are mutation lists that were defined by the team the created the "Omicron", "Delta", etc. naming scheme. They are no longer updated with modern variants, so I've just included them in `constellation_lists`. The variant matrix can be defined as:
-
-```R
-varmat <- astronomize()
-dim(varmat)
+```{r}
+barplot(
+    height = matrix(res$rho, 
+        ncol = ifelse("group" %in% names(res), 
+            length(unique(res$group)), 
+            1)), 
+    col = 1:length(unique(res$variant)),
+    horiz = TRUE, 
+    xlim = c(0, 1))
+legend("topright", 
+    legend = unique(res$variant), 
+    col = 1:length(unique(res$variant)), 
+    pch = 15)
 ```
 
-```
-## [1]  37 325
-```
+`ggplot` is nicer, but not a required dependency:
 
-The structure is the exact same as the `varmat` above, but includes every variant up until the first few Omicron recombinants.
-
-The code below will generate data from all variants at random, but add a bunch of Omicron. 
-
-```R
-varmat <- varmat[!grepl("+", rownames(varmat), fixed = TRUE), ]
-rel_counts <- rpois(nrow(varmat), 10)
-is_omicron <- rownames(varmat) %in% c("BA.1", "BA.2", "B.1.1.529")
-rel_counts[is_omicron] <- c(100, 200, 300)
-coco <- simulate_coco(varmat, rel_counts = rel_counts)
-
-fused <- fuse(coco, varmat)
-
-copt <- provoc(fused = fused, method = "optim")
-copt[copt$variant %in% c("BA.1", "BA.2", "B.1.1.529"), ]
-
+```{r}
+library(ggplot2)
+ggplot(res) +
+    aes(x = 1, y = rho, fill = variant) + 
+    geom_bar(stat = "identity", position = "stack") +
+    coord_flip() +
+    lims(y = c(0, 1))
 ```
 
-```
-##          rho ci_low ci_high   variant sample
-## 5  0.1184445     NA      NA B.1.1.529      1
-## 16 0.2301833     NA      NA      BA.1      1
-## 17 0.3531027     NA      NA      BA.2      1
-## ... Other variants not shown
-```
+# Multiple Samples
 
-### Multiple Samples
-
-The `provoc()` function looks for a column labelled `sample`, and will apply the analysis separately across each unique value.
-
-```R
-rel_counts <- rpois(nrow(varmat), 10)
-is_omicron <- rownames(varmat) %in% c("BA.1", "BA.2", "B.1.1.529")
-rel_counts[is_omicron] <- c(100, 200, 300)
-coco1 <- simulate_coco(varmat, rel_counts = rel_counts, verbose = FALSE)
-coco1$sample <- "1"
-
-rel_counts[is_omicron] <- c(200, 200, 200)
-coco2 <- simulate_coco(varmat, rel_counts = rel_counts, verbose = FALSE)
-coco2$sample <- "2"
-
-rel_counts[is_omicron] <- c(300, 200, 100)
-coco3 <- simulate_coco(varmat, rel_counts = rel_counts, verbose = FALSE)
-coco3$sample <- "3"
-
-rel_counts[is_omicron] <- c(400, 100, 0)
-coco4 <- simulate_coco(varmat, rel_counts = rel_counts, verbose = FALSE)
-coco4$sample <- "4"
-
-coco <- rbind(coco1, coco2) |> rbind(coco3) |> rbind(coco4)
-
-fused <- fuse(coco, varmat)
-
-copt <- provoc(fused = fused, method = "optim")
-copt[copt$variant %in% c("BA.1", "BA.2", "B.1.1.529"), ]
+```{r}
+# First two sampls from Baaijens
+b2 <- Baaijens [Baaijens$sra %in% unique(Baaijens$sra)[1:2], ]
+b2$mutations <- parse_mutations(b2$label)
+head(b1[, c("count", "coverage", "mutation", "label", "sra")])
 ```
 
-```
-##       rho ci_low ci_high   variant sample
-## 5   0.113     NA      NA B.1.1.529      1
-## 16  0.223     NA      NA      BA.1      1
-## 17  0.331     NA      NA      BA.2      1
-## 35  0.222     NA      NA B.1.1.529      2
-## 46  0.217     NA      NA      BA.1      2
-## 47  0.223     NA      NA      BA.2      2
-## 65  0.338     NA      NA B.1.1.529      3
-## 76  0.215     NA      NA      BA.1      3
-## 77  0.109     NA      NA      BA.2      3
-## 95  0.494     NA      NA B.1.1.529      4
-## 106 0.125     NA      NA      BA.1      4
-## 107 0.000     NA      NA      BA.2      4
+Note the "by" argument below.
+
+```{r}
+res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2,
+    data = b2, by = "sra", verbose = FALSE)
+res
 ```
 
-As expected, the estimated values are close to the truths (but a little bit lower since all of the variants were included). The format of the output makes for easy plotting with `ggplot2`.
+Note to my programmers: The following code is the same, yet it still works for the plots!
+
+```{r}
+barplot(
+    height = matrix(res$rho, 
+        ncol = ifelse("group" %in% names(res), 
+            length(unique(res$group)), 
+            1)), 
+    col = 1:length(unique(res$variant)),
+    horiz = TRUE, 
+    xlim = c(0, 1))
+legend("topright", 
+    legend = unique(res$variant), 
+    col = 1:length(unique(res$variant)), 
+    pch = 15)
+```
+
+Note to programmers: I had to change `x = 1` to `x = group`. The underlying code will have to account for this.
+
+```{r}
+ggplot(res) +
+    aes(x = group, y = rho, fill = variant) + 
+    geom_bar(stat = "identity", position = "stack") +
+    coord_flip() +
+    lims(y = c(0, 1))
+```
+
