@@ -43,7 +43,8 @@ head(b1[, c("count", "coverage", "mutation", "label")])
 
 ```{r}
 res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2,
-    data = b1, verbose = FALSE)
+    data = b1,
+    verbose = FALSE)
 res
 ```
 
@@ -61,32 +62,19 @@ Top 3 variants:
 3 <0.001     NA      NA B.1.617.2
 ```
 
-The following R code makes a nice plot:
+We have created a class for `provoc` objects with convenient methods. For example, plotting the results is achieved as follows:
 
 ```{r}
-barplot(
-    height = matrix(res$rho, 
-        ncol = ifelse("group" %in% names(res), 
-            length(unique(res$group)), 
-            1)), 
-    col = 1:length(unique(res$variant)),
-    horiz = TRUE, 
-    xlim = c(0, 1))
-legend("topright", 
-    legend = unique(res$variant), 
-    col = 1:length(unique(res$variant)), 
-    pch = 15)
+plot(res)
 ```
 
-`ggplot` is nicer, but not a required dependency:
+We use the convention of [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html) as a function that creates a `ggplot2` plot based on a particular type of data. This allows for all of `ggplot2`'s fanciness on top of a pre-made plot.
 
 ```{r}
 library(ggplot2)
-ggplot(res) +
-    aes(x = 1, y = rho, fill = variant) + 
-    geom_bar(stat = "identity", position = "stack") +
-    coord_flip() +
-    lims(y = c(0, 1))
+autoplot(res) +
+    theme_bw() +
+    labs(title = "Results for one sample")
 ```
 
 # Multiple Samples
@@ -102,34 +90,24 @@ Note the "by" argument below.
 
 ```{r}
 res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2,
-    data = b2, by = "sra", verbose = FALSE)
+    data = b2, by = "sra",
+    verbose = FALSE)
 res
 ```
 
-Note to my programmers: The following code is the same, yet it still works for the plots!
+The plotting functions above work as expected.
 
 ```{r}
-barplot(
-    height = matrix(res$rho, 
-        ncol = ifelse("group" %in% names(res), 
-            length(unique(res$group)), 
-            1)), 
-    col = 1:length(unique(res$variant)),
-    horiz = TRUE, 
-    xlim = c(0, 1))
-legend("topright", 
-    legend = unique(res$variant), 
-    col = 1:length(unique(res$variant)), 
-    pch = 15)
+plot(res)
 ```
 
-Note to programmers: I had to change `x = 1` to `x = group`. The underlying code will have to account for this.
 
 ```{r}
-ggplot(res) +
-    aes(x = group, y = rho, fill = variant) + 
-    geom_bar(stat = "identity", position = "stack") +
-    coord_flip() +
-    lims(y = c(0, 1))
+autoplot(res)
+```
+
+```{r}
+res$date <- lubridate::ymd(b2$date[match(res$group, b2$sra)])
+autoplot(res, date_col = "date")
 ```
 
