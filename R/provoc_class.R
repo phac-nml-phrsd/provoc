@@ -113,18 +113,18 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
             geom_bar(stat = "identity", position = "stack") +
             lims(y = c(0, 1))
     if (!is.null(date_col)) {
-        if (!is.Date(provoc_obj[, date_col])) 
+        if (!inherits(provoc_obj[, date_col], "Date")) 
             stop("Supplied date column does not include Date values. \nTry lubridate::ymd().")
 
         gg <- gg  +
-            aes(x = 1, y = rho, fill = variant, group = group) +
+            aes(x = date, y = rho, fill = variant, group = group) +
             labs(x = "Proportion", y = NULL, fill = "Lineage")
     } else if (!"group" %in% colnames(provoc_obj)) {
         if(ncol(provoc_obj) > 4) 
             warning("Detected extra information, but plotting results as if they're a single sample.")
     
         gg <- gg +
-            aes(x = date, y = rho, fill = variant) +
+            aes(x = 1, y = rho, fill = variant) +
             labs(x = "Proportion", y = NULL, fill = "Lineage") +
             coord_flip()
     } else {
