@@ -4,7 +4,7 @@
 \alias{plot.provoc}
 \title{Plot the results of model fitting}
 \usage{
-\method{plot}{provoc}(provoc_obj, which = 1:4)
+\method{plot}{provoc}(provoc_obj, plot_type = c("barplot"))
 }
 \description{
 Plot the results of model fitting

@@ -57,12 +57,32 @@ print.summary.provoc <- function(summary.provoc) {
 }
 
 #' Plot the results of model fitting
-plot.provoc <- function(provoc_obj, which = 1:4) {
-    # TODO: Make this function like plot.lm
+#' @export
+plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
+    #plot_types <- c("b", "r")
+    #if(!all(plot_type %in% plot_types)) stop("Invalid plot choice.")
 
-    # TODO: Choose plots.
-    # Residuals versus fitted, possibly coloured (or faceted) by variant
-    # d
+    mfrow <- switch(as.character(length(plot_type)),
+        "1" = c(1,1),
+        "2" = c(1,2),
+        c(2,2))
+    par(mfrow = mfrow)
+
+    # Barplot
+    if(1 %in% plot_type || any(startsWith(plot_type, "b"))) {
+        barplot(
+            height = matrix(provoc_obj$rho, 
+                ncol = ifelse("group" %in% names(provoc_obj), 
+                    length(unique(provoc_obj$group)), 
+                    1)), 
+            col = 1:length(unique(provoc_obj$variant)),
+            horiz = TRUE, 
+            xlim = c(0, 1))
+        legend("topright", 
+            legend = unique(provoc_obj$variant), 
+            col = 1:length(unique(provoc_obj$variant)), 
+            pch = 15)
+    }
 }
 
 autoplot.provoc <- function(provoc_obj) {
