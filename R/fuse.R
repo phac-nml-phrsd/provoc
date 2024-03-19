@@ -116,12 +116,20 @@ variants_similarity <- function(data, is_varmat) {
     similiarities <- list()
     
     similiarities$Differ_by_one <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = differ_by_one, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
+    colnames(similiarities$Differ_by_one) <- colnames(subset_of_variants)
+    rownames(similiarities$Differ_by_one) <- colnames(subset_of_variants)
     
     similiarities$Jaccard_similarity <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = jaccard_simularity, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
+    colnames(similiarities$Jaccard_similarity) <- colnames(subset_of_variants)
+    rownames(similiarities$Jaccard_similarity) <- colnames(subset_of_variants)
     
     similiarities$is_subset <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = is_subset, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
+    colnames(similiarities$is_subset) <- colnames(subset_of_variants)
+    rownames(similiarities$is_subset) <- colnames(subset_of_variants)
     
     similiarities$is_almost_subset <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = is_almost_subset, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
+    colnames(similiarities$is_almost_subset) <- colnames(subset_of_variants)
+    rownames(similiarities$is_almost_subset) <- colnames(subset_of_variants)
     
     return(similiarities)
 }
@@ -192,7 +200,7 @@ is_almost_subset <- function(v1,v2){
     i <- i + 1 
   }
   #some work needs to be done on this part
-  if ((not_subset_count)/i < 0.1) {
+  if ((not_subset_count)/i < 0.1 & (not_subset_count)/i > 0) {
     result <- TRUE
   }
   return(result)
