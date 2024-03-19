@@ -6,14 +6,14 @@
 #' @param formula A formula for the binomial model, like cbind(count, coverage) ~ .
 #' @param data Data frame containing count, coverage, and lineage columns.
 #' @param mutation_defs Optional mutation definitions; if NULL, uses astronomize().
-#' @param by Column name to group and process data.
+#' @param by Column name to group and process data. If included, the results will contain a column labelled "group".
 #' @param update_interval Interval for progress messages (0 to suppress).
 #' @param verbose TRUE to print detailed messages.
 #' @param annihilate TRUE to remove duplicate variants from the data
 #'
-#' @return Returns an object of class 'provoc' with results from applying `provoc_optim` to the input data. The object contains the following attributes:
-#'  - proportions: Estimated proportions vector for each variant of concern.
-#'  - variant_matrix: Mutation definitions used for analysis, provided `mutation_defs` or default `astronomize()`.
+#' @return Returns an object of class 'provoc' with results from applying `provoc_optim` to the input data. The object has methods for print(), plot(), and summary(), but otherwise is treated as a dataframe. Fit information can be extracted as follows:
+#'  - convergence(res)
+#'  - get_mutation_defs(res): Mutation definitions used for analysis, provided `mutation_defs` or default `astronomize()`.
 #'
 #' Outputs necessary information for subsequent analysis, including the use of the `predict.provoc()`.
 #'
@@ -28,7 +28,7 @@
 #' res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2, data = Baaijens, by = "sample_id")
 #'
 #' # Check for analysis convergence
-#' print(convergence(res))
+#' print(get_convergence(res))
 #'
 #' # Use the results for prediction
 #' predicted_values <- predict.provoc(res)
@@ -279,29 +279,3 @@ process_optim <- function(grouped_data, mutation_defs, by) {
     return(res_list)
 }
 
-
-#' Check if provoc converged
-#'
-#' If converged, returns True and prints a message. Otherwise, prints the samples and the note giving hints as to why it didn't converge.
-#'
-#' @param res The result of \code{provoc()}
-#' @param verbose Print a message to the screen?
-#'
-#' @return Invisbly returns TRUE if all samples converged, false otherwise.
-#' @export
-convergence <- function(res, verbose = TRUE) {
-    if (!"convergence" %in% attributes(attributes(res))$names) {
-        stop("Not a result of provoc - does not have correct attributes")
-    }
-
-    conv <- attr(res, "convergence")
-
-    if (any(!as.logical(conv$convergence))) {
-        if (verbose) print(conv[which(!as.logical(conv$convergence)), -2])
-        return(invisible(FALSE))
-
-    } else {
-        if (verbose) cat("All samples converged\n")
-        return(invisible(TRUE))
-    }
-}

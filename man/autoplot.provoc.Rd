@@ -2,10 +2,15 @@
 % Please edit documentation in R/provoc_class.R
 \name{autoplot.provoc}
 \alias{autoplot.provoc}
-\title{Plot the results using ggplot2}
+\title{Plot a provoc object using ggplot2}
 \usage{
 \method{autoplot}{provoc}(provoc_obj, date_col = NULL)
 }
+\arguments{
+\item{provoc_obj}{The result of provoc(), or an object coerced via as.provoc().}
+
+\item{date_col}{Optional - if there's a date column, the results are plotted over time. This can be problematic if there are multiple samples at each time point.}
+}
 \description{
-Only plots the results, does not plot residuals
+Plots the results of estimating wastewater prevalence of SARS-CoV-2. Optionally plots the results over time if given a date column.
 }

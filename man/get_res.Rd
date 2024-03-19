@@ -6,6 +6,9 @@
 \usage{
 get_res(provoc_obj)
 }
+\arguments{
+\item{provoc_obj}{The result of provoc(), or an object coerced via as.provoc().}
+}
 \description{
-Extract just the results of lineage estimation
+Prints the most useful diagnostics to the screen, invisibly returning them as a list.
 }

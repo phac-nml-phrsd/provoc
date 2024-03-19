@@ -2,10 +2,18 @@
 % Please edit documentation in R/provoc_class.R
 \name{get_convergence}
 \alias{get_convergence}
-\title{Extract convergence information}
+\title{Check if provoc converged}
 \usage{
-get_convergence(provoc_obj)
+get_convergence(res, verbose = TRUE)
+}
+\arguments{
+\item{res}{The result of \code{provoc()}}
+
+\item{verbose}{Print a message to the screen?}
+}
+\value{
+Invisbly returns TRUE if all samples converged, false otherwise.
 }
 \description{
-Extract convergence information
+If converged, returns True and prints a message. Otherwise, prints the samples and the note giving hints as to why it didn't converge.
 }

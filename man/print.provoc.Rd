@@ -6,6 +6,11 @@
 \usage{
 \method{print}{provoc}(provoc_obj, n = 6)
 }
+\arguments{
+\item{provoc_obj}{The result of provoc(), or an object coerced via as.provoc().}
+
+\item{n}{The number of rows of the results dataframe to print}
+}
 \description{
-Print the results of lineage abundance estimation
+Prints the most useful diagnostics to the screen, invisibly returning them as a list.
 }

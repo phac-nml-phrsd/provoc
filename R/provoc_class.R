@@ -1,4 +1,8 @@
 #' Print the results of lineage abundance estimation
+#' 
+#' @inherit summary.provoc
+#' @param n The number of rows of the results dataframe to print
+#' 
 #' @export
 print.provoc <- function(provoc_obj, n = 6) {
     cat("Call: ", as.character(attributes(provoc_obj)$formula))
@@ -17,6 +21,8 @@ print.provoc <- function(provoc_obj, n = 6) {
 #' Summarise results of model fitting
 #' 
 #' Prints the most useful diagnostics to the screen, invisibly returning them as a list.
+#' 
+#' @param provoc_obj The result of provoc(), or an object coerced via as.provoc().
 #' 
 #' @export
 summary.provoc <- function(provoc_obj) {
@@ -57,6 +63,10 @@ print.summary.provoc <- function(summary.provoc) {
 }
 
 #' Plot the results of model fitting
+#' 
+#' @inherit summary.provoc
+#' @param plot_type Currently only "barplot" is implemented. Residual plots and other diagnostics are works in progress.
+#' 
 #' @export
 plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
     #plot_types <- c("b", "r")
@@ -86,9 +96,12 @@ plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
     }
 }
 
-#' Plot the results using ggplot2
+#' Plot a provoc object using ggplot2
 #' 
-#' Only plots the results, does not plot residuals
+#' Plots the results of estimating wastewater prevalence of SARS-CoV-2. Optionally plots the results over time if given a date column.
+#' 
+#' @inherit summary.provoc
+#' @param date_col Optional - if there's a date column, the results are plotted over time. This can be problematic if there are multiple samples at each time point.
 #' 
 #' @export
 autoplot.provoc <- function(provoc_obj, date_col = NULL) {
@@ -98,14 +111,13 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
 
     gg <- ggplot(provoc_obj) + 
             geom_bar(stat = "identity", position = "stack") +
-            coord_flip() +
             lims(y = c(0, 1))
     if (!is.null(date_col)) {
         if (!is.Date(provoc_obj[, date_col])) 
             stop("Supplied date column does not include Date values. \nTry lubridate::ymd().")
 
         gg <- gg  +
-            aes(x = 1, y = rho, fill = variant) +
+            aes(x = 1, y = rho, fill = variant, group = group) +
             labs(x = "Proportion", y = NULL, fill = "Lineage")
     } else if (!"group" %in% colnames(provoc_obj)) {
         if(ncol(provoc_obj) > 4) 
@@ -113,30 +125,60 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
     
         gg <- gg +
             aes(x = date, y = rho, fill = variant) +
-            labs(x = "Proportion", y = NULL, fill = "Lineage")
+            labs(x = "Proportion", y = NULL, fill = "Lineage") +
+            coord_flip()
     } else {
         gg <- gg +
             aes(x = group, y = rho, fill = variant) +
-            labs(x = "Proportion", y = NULL, fill = "Lineage")
+            labs(x = "Proportion", y = NULL, fill = "Lineage") +
+            coord_flip()
     }
     print(gg)
 }
 
-#' Extract the variant matrix used to fit the model
+#' Extract the mutation definitions used to fit the model
+#' 
+#' @inherit summary.provoc
+#' 
 #' @export
-get_varmat <- function(provoc_obj) {
+get_mutation_defs <- function(provoc_obj) {
     attributes(provoc_obj)$variant_matrix
 }
 
 
 #' Extract just the results of lineage estimation
+#' 
+#' @inherit summary.provoc
+#' 
 #' @export
 get_res <- function(provoc_obj) {
     as.data.frame(provoc_obj)
 }
 
-#' Extract convergence information
+
+#' Check if provoc converged
+#'
+#' If converged, returns True and prints a message. Otherwise, prints the samples and the note giving hints as to why it didn't converge.
+#'
+#' @param res The result of \code{provoc()}
+#' @param verbose Print a message to the screen?
+#'
+#' @return Invisbly returns TRUE if all samples converged, false otherwise.
 #' @export
-get_convergence <- function(provoc_obj) {
-    attributes(provoc_obj)$convergence
+get_convergence <- function(res, verbose = TRUE) {
+    if (!"convergence" %in% attributes(attributes(res))$names) {
+        stop("Not a result of provoc - does not have correct attributes")
+    }
+
+    conv <- attr(res, "convergence")
+
+    if (any(!as.logical(conv$convergence))) {
+        if (verbose) print(conv[which(!as.logical(conv$convergence)), -2])
+        return(invisible(FALSE))
+
+    } else {
+        if (verbose) cat("All samples converged\n")
+        return(invisible(TRUE))
+    }
 }
+

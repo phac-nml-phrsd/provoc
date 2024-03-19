@@ -21,7 +21,7 @@ provoc(
 
 \item{mutation_defs}{Optional mutation definitions; if NULL, uses astronomize().}
 
-\item{by}{Column name to group and process data.}
+\item{by}{Column name to group and process data. If included, the results will contain a column labelled "group".}
 
 \item{update_interval}{Interval for progress messages (0 to suppress).}
 
@@ -30,10 +30,10 @@ provoc(
 \item{annihilate}{TRUE to remove duplicate variants from the data}
 }
 \value{
-Returns an object of class 'provoc' with results from applying \code{provoc_optim} to the input data. The object contains the following attributes:
+Returns an object of class 'provoc' with results from applying \code{provoc_optim} to the input data. The object has methods for print(), plot(), and summary(), but otherwise is treated as a dataframe. Fit information can be extracted as follows:
 \itemize{
-\item proportions: Estimated proportions vector for each variant of concern.
-\item variant_matrix: Mutation definitions used for analysis, provided \code{mutation_defs} or default \code{astronomize()}.
+\item convergence(res)
+\item get_mutation_defs(res): Mutation definitions used for analysis, provided \code{mutation_defs} or default \code{astronomize()}.
 }
 
 Outputs necessary information for subsequent analysis, including the use of the \code{predict.provoc()}.
@@ -53,7 +53,7 @@ Baaijens$mutation <- parse_mutations(Baaijens$label)
 res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2, data = Baaijens, by = "sample_id")
 
 # Check for analysis convergence
-print(convergence(res))
+print(get_convergence(res))
 
 # Use the results for prediction
 predicted_values <- predict.provoc(res)
