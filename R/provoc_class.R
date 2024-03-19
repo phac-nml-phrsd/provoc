@@ -77,7 +77,8 @@ plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
                     1)), 
             col = 1:length(unique(provoc_obj$variant)),
             horiz = TRUE, 
-            xlim = c(0, 1))
+            xlim = c(0, 1),
+            xlab = "Proportion", ylab = NULL)
         legend("topright", 
             legend = unique(provoc_obj$variant), 
             col = 1:length(unique(provoc_obj$variant)), 
@@ -85,9 +86,40 @@ plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
     }
 }
 
-autoplot.provoc <- function(provoc_obj) {
-    # TODO: prepare data for ggplot
-    # TODO: Check if ggplot2 is loaded
+#' Plot the results using ggplot2
+#' 
+#' Only plots the results, does not plot residuals
+#' 
+#' @export
+autoplot.provoc <- function(provoc_obj, date_col = NULL) {
+    if(!"ggplot2" %in% .packages()) {
+        stop("Please load ggplot2 before using this function.")
+    }
+
+    gg <- ggplot(provoc_obj) + 
+            geom_bar(stat = "identity", position = "stack") +
+            coord_flip() +
+            lims(y = c(0, 1))
+    if (!is.null(date_col)) {
+        if (!is.Date(provoc_obj[, date_col])) 
+            stop("Supplied date column does not include Date values. \nTry lubridate::ymd().")
+
+        gg <- gg  +
+            aes(x = 1, y = rho, fill = variant) +
+            labs(x = "Proportion", y = NULL, fill = "Lineage")
+    } else if (!"group" %in% colnames(provoc_obj)) {
+        if(ncol(provoc_obj) > 4) 
+            warning("Detected extra information, but plotting results as if they're a single sample.")
+    
+        gg <- gg +
+            aes(x = date, y = rho, fill = variant) +
+            labs(x = "Proportion", y = NULL, fill = "Lineage")
+    } else {
+        gg <- gg +
+            aes(x = group, y = rho, fill = variant) +
+            labs(x = "Proportion", y = NULL, fill = "Lineage")
+    }
+    print(gg)
 }
 
 #' Extract the variant matrix used to fit the model
