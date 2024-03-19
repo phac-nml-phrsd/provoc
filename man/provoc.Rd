@@ -10,7 +10,8 @@ provoc(
   mutation_defs = NULL,
   by = NULL,
   update_interval = 20,
-  verbose = TRUE
+  verbose = TRUE,
+  annihilate = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ provoc(
 \item{update_interval}{Interval for progress messages (0 to suppress).}
 
 \item{verbose}{TRUE to print detailed messages.}
+
+\item{annihilate}{TRUE to remove duplicate variants from the data}
 }
 \value{
 Returns an object of class 'provoc' with results from applying \code{provoc_optim} to the input data. The object contains the following attributes:

@@ -4,7 +4,7 @@
 \alias{extract_formula_components}
 \title{Extract Formula Components}
 \usage{
-extract_formula_components(formula, data, mutation_defs)
+extract_formula_components(formula, data, mutation_defs, mutation_col, by_col)
 }
 \arguments{
 \item{formula}{The formula input by the user.}
