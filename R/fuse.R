@@ -135,8 +135,7 @@ variants_similarity <- function(data, is_varmat) {
       while (!is.null(ncol(similiarities$Differ_by_one)) && i <= ncol(similiarities$Differ_by_one)) {
         if (sum(similiarities$Differ_by_one[,i] == rep(FALSE, nrow(similiarities$Differ_by_one))) == nrow(similiarities$Differ_by_one)) {
           similiarities$Differ_by_one <- similiarities$Differ_by_one[,-i]
-        }
-        else {
+        } else {
           i <- i + 1
         }
       }
@@ -149,6 +148,7 @@ variants_similarity <- function(data, is_varmat) {
     similiarities$is_subset <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = is_subset, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
     colnames(similiarities$is_subset) <- colnames(subset_of_variants)
     rownames(similiarities$is_subset) <- colnames(subset_of_variants)
+    diag(similiarities$is_subset) <- rep("place holder", nrow(similiarities$is_subset))
     i <- 1
     while (!is.null(nrow(similiarities$is_subset)) && i <= nrow(similiarities$is_subset)) {
       if (sum(similiarities$is_subset[i, ] == rep(FALSE, ncol(similiarities$is_subset))) == ncol(similiarities$is_subset) - 1) {
@@ -164,14 +164,14 @@ variants_similarity <- function(data, is_varmat) {
     else{
       i <- 1
       while (!is.null(ncol(similiarities$is_subset)) && i <= ncol(similiarities$is_subset)) {
-        if (sum(similiarities$is_subset[,i] == rep(FALSE, nrow(similiarities$is_subset))) == nrow(similiarities$is_subset) - 1) {
+        if (sum(similiarities$is_subset[,i] == rep(TRUE, nrow(similiarities$is_subset))) == 0) {
           similiarities$is_subset <- similiarities$is_subset[,-i]
-        }
-        else {
+        } else {
           i <- i + 1
         }
       }
     }
+    similiarities$is_subset[similiarities$is_subset == "place holder"] <- TRUE
     
     similiarities$is_almost_subset <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = is_almost_subset, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
     colnames(similiarities$is_almost_subset) <- colnames(subset_of_variants)
@@ -193,8 +193,7 @@ variants_similarity <- function(data, is_varmat) {
       while (!is.null(ncol(similiarities$is_almost_subset)) && i <= ncol(similiarities$is_almost_subset)) {
         if (sum(similiarities$is_almost_subset[,i] == rep(FALSE, nrow(similiarities$is_almost_subset))) == nrow(similiarities$is_almost_subset)) {
           similiarities$is_almost_subset <- similiarities$is_almost_subset[,-i]
-        }
-        else {
+        } else {
           i <- i + 1
         }
       }
