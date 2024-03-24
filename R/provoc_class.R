@@ -103,6 +103,7 @@ plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
 #' @inherit summary.provoc
 #' @param date_col Optional - if there's a date column, the results are plotted over time. This can be problematic if there are multiple samples at each time point.
 #' 
+#' @importFrom ggplot2 autoplot
 #' @export
 autoplot.provoc <- function(provoc_obj, date_col = NULL) {
     if(!"ggplot2" %in% .packages()) {
