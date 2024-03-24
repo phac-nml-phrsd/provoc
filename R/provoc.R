@@ -43,15 +43,9 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     mutation_defs <- as.matrix(process_mutation_defs(mutation_defs))
 
     # Find out which column might define the mutations
-    mutation_col <- NULL
-    for (col in colnames(data)) {
-        if (any(colnames(mutation_defs) %in% data[, col])) {
-            mutation_col <- col
-        }
-    }
-    if (is.null(mutation_col)) {
-        stop("No column contains the mutations in mutation_defs.")
-    }
+    find_muation_column_output <- find_mutation_column(data, mutation_defs)
+    mutation_defs <- find_muation_column_output[[1]]
+    mutation_col <- find_muation_column_output[[2]]
 
     # Extract components from the formula
     components <- extract_formula_components(formula, data,
@@ -118,6 +112,32 @@ validate_inputs <- function(formula, data) {
         stop("Argument 'formula' must be a formula.")
 
     if (!is.data.frame(data)) stop("Argument 'data' must be a data frame.")
+}
+
+#' Finds the right mutation column in mutation_defs.
+#'
+#' Checks the columns of mutation_defs and if not found in columns will check the rows
+#' and transpose mutation_defs.
+#' 
+#' @param data Data frame containing count, coverage, and lineage columns
+#' @param mutation_defs Optional mutation definitions
+#'
+#' @return A list of length 2 containing the possibly transposed mutation_defs and
+#' the right mutation column.
+find_mutation_column <- function(data, mutation_defs) {
+    mutation_col <- NULL
+    for (col in colnames(data)) {
+        if (any(colnames(mutation_defs) %in% data[, col])) {
+            mutation_col <- col
+            return(list(mutation_defs, mutation_col))
+        } else if (any(rownames(mutation_defs) %in% data[, col])) {
+            mutation_col <- col
+            return(list(t(mutation_defs), mutation_col))
+        }
+    }
+    if (is.null(mutation_col)) {
+        stop("No column contains the mutations in mutation_defs.")
+    }
 }
 
 #' Remove Identical variants
