@@ -134,8 +134,10 @@ remove_identical_variants <- function(fused_df, annihilate){
     subset_of_variants <- dplyr::select(fused_df,contains("var_"))
     if (annihilate) {
         unique_subset_of_variants <- t(unique(t(subset_of_variants)))
-        print(paste0("Variant ", colnames(subset_of_variants)[!(colnames(subset_of_variants) %in% colnames(unique_subset_of_variants))],
+        if (ncol(subset_of_variants) != ncol(unique_subset_of_variants)) {
+          print(paste0("Variant ", colnames(subset_of_variants)[!(colnames(subset_of_variants) %in% colnames(unique_subset_of_variants))],
                        " is a duplicate variant and has been removed from the dateframe"))
+        }
         return(cbind(dplyr::select(fused_df, !contains("var_")), unique_subset_of_variants))
     }
     else {
