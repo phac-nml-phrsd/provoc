@@ -134,7 +134,7 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
             labs(x = "Proportion", y = NULL, fill = "Lineage") +
             coord_flip()
     }
-    print(gg)
+    return(gg)
 }
 
 #' Extract the mutation definitions used to fit the model
