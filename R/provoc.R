@@ -35,8 +35,8 @@
 #'
 #' @export
 
-provoc <- function(formula, data, mutation_defs = NULL, by = NULL, 
-                   update_interval = 20, verbose = TRUE, annihilate = FALSE) {
+provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
+                   update_interval = 20, verbose = FALSE, annihilate = FALSE) {
 
     # Initial validation and processing
     validate_inputs(formula, data)

@@ -9,8 +9,9 @@
 #' @param reffile The path to the reference file that was used to define mutations. Usually NC_045512.fa except in very particular circumstances.
 #' 
 #' @return e.g. aa:orf1a:K856R
-parse_mutation <- function(type, pos, alt, 
+parse_mutation <- function(type, pos, alt,
     reffile = system.file("extdata/NC_045512.fa", package = "provoc")) {
+
     gcode <- list(
         'TTT'= 'F', 'TTC'= 'F', 'TTA'= 'L', 'TTG'= 'L',
         'TCT'= 'S', 'TCC'= 'S', 'TCA'= 'S', 'TCG'= 'S',
@@ -30,7 +31,7 @@ parse_mutation <- function(type, pos, alt,
         'GGT'= 'G', 'GGC'= 'G', 'GGA'= 'G', 'GGG'= 'G',
         '---'= '-', 'XXX'= '?'
     )
-    orfs = list(
+    orfs <- list(
         'orf1a'= c(265, 13468),
         'orf1b'= c(13467, 21555),
         'S'= c(21562, 25384),
@@ -54,18 +55,19 @@ parse_mutation <- function(type, pos, alt,
         this_left <- this_right <- "None"
 
         orfl <- sapply(orfs, function(x) x[1] < pos & x[2] > pos)
-        if(any(orfl)) {
+        if (any(orfl)) {
             this_orf <- names(orfl)[orfl][1]
             this_left <- orfs[[this_orf]][1]
             this_right <- orfs[[this_orf]][2]
         }
 
-        if(this_orf != "None") {
+        if (this_orf != "None") {
             # 3 nucleotides per codon
-            codon_left <- 3 * ((pos-this_left) %/% 3)
-            codon_pos <- (pos-this_left) %% 3
+            codon_left <- 3 * ((pos - this_left) %/% 3)
+            codon_pos <- (pos - this_left) %% 3
 
-            rcodon <- refseq[this_left:this_right + 1][codon_left:(codon_left+2) + 1]
+            rcodon <- refseq[this_left:this_right + 1][
+                codon_left:(codon_left + 2) + 1]
             ramino <- gcode[[paste0(rcodon, collapse = "")]]
 
             qcodon <- rcodon
@@ -74,7 +76,8 @@ parse_mutation <- function(type, pos, alt,
             qamino <-  gcode[[paste0(qcodon, collapse = "")]]
 
             if (ramino != qamino)
-                return(paste0("aa:", this_orf, ":", ramino, round(1+codon_left/3), qamino))
+                return(paste0("aa:", this_orf, ":", ramino,
+                        round(1 + codon_left / 3), qamino))
         }
     } else if (type == "+") {
         # Revert to 1-indexing
@@ -109,16 +112,15 @@ parse_unique_mutations <- function(muts) {
             new_muts[i] <- provoc:::parse_mutation("~", pos, alt)
         } else if (first_char %in% c("-", "+")) {
             # Split mutation string
-            splits <- strsplit(thismut, "[+-]", perl=TRUE)[[1]]
+            splits <- strsplit(thismut, "[+-]", perl = TRUE)[[1]]
             type <- first_char
             if (type == "+") {
-              pos <- as.numeric(gsub(".*?([0-9]+).*", "\\1", splits[2]))
-              alt <- gsub("[^a-zA-Z]", "", splits[2])
-            }
-            else {
-              split_numbers <- strsplit(as.character(splits[2]), "[.]")[[1]]
-              pos <- as.numeric(split_numbers[1])
-              alt <- as.numeric(split_numbers[2])
+                pos <- as.numeric(gsub(".*?([0-9]+).*", "\\1", splits[2]))
+                alt <- gsub("[^a-zA-Z]", "", splits[2])
+            } else {
+                split_numbers <- strsplit(as.character(splits[2]), "[.]")[[1]]
+                pos <- as.numeric(split_numbers[1])
+                alt <- as.numeric(split_numbers[2])
             }
             # Call parse_mutation with type "-" or "+"
             new_muts[i] <- provoc:::parse_mutation(type, pos, alt)
@@ -128,7 +130,8 @@ parse_unique_mutations <- function(muts) {
     }
 
     # Turn new_muts into a dataframe
-    data.frame(label = unique_muts, mutation = new_muts, stringsAsFactors = FALSE)
+    data.frame(label = unique_muts, mutation = new_muts,
+        stringsAsFactors = FALSE)
 }
 
 
@@ -143,4 +146,39 @@ parse_unique_mutations <- function(muts) {
 parse_mutations <- function(labels) {
     unique_aa <- provoc:::parse_unique_mutations(unique(labels))
     return(unique_aa$mutation[match(labels, unique_aa$label)])
+}
+
+#' Parse mutations from ivar pipeline
+#' 
+#' @param pos The position on the genome
+#' @param alt The alternate genotype
+#' 
+parse_one_ivar <- function(pos, alt) {
+    if (substr(alt, 1, 1) == "-") {
+        type <- "-"
+        pos <- pos
+        alt <- substr(alt, 2, nchar(alt))
+    } else if (substr(alt, 1, 1) == "+") {
+        type <- "+"
+        pos <- pos
+        alt <- substr(alt, 2, nchar(alt))
+    } else {
+        type <- "~"
+        pos <- pos
+        alt <- alt
+    }
+    provoc:::parse_mutation(type, pos, alt)
+}
+
+#' Parse Mutations from the ivar pipeline
+#' 
+#' @param ivar_output A data frame imported from the ivar output. Must have columns POS and ALT
+#' 
+#' @export
+parse_ivar <- function(ivar_output) {
+    sapply(seq_along(ivar_output$POS), function(i) {
+        provoc:::parse_one_ivar(
+            pos = ivar_output$POS[i] + 1,
+            alt = ivar_output$ALT[i])
+    })
 }
