@@ -102,7 +102,7 @@ fission <- function(fused, sample = NULL) {
 #' Finds and prints all similarities among variants
 #' 
 #' @param data A dataframe either before or after it has been fused with varmat
-#' @param is_varmat TRUE if data is a varaint matrix, FALSE if data is a fused dataframe
+#' @param is_varmat TRUE if data is a variant matrix, FALSE if data is a fused dataframe
 #' 
 #' @return none
 variants_similarity <- function(data, is_varmat) {
@@ -118,6 +118,28 @@ variants_similarity <- function(data, is_varmat) {
     similiarities$Differ_by_one <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = differ_by_one, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
     colnames(similiarities$Differ_by_one) <- colnames(subset_of_variants)
     rownames(similiarities$Differ_by_one) <- colnames(subset_of_variants)
+    i <- 1
+    while (!is.null(nrow(similiarities$Differ_by_one)) && i <= nrow(similiarities$Differ_by_one)) {
+      if (sum(similiarities$Differ_by_one[i, ] == rep(FALSE, ncol(similiarities$Differ_by_one))) == ncol(similiarities$Differ_by_one)) {
+        similiarities$Differ_by_one <- similiarities$Differ_by_one[-i,]
+      }
+      else {
+        i <- i + 1
+      }
+    }
+    if(is.null(nrow(similiarities$Differ_by_one))) {
+      similiarities$Differ_by_one <- NULL
+    }
+    else{
+      i <- 1
+      while (!is.null(ncol(similiarities$Differ_by_one)) && i <= ncol(similiarities$Differ_by_one)) {
+        if (sum(similiarities$Differ_by_one[,i] == rep(FALSE, nrow(similiarities$Differ_by_one))) == nrow(similiarities$Differ_by_one)) {
+          similiarities$Differ_by_one <- similiarities$Differ_by_one[,-i]
+        } else {
+          i <- i + 1
+        }
+      }
+    }
     
     similiarities$Jaccard_similarity <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = jaccard_simularity, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
     colnames(similiarities$Jaccard_similarity) <- colnames(subset_of_variants)
@@ -126,10 +148,56 @@ variants_similarity <- function(data, is_varmat) {
     similiarities$is_subset <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = is_subset, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
     colnames(similiarities$is_subset) <- colnames(subset_of_variants)
     rownames(similiarities$is_subset) <- colnames(subset_of_variants)
+    diag(similiarities$is_subset) <- rep("place holder", nrow(similiarities$is_subset))
+    i <- 1
+    while (!is.null(nrow(similiarities$is_subset)) && i <= nrow(similiarities$is_subset)) {
+      if (sum(similiarities$is_subset[i, ] == rep(FALSE, ncol(similiarities$is_subset))) == ncol(similiarities$is_subset) - 1) {
+        similiarities$is_subset <- similiarities$is_subset[-i,]
+      }
+      else {
+        i <- i + 1
+      }
+    }
+    if(is.null(nrow(similiarities$is_subset))) {
+      similiarities$is_subset <- NULL
+    }
+    else{
+      i <- 1
+      while (!is.null(ncol(similiarities$is_subset)) && i <= ncol(similiarities$is_subset)) {
+        if (sum(similiarities$is_subset[,i] == rep(TRUE, nrow(similiarities$is_subset))) == 0) {
+          similiarities$is_subset <- similiarities$is_subset[,-i]
+        } else {
+          i <- i + 1
+        }
+      }
+    }
+    similiarities$is_subset[similiarities$is_subset == "place holder"] <- TRUE
     
     similiarities$is_almost_subset <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = is_almost_subset, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
     colnames(similiarities$is_almost_subset) <- colnames(subset_of_variants)
     rownames(similiarities$is_almost_subset) <- colnames(subset_of_variants)
+    i <- 1
+    while (!is.null(nrow(similiarities$is_almost_subset)) && i <= nrow(similiarities$is_almost_subset)) {
+      if (sum(similiarities$is_almost_subset[i, ] == rep(FALSE, ncol(similiarities$is_almost_subset))) == ncol(similiarities$is_almost_subset)) {
+        similiarities$is_almost_subset <- similiarities$is_almost_subset[-i,]
+      }
+      else {
+        i <- i + 1
+      }
+    }
+    if (is.null(nrow(similiarities$is_almost_subset))) {
+      similiarities$is_almost_subset <- NULL
+    }
+    else{
+      i <- 1
+      while (!is.null(ncol(similiarities$is_almost_subset)) && i <= ncol(similiarities$is_almost_subset)) {
+        if (sum(similiarities$is_almost_subset[,i] == rep(FALSE, nrow(similiarities$is_almost_subset))) == nrow(similiarities$is_almost_subset)) {
+          similiarities$is_almost_subset <- similiarities$is_almost_subset[,-i]
+        } else {
+          i <- i + 1
+        }
+      }
+    }
     
     return(similiarities)
 }
