@@ -1,8 +1,8 @@
 #' Print the results of lineage abundance estimation
-#' 
+#'
 #' @inherit summary.provoc
 #' @param n The number of rows of the results dataframe to print
-#' 
+#'
 #' @export
 print.provoc <- function(provoc_obj, n = 6) {
     cat("Call: ", as.character(attributes(provoc_obj)$formula))
@@ -19,11 +19,11 @@ print.provoc <- function(provoc_obj, n = 6) {
 }
 
 #' Summarise results of model fitting
-#' 
+#'
 #' Prints the most useful diagnostics to the screen, invisibly returning them as a list.
-#' 
+#'
 #' @param provoc_obj The result of provoc(), or an object coerced via as.provoc().
-#' 
+#'
 #' @export
 summary.provoc <- function(provoc_obj) {
     cat("Call: ")
@@ -63,46 +63,48 @@ print.summary.provoc <- function(summary.provoc) {
 }
 
 #' Plot the results of model fitting
-#' 
+#'
 #' @inherit summary.provoc
 #' @param plot_type Currently only "barplot" is implemented. Residual plots and other diagnostics are works in progress.
-#' 
+#'
 #' @export
 plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
     #plot_types <- c("b", "r")
     #if(!all(plot_type %in% plot_types)) stop("Invalid plot choice.")
 
     mfrow <- switch(as.character(length(plot_type)),
-        "1" = c(1,1),
-        "2" = c(1,2),
-        c(2,2))
+        "1" = c(1, 1),
+        "2" = c(1, 2),
+        c(2, 2))
     par(mfrow = mfrow)
 
     # Barplot
-    if(1 %in% plot_type || any(startsWith(plot_type, "b"))) {
+    if (1 %in% plot_type || any(startsWith(plot_type, "b"))) {
         barplot(
-            height = matrix(provoc_obj$rho, 
-                ncol = ifelse("group" %in% names(provoc_obj), 
-                    length(unique(provoc_obj$group)), 
-                    1)), 
+            height = matrix(provoc_obj$rho,
+                ncol = ifelse("group" %in% names(provoc_obj),
+                    length(unique(provoc_obj$group)),
+                    1)),
+            names.arg = unique(provoc_obj$group),
             col = 1:length(unique(provoc_obj$variant)),
-            horiz = TRUE, 
+            horiz = TRUE,
             xlim = c(0, 1),
-            xlab = "Proportion", ylab = NULL)
-        legend("topright", 
-            legend = unique(provoc_obj$variant), 
-            col = 1:length(unique(provoc_obj$variant)), 
+            xlab = "Proportion",
+            ylab = NULL)
+        legend("topright",
+            legend = unique(provoc_obj$variant),
+            col = 1:length(unique(provoc_obj$variant)),
             pch = 15)
     }
 }
 
 #' Plot a provoc object using ggplot2
-#' 
+#'
 #' Plots the results of estimating wastewater prevalence of SARS-CoV-2. Optionally plots the results over time if given a date column.
-#' 
+#'
 #' @inherit summary.provoc
 #' @param date_col Optional - if there's a date column, the results are plotted over time. This can be problematic if there are multiple samples at each time point.
-#' 
+#'
 #' @importFrom ggplot2 autoplot
 #' @export
 autoplot.provoc <- function(provoc_obj, date_col = NULL) {
@@ -110,20 +112,20 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
         stop("Please load ggplot2 before using this function.")
     }
 
-    gg <- ggplot(provoc_obj) + 
-            geom_bar(stat = "identity", position = "stack") +
-            lims(y = c(0, 1))
+    gg <- ggplot(provoc_obj) +
+        geom_bar(stat = "identity", position = "stack") +
+        lims(y = c(0, 1))
     if (!is.null(date_col)) {
-        if (!inherits(provoc_obj[, date_col], "Date")) 
+        if (!inherits(provoc_obj[, date_col], "Date"))
             stop("Supplied date column does not include Date values. \nTry lubridate::ymd().")
 
         gg <- gg  +
             aes(x = date, y = rho, fill = variant, group = group) +
             labs(x = "Proportion", y = NULL, fill = "Lineage")
     } else if (!"group" %in% colnames(provoc_obj)) {
-        if(ncol(provoc_obj) > 4) 
+        if (ncol(provoc_obj) > 4)
             warning("Detected extra information, but plotting results as if they're a single sample.")
-    
+
         gg <- gg +
             aes(x = 1, y = rho, fill = variant) +
             labs(x = "Proportion", y = NULL, fill = "Lineage") +
@@ -138,9 +140,9 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
 }
 
 #' Extract the mutation definitions used to fit the model
-#' 
+#'
 #' @inherit summary.provoc
-#' 
+#'
 #' @export
 get_mutation_defs <- function(provoc_obj) {
     attributes(provoc_obj)$variant_matrix
@@ -148,9 +150,9 @@ get_mutation_defs <- function(provoc_obj) {
 
 
 #' Extract just the results of lineage estimation
-#' 
+#'
 #' @inherit summary.provoc
-#' 
+#'
 #' @export
 get_res <- function(provoc_obj) {
     as.data.frame(provoc_obj)
@@ -182,4 +184,3 @@ get_convergence <- function(res, verbose = TRUE) {
         return(invisible(TRUE))
     }
 }
-
