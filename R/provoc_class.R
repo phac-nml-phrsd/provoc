@@ -7,8 +7,13 @@
 print.provoc <- function(provoc_obj, n = 6) {
     cat("Call: ", as.character(attributes(provoc_obj)$formula))
     cat("\n\n")
-    cat("Convergence:\n")
-    print(unlist(attributes(provoc_obj)$convergence))
+    all_conv <- unlist(attributes(provoc_obj)$convergence)
+    if (any(!all_conv)) {
+        cat("Some models did not converge:\n")
+        print(unlist(attributes(provoc_obj)$convergence)[!all_conv])
+    } else {
+        cat("All models converged.\n")
+    }
     cat("\n")
     n <- min(n, nrow(provoc_obj))
     provoc_df <- provoc_obj[order(-provoc_obj$rho), ]
@@ -90,7 +95,8 @@ plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
             horiz = TRUE,
             xlim = c(0, 1),
             xlab = "Proportion",
-            ylab = NULL)
+            ylab = NULL,
+            las = 1)
         legend("topright",
             legend = unique(provoc_obj$variant),
             col = 1:length(unique(provoc_obj$variant)),
@@ -108,7 +114,7 @@ plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
 #' @importFrom ggplot2 autoplot
 #' @export
 autoplot.provoc <- function(provoc_obj, date_col = NULL) {
-    if(!"ggplot2" %in% .packages()) {
+    if (!"ggplot2" %in% .packages()) {
         stop("Please load ggplot2 before using this function.")
     }
 
@@ -118,23 +124,29 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
     if (!is.null(date_col)) {
         if (!inherits(provoc_obj[, date_col], "Date"))
             stop("Supplied date column does not include Date values. \nTry lubridate::ymd().")
-
         gg <- gg  +
             aes(x = date, y = rho, fill = variant, group = group) +
-            labs(x = "Proportion", y = NULL, fill = "Lineage")
+            labs(y = "Proportion", x = "Date", fill = "Lineage") +
+            scale_x_continuous(minor_breaks = NULL,
+                breaks = unique(provoc_obj$date)) +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
     } else if (!"group" %in% colnames(provoc_obj)) {
         if (ncol(provoc_obj) > 4)
             warning("Detected extra information, but plotting results as if they're a single sample.")
-
         gg <- gg +
             aes(x = 1, y = rho, fill = variant) +
-            labs(x = "Proportion", y = NULL, fill = "Lineage") +
+            labs(y = "Proportion", x = NULL, fill = "Lineage") +
+            scale_x_continuous(minor_breaks = NULL, breaks = NULL) +
             coord_flip()
+
     } else {
         gg <- gg +
             aes(x = group, y = rho, fill = variant) +
-            labs(x = "Proportion", y = NULL, fill = "Lineage") +
+            labs(y = "Proportion", x = "Group", fill = "Lineage") +
+            scale_x_discrete(breaks = sort(unique(provoc_obj$group))) +
             coord_flip()
+
     }
     return(gg)
 }
