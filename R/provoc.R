@@ -36,10 +36,10 @@
 #' @export
 
 provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
-                   update_interval = 20, verbose = FALSE, annihilate = FALSE) {
+    update_interval = 20, verbose = FALSE, annihilate = FALSE) {
     #creating original copy of data for later use
     data_copy <- data
-  
+
     # Initial validation and processing
     validate_inputs(formula, data)
     mutation_defs <- as.matrix(process_mutation_defs(mutation_defs))
@@ -60,7 +60,7 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
 
     #remove identical variants
     data <- remove_identical_variants(data, annihilate)
-  
+
     # Group the fused data for processing
     if (!is.null(by)) {
         if (!by %in% names(data)) {
@@ -89,11 +89,14 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
         }
     }
     row.names(final_results) <- NULL
-    
+
     # Find columns that are constant to by and add them to necessary data
     constant_columns <- constant_with_by(data_copy, by)
     if (!is.null(constant_columns)) {
-      final_results <- dplyr::left_join(final_results, constant_columns, by = c("group" = "sra"))
+        final_results <- dplyr::left_join(
+            final_results,
+            constant_columns,
+            by = c("group" = "sra"))
     }
 
     provoc_obj <- final_results
@@ -158,17 +161,20 @@ find_mutation_column <- function(data, mutation_defs) {
 #' @return A data frame with no mutations that have a duplicate combination of variants
 #' @examples
 #' # This function is internally used and not typically called by the user.
-remove_identical_variants <- function(fused_df, annihilate){
-    subset_of_variants <- dplyr::select(fused_df,contains("var_"))
+remove_identical_variants <- function(fused_df, annihilate) {
+    subset_of_variants <- dplyr::select(fused_df, contains("var_"))
     if (annihilate) {
         unique_subset_of_variants <- t(unique(t(subset_of_variants)))
         if (ncol(subset_of_variants) != ncol(unique_subset_of_variants)) {
-          print(paste0("Variant ", colnames(subset_of_variants)[!(colnames(subset_of_variants) %in% colnames(unique_subset_of_variants))],
+            print(paste0("Variant ",
+                colnames(subset_of_variants)[
+                    !(colnames(subset_of_variants) %in%
+                            colnames(unique_subset_of_variants))],
                        " is a duplicate variant and has been removed from the dateframe"))
         }
-        return(cbind(dplyr::select(fused_df, !contains("var_")), unique_subset_of_variants))
-    }
-    else {
+        return(cbind(dplyr::select(fused_df,
+            !contains("var_")), unique_subset_of_variants))
+    } else {
         names_of_duplicate_var <- names(which(duplicated(t(fused_df))))
         for (var in names_of_duplicate_var) {
             other_variants <- dplyr::select(subset_of_variants,!contains(var))
@@ -178,7 +184,9 @@ remove_identical_variants <- function(fused_df, annihilate){
                     duplicated_with_var <- append(duplicated_with_var, var_i)
                 }
             }
-            warning("Variants ", paste(duplicated_with_var, collapse = ", "), " are duplicates of eachother")
+            warning("Variants ",
+                paste(duplicated_with_var, collapse = ", "),
+                " are duplicates of eachother")
         }
         return(fused_df)
     }
@@ -196,7 +204,8 @@ remove_identical_variants <- function(fused_df, annihilate){
 #' and `mutation_defs`, a matrix filtered to only include mutations on the formula's RHS
 #' @examples
 #' This function is internally used and not typically called by the user.
-extract_formula_components <- function(formula, data, mutation_defs, mutation_col, by_col) {
+extract_formula_components <- function(formula, data,
+    mutation_defs, mutation_col, by_col) {
     # Extract LHS and RHS of the formula
     formula_str <- deparse(formula)
     formula_parts <- strsplit(formula_str, "~")[[1]]
@@ -209,9 +218,10 @@ extract_formula_components <- function(formula, data, mutation_defs, mutation_co
 
     # Extract necessary data based on LHS
     response_vars <- all.vars(formula[[2]])
-    necessary_data <- data[, c(mutation_col, response_vars, by_col), drop = FALSE]
+    necessary_data <- data[, c(mutation_col, response_vars, by_col),
+        drop = FALSE]
     colnames(necessary_data) <- c("mutation", "count", "coverage", by_col)
-    
+
     # Validate and subset mutation definitions based on RHS variants
     if (!is.null(mutation_defs) && length(variant_names) > 0) {
         missing_variants <- setdiff(variant_names, rownames(mutation_defs))
@@ -243,7 +253,8 @@ process_mutation_defs <- function(mutation_defs) {
         return(provoc:::astronomize())
     }
     if (!is.matrix(mutation_defs)) {
-        mutation_defs <- tryCatch(as.matrix(mutation_defs), error = function(e) e)
+        mutation_defs <- tryCatch(as.matrix(mutation_defs),
+            error = function(e) e)
         if ("error" %in% class(mutation_defs)) {
             stop("mutation_defs must be a matrix or something coercible into a matrix")}
     }
@@ -308,22 +319,24 @@ process_optim <- function(grouped_data, mutation_defs, by) {
     attr(res_list, "convergence") <- convergence_list
     return(res_list)
 }
+
 #' Finds all columns of the data that are constant with the specified by group
 #'
 #' @param data Data frame containing count, coverage, and lineage columns.
 #' @param by Column name to group and process data.
 #'
 #' @return A dataframe with the columns by and all that are constant with by
-constant_with_by <- function(data,by){
-  if (is.null(by)) {
-      return(NULL)
-  }
-  grouped_data <- split(data, data[[by]])
-  for (group_name in names(grouped_data)) {
-       group_data <- grouped_data[[group_name]]
-       group_data <- group_data[, names(group_data) %in% names(data)]
-       is_constant <- as.matrix(apply(group_data, 2, function(a) length(unique(a)) == 1))
-       data <- data[, names(data) %in% rownames(which(is_constant == TRUE, arr.ind = TRUE))]
-  }
-  return(data)
+constant_with_by <- function(data, by) {
+    if (is.null(by)) {
+        return(NULL)
+    }
+    grouped_data <- split(data, data[[by]])
+    for (group_name in names(grouped_data)) {
+        group_data <- grouped_data[[group_name]]
+        is_constant <- apply(group_data, 2,
+            function(a) length(unique(a)) == 1)
+        data <- data[, names(is_constant)[is_constant]]
+    }
+
+    return(data[!duplicated(data), ])
 }

@@ -3,7 +3,7 @@
 #' @param x A vector of numbers
 #' 
 #' @return A vector with the same length of x such that the sum of the values is larger than 0 but less than 1 and all values are between 0 and 1
-to_feasible <- function(x){
+to_feasible <- function(x) {
     x <- x - min(x, na.rm = TRUE) + 0.0001
     x <- 0.99 * x / sum(x, na.rm = TRUE)
     x
@@ -21,7 +21,7 @@ rho_initializer <- function(varmat) {
     probables1 <- c("BA.1$", "BA.2$", "^B.1.1.529$")
     for (i in seq_along(probables1)) {
         var_in_names <- grepl(probables1[i], rownames(varmat))
-        if(any(var_in_names)) {
+        if (any(var_in_names)) {
             rho_init[which(var_in_names)] <- 50
         }
     }
@@ -67,8 +67,8 @@ rho_initializer <- function(varmat) {
 #' coco <- simulate_coco(varmat, rel_counts = c(100, 200, 300)) # expect 1/6, 2/6, and 3/6
 #' res <- copt_binom(coco, varmat)
 #' res$res_df
-provoc_optim <- function(coco, varmat, bootstrap_samples = 0, 
-                         verbose = TRUE) {
+provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
+    verbose = TRUE) {
     muts <- coco$mutation
     cou2 <- coco$count
     cov2 <- coco$coverage
@@ -79,8 +79,10 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         prob <- as.numeric(rho %*% varmat)
         prob[coverage == 0] <- 0
         prob[prob == 0 & count != 0] <- 0.000001
-        -sum(stats::dbinom(x = as.numeric(count), size = as.numeric(coverage), prob = as.numeric(prob),
-            log = TRUE))
+        -sum(stats::dbinom(x = as.numeric(count),
+                size = as.numeric(coverage),
+                prob = as.numeric(prob),
+                log = TRUE))
     }
 
     # Constraints will kill me --------------------------------
@@ -103,9 +105,9 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         control = list(maxit = 10000))
     res$init_method <- "Prior_Assumption"
 
-    if(res$convergence) { # if not converged,
+    if (res$convergence) { # if not converged,
         # Try a different initialization
-        rho_init <- 0.99*rep(1/nrow(vari2), nrow(vari2))
+        rho_init <- 0.99 * rep(1 / nrow(vari2), nrow(vari2))
         res <- stats::constrOptim(rho_init,
             f = objective, grad = NULL,
             ui = ui, ci = ci,
@@ -115,8 +117,8 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
     }
 
     bestres <- res
-    if(res$convergence) { 
-        if(verbose) {
+    if (res$convergence) {
+        if (verbose) {
             print("Trying the nuclear option for constrOptim.")
             print("This has never actually worked before.")
             print("Godspeed.")
@@ -124,9 +126,9 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         # Uniform inititialization
         i <- 0
         converged <- FALSE
-        while(i < 20 & !converged) {
+        while (i < 20 & !converged) {
             i <- i + 1
-            if(!i %% 10) print(paste0("Attempt ", i, " of 20."))
+            if (!i %% 10) print(paste0("Attempt ", i, " of 20."))
 
             # Add noise to previous iteration
             rho_init <- res$par +
@@ -143,50 +145,60 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         res$init_method <- "Nuclear"
 
         # Only take the best results out of all nuclear tries
-        if(res$value < bestres$value) {
+        if (res$value < bestres$value) {
             bestres <- res
         }
 
         converged <- !res$convergence
-        if(i == 20 & verbose) {
+        if (i == 20 & verbose) {
             print("Nuclear Option failed; going with best results.")
         }
     }
 
-
+    boots <- NULL
     res_df <- data.frame(rho = bestres$par,
-            ci_low = NA,
-            ci_high = NA, 
-            variant = rownames(varmat))
+        ci_low = NA,
+        ci_high = NA,
+        variant = rownames(varmat))
     convergence <- ifelse(bestres$convergence == 0, TRUE, bestres$convergence)
-    convergence_note <- paste("Optim results: ", 
-        bestres$convergence, 
-        "; Initialization: ", bestres$init_method, sep = '')
-    if(bootstrap_samples > 0) {
+    convergence_note <- paste("Optim results: ",
+        bestres$convergence,
+        "; Initialization: ", bestres$init_method, sep = "")
+    if (bootstrap_samples > 0) {
         resampled_coverage <- rmultinom(bootstrap_samples,
-                           size = sum(cov2),
-                           prob = cov2/sum(cov2)) |>
-                    as.numeric()
+            size = sum(cov2),
+            prob = cov2 / sum(cov2)) |>
+            as.numeric()
         resampled_counts <- rbinom(length(resampled_coverage),
-                         size = resampled_coverage,
-                         prob = rep(cou2/cov2, bootstrap_samples))
-        resamples <- data.frame(count = resampled_counts,
-                              coverage = resampled_coverage,
-                              mut = rep(muts, bootstrap_samples),
-                              iteration = rep(1:bootstrap_samples, each = length(muts)))
-        boots <- data.frame(matrix(nrow = nrow(vari2), ncol = bootstrap_samples))
+            size = resampled_coverage,
+            prob = rep(cou2 / cov2, bootstrap_samples))
+        resamples <- data.frame(
+            count = resampled_counts,
+            coverage = resampled_coverage,
+            mut = rep(muts, bootstrap_samples),
+            iteration = rep(1:bootstrap_samples,
+                each = length(muts))
+        )
+        boots <- data.frame(
+            matrix(nrow = nrow(vari2),
+                ncol = bootstrap_samples)
+        )
         i <- 1
         for (iteration in split(resamples, resamples[["iteration"]])){
-            boots_column <- paste("X",i,sep="")
-            boots[boots_column] <- provoc_optim(iteration, vari2[,muts])$res_df[,"rho"]
+            boots_column <- paste("X", i, sep = "")
+            boots[boots_column] <- provoc_optim(iteration,
+                vari2[, muts])$res_df[, "rho"]
             i <- i + 1
         }
-        
+
         ci <- apply(boots, 1, quantile, prob = c(0.025, 0.975))
-        
-        res_df$ci_low <- ci[1,]
-        res_df$ci_high <- ci[2,]
+        boots <- t(boots)
+        res_df$ci_low <- ci[1, ]
+        res_df$ci_high <- ci[2, ]
     }
 
-    return(list(res_df = res_df, convergence = convergence, convergence_note = convergence_note))
+    return(list(res_df = res_df,
+            convergence = convergence,
+            convergence_note = convergence_note,
+            bootstrap_samples = boots))
 }
