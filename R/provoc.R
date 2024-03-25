@@ -37,7 +37,9 @@
 
 provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
                    update_interval = 20, verbose = FALSE, annihilate = FALSE) {
-
+    #creating original copy of data for later use
+    data_copy <- data
+  
     # Initial validation and processing
     validate_inputs(formula, data)
     mutation_defs <- as.matrix(process_mutation_defs(mutation_defs))
@@ -87,6 +89,12 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
         }
     }
     row.names(final_results) <- NULL
+    
+    # Find columns that are constant to by and add them to necessary data
+    constant_columns <- constant_with_by(data_copy, by)
+    if (!is.null(constant_columns)) {
+      final_results <- dplyr::left_join(final_results, constant_columns, by = c("group" = "sra"))
+    }
 
     provoc_obj <- final_results
     attr(provoc_obj, "variant_matrix") <- mutation_defs
@@ -203,7 +211,7 @@ extract_formula_components <- function(formula, data, mutation_defs, mutation_co
     response_vars <- all.vars(formula[[2]])
     necessary_data <- data[, c(mutation_col, response_vars, by_col), drop = FALSE]
     colnames(necessary_data) <- c("mutation", "count", "coverage", by_col)
-
+    
     # Validate and subset mutation definitions based on RHS variants
     if (!is.null(mutation_defs) && length(variant_names) > 0) {
         missing_variants <- setdiff(variant_names, rownames(mutation_defs))
@@ -305,18 +313,17 @@ process_optim <- function(grouped_data, mutation_defs, by) {
 #' @param data Data frame containing count, coverage, and lineage columns.
 #' @param by Column name to group and process data.
 #'
-#' @return A List of all constant columns with the by column
+#' @return A dataframe with the columns by and all that are constant with by
 constant_with_by <- function(data,by){
   if (is.null(by)) {
       return(NULL)
   }
   grouped_data <- split(data, data[[by]])
-  data_without_by <- data[, !names(data) %in% by]
   for (group_name in names(grouped_data)) {
        group_data <- grouped_data[[group_name]]
-       group_data <- group_data[, names(group_data) %in% names(data_without_by)]
+       group_data <- group_data[, names(group_data) %in% names(data)]
        is_constant <- as.matrix(apply(group_data, 2, function(a) length(unique(a)) == 1))
-       data_without_by <- data_without_by[, names(data_without_by) %in% rownames(which(is_constant == TRUE, arr.ind = TRUE))]
+       data <- data[, names(data) %in% rownames(which(is_constant == TRUE, arr.ind = TRUE))]
   }
-  return(list(colnames(data_without_by)))
+  return(data)
 }
