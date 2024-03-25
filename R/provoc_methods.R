@@ -25,7 +25,7 @@ predict.provoc <- function(provoc_obj,
     }
 
     proportions <- as.numeric(provoc_obj$rho)
-    variant_matrix <- get_varmat(provoc_obj)
+    variant_matrix <- get_mutation_defs(provoc_obj)
     if (any(!rownames(variant_matrix) %in% provoc_obj$variant)) {
         stop("Variant matrix does not match variants in results")
     }
