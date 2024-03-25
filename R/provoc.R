@@ -96,7 +96,7 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
       final_results <- dplyr::left_join(final_results, constant_columns, by = c("group" = "sra"))
     }
 
-    provoc_obj <- final_results
+    provoc_obj <- unique(final_results)
     attr(provoc_obj, "variant_matrix") <- mutation_defs
     attr(provoc_obj, "formula") <- formula
     attr(provoc_obj, "convergence") <- attributes(res_list)$convergence
