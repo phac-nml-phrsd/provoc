@@ -300,4 +300,23 @@ process_optim <- function(grouped_data, mutation_defs, by) {
     attr(res_list, "convergence") <- convergence_list
     return(res_list)
 }
-
+#' Finds all columns of the data that are constant with the specified by group
+#'
+#' @param data Data frame containing count, coverage, and lineage columns.
+#' @param by Column name to group and process data.
+#'
+#' @return A List of all constant columns with the by column
+constant_with_by <- function(data,by){
+  if (is.null(by)) {
+      return(NULL)
+  }
+  grouped_data <- split(data, data[[by]])
+  data_without_by <- data[, !names(data) %in% by]
+  for (group_name in names(grouped_data)) {
+       group_data <- grouped_data[[group_name]]
+       group_data <- group_data[, names(group_data) %in% names(data_without_by)]
+       is_constant <- as.matrix(apply(group_data, 2, function(a) length(unique(a)) == 1))
+       data_without_by <- data_without_by[, names(data_without_by) %in% rownames(which(is_constant == TRUE, arr.ind = TRUE))]
+  }
+  return(list(colnames(data_without_by)))
+}
