@@ -192,7 +192,7 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         }
 
         ci <- apply(boots, 1, quantile, prob = c(0.025, 0.975))
-
+        boots <- t(boots)
         res_df$ci_low <- ci[1, ]
         res_df$ci_high <- ci[2, ]
     }
@@ -200,5 +200,5 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
     return(list(res_df = res_df,
             convergence = convergence,
             convergence_note = convergence_note,
-            bootstrap_samples = t(boots)))
+            bootstrap_samples = boots))
 }
