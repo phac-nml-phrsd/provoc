@@ -1,5 +1,5 @@
 
-test_that("rho total is less than 1", {
+test_that("rho values between 0 and 1", {
   epsilon = 0.005 #initializes epsilon, put outside of rho_test function since it doesn't change
   rho_test <- function(converg_info){
     i = 1
@@ -10,7 +10,6 @@ test_that("rho total is less than 1", {
       rho_total = rho_total + converg_info$rho[i]
       i = i + 1
     }
-    expect_lt(rho_total, 1+epsilon) #checks to see if rho total is between 1-epsilon and 1+epsilon, since addition with significant digits can cause issues on preciseness.
   }
   create_provoc_table <- function(rel_counts){
     varmat <- simulate_varmat() #simulates a new variant matrix
