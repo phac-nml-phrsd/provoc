@@ -101,18 +101,16 @@ fission <- function(fused, sample = NULL) {
 
 #' Finds and prints all similarities among variants
 #' 
-#' @param data A data frame either before or after it has been fused with varmat
-#' @param is_varmat TRUE if data is a variant matrix, FALSE if data is a fused data frame
+#' @param data A variant matrix
 #' 
 #' @return A list of length 4 containing information on which variants differ by one,
 #' the Jaccard similarity between variants, which variants are subsets and almost subsets
 #' of each other. in is_subset and is_almost_subset a value is true if the variant of the
 #' column name is a subset/almost a subset of the variant of the row name.
-variants_similarity <- function(data, is_varmat) {
+variants_similarity <- function(data) {
     
-    if (is_varmat) {
-      data <- as.data.frame(t(data))
-    }
+    data <- as.data.frame(t(data))
+
     
     subset_of_variants <- data |> dplyr::select_if(~ all(. %in% c(0,1)))
     
