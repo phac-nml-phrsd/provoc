@@ -34,7 +34,6 @@
 #' predicted_values <- predict.provoc(res)
 #'
 #' @export
-
 provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     update_interval = 20, verbose = FALSE, annihilate = FALSE) {
     #creating original copy of data for later use
@@ -199,6 +198,8 @@ remove_identical_variants <- function(fused_df, annihilate) {
 #' @param formula The formula input by the user.
 #' @param data The dataframe containing the dataset.
 #' @param mutation_defs A matrix containing mutation definitions.
+#' @param mutation_col The column containing the mutations.
+#' @param by_col The column to group the data by.
 #'
 #' @return A list containing `data`, a dataframe filtered based on the formula's LHS
 #' and `mutation_defs`, a matrix filtered to only include mutations on the formula's RHS
@@ -294,6 +295,7 @@ prepare_and_fuse_data <- function(data, mutation_defs, by, verbose) {
 #'
 #' @param grouped_data A list containing data frames for each group to be processed.
 #' @param mutation_defs A matrix of mutation definitions.
+#' @param by An optional string specifying the column name to group the data by.
 #'
 #' @return A list of results for each group, including point estimates and convergence information.
 #' @examples
