@@ -7,6 +7,7 @@
 #' @param data Data frame containing count, coverage, and lineage columns.
 #' @param mutation_defs Optional mutation definitions; if NULL, uses astronomize().
 #' @param by Column name to group and process data. If included, the results will contain a column labelled "group".
+#' @param bootstrap_samples The number of bootstrap samples to use.
 #' @param update_interval Interval for progress messages (0 to suppress).
 #' @param verbose TRUE to print detailed messages.
 #' @param annihilate TRUE to remove duplicate variants from the data
@@ -35,8 +36,8 @@
 #'
 #' @export
 
-provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
-    update_interval = 20, verbose = FALSE, annihilate = FALSE) {
+provoc <- function(formula, data, mutation_defs = NULL, by = NULL, 
+    bootstrap_samples = 0, update_interval = 20, verbose = FALSE, annihilate = FALSE) {
     #creating original copy of data for later use
     data_copy <- data
 
@@ -73,7 +74,7 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     }
 
     # Proceed with processing each group
-    res_list <- process_optim(grouped_data, mutation_defs, by)
+    res_list <- process_optim(grouped_data, mutation_defs, by, bootstrap_samples)
 
     # Combine results and ensure object is of class 'provoc'
     final_results <- do.call(rbind, res_list)
@@ -294,11 +295,13 @@ prepare_and_fuse_data <- function(data, mutation_defs, by, verbose) {
 #'
 #' @param grouped_data A list containing data frames for each group to be processed.
 #' @param mutation_defs A matrix of mutation definitions.
+#' @param by Column name to group and process data. If included, the results will contain a column labelled "group".
+#' @param bootstrap_samples The number of bootstrap samples to use.
 #'
 #' @return A list of results for each group, including point estimates and convergence information.
 #' @examples
 #' # This function is internally used and not typically called by the user.
-process_optim <- function(grouped_data, mutation_defs, by) {
+process_optim <- function(grouped_data, mutation_defs, by, bootstrap_samples) {
     res_list <- vector("list", length = length(grouped_data))
     names(res_list) <- names(grouped_data)
     convergence_list <- vector("list", length = length(grouped_data))
@@ -312,7 +315,7 @@ process_optim <- function(grouped_data, mutation_defs, by) {
         coco <- fissed$coco
         varmat <- fissed$varmat
 
-        optim_results <- provoc:::provoc_optim(coco = coco, varmat = varmat)
+        optim_results <- provoc:::provoc_optim(coco = coco, varmat = varmat, bootstrap_samples = bootstrap_samples)
         res_list[[group_name]] <- optim_results$res_df
         convergence_list[[group_name]] <- optim_results$convergence
     }

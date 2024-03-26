@@ -168,10 +168,10 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         resampled_coverage <- rmultinom(bootstrap_samples,
             size = sum(cov2),
             prob = cov2 / sum(cov2)) |>
-            as.numeric()
+            as.integer()
         resampled_counts <- rbinom(length(resampled_coverage),
             size = resampled_coverage,
-            prob = rep(cou2 / cov2, bootstrap_samples))
+            prob = rep(cou2 / (0.999 * (cov2 + 0.0001)), bootstrap_samples))
         resamples <- data.frame(
             count = resampled_counts,
             coverage = resampled_coverage,
