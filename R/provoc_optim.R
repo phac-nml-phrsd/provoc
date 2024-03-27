@@ -68,18 +68,21 @@ rho_initializer <- function(varmat) {
 #' res <- copt_binom(coco, varmat)
 #' res$res_df
 provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
-    verbose = TRUE) {
+    verbose = TRUE, rho_init = NULL) {
     muts <- coco$mutation[coco$coverage > 0]
     cou2 <- coco$count[coco$coverage > 0]
     cov2 <- coco$coverage[coco$coverage > 0]
     vari2 <- varmat[, coco$coverage > 0]
-    rho_init <- rho_initializer(vari2)
+    if (is.null(rho_init)) {
+        rho_init <- rho_initializer(vari2)
+    } else {
+        rho_init <- to_feasible(rho_init)
+    }
 
     objective <- function(rho, count, varmat, coverage) {
-        prob <- as.numeric(rho %*% varmat)
         -sum(stats::dbinom(x = as.numeric(count),
                 size = as.numeric(coverage),
-                prob = 0.999 * as.numeric(prob) + 0.0001,
+                prob = 0.999 * rho %*% varmat + 0.0001,
                 log = TRUE))
     }
 
@@ -153,7 +156,6 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         }
     }
 
-    boots <- NULL
     res_df <- data.frame(rho = bestres$par,
         ci_low = NA,
         ci_high = NA,
@@ -179,11 +181,14 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         )
 
         boots <- sapply(split(resamples, resamples[, "iteration"]),
-            function(x) provoc_optim(x, vari2)$res_df[, "rho"]
-        )
+            function(x) {
+                provoc_optim(x, vari2,
+                    rho_init = res_df$rho)$res_df[, "rho"]
+            }
+        ) |> t()
+        colnames(boots) <- res_df$variant
 
-        ci <- apply(boots, 1, quantile, prob = c(0.025, 0.975))
-        boots <- t(boots)
+        ci <- apply(boots, 2, quantile, prob = c(0.025, 0.975))
         res_df$ci_low <- ci[1, ]
         res_df$ci_high <- ci[2, ]
     }
@@ -191,5 +196,5 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
     return(list(res_df = res_df,
             convergence = convergence,
             convergence_note = convergence_note,
-            bootstrap_samples = boots))
+            bootstrap_samples = cor(boots)))
 }

@@ -74,7 +74,9 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     }
 
     # Proceed with processing each group
-    res_list <- process_optim(grouped_data, mutation_defs, by, bootstrap_samples)
+    res <- process_optim(grouped_data, mutation_defs,
+        by, bootstrap_samples)
+    res_list <- res$res_list
 
     # Combine results and ensure object is of class 'provoc'
     final_results <- do.call(rbind, res_list)
@@ -103,7 +105,8 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     provoc_obj <- final_results
     attr(provoc_obj, "variant_matrix") <- mutation_defs
     attr(provoc_obj, "formula") <- formula
-    attr(provoc_obj, "convergence") <- attributes(res_list)$convergence
+    attr(provoc_obj, "convergence") <- res$convergence_list
+    attr(provoc_obj, "bootstrap_cor") <- res$boot_list
     class(provoc_obj) <- c("provoc", "data.frame")
 
     return(provoc_obj)
@@ -306,6 +309,8 @@ process_optim <- function(grouped_data, mutation_defs, by, bootstrap_samples) {
     names(res_list) <- names(grouped_data)
     convergence_list <- vector("list", length = length(grouped_data))
     names(convergence_list) <- names(grouped_data)
+    boot_list <- vector("list", length = length(grouped_data))
+    names(boot_list) <- names(grouped_data)
 
     for (group_name in names(grouped_data)) {
         group_data <- grouped_data[[group_name]]
@@ -315,12 +320,17 @@ process_optim <- function(grouped_data, mutation_defs, by, bootstrap_samples) {
         coco <- fissed$coco
         varmat <- fissed$varmat
 
-        optim_results <- provoc:::provoc_optim(coco = coco, varmat = varmat, bootstrap_samples = bootstrap_samples)
+        optim_results <- provoc:::provoc_optim(
+            coco = coco, varmat = varmat,
+            bootstrap_samples = bootstrap_samples)
         res_list[[group_name]] <- optim_results$res_df
         convergence_list[[group_name]] <- optim_results$convergence
+        boot_list[[group_name]] <- optim_results$bootstrap_samples
     }
-    attr(res_list, "convergence") <- convergence_list
-    return(res_list)
+
+    return(list(res_list = res_list,
+            convergence_list = convergence_list,
+            boot_list = boot_list))
 }
 
 #' Finds all columns of the data that are constant with the specified by group
