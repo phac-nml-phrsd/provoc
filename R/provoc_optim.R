@@ -76,7 +76,6 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
     rho_init <- rho_initializer(vari2)
 
     objective <- function(rho, count, varmat, coverage) {
-        calls <<- calls + 1
         prob <- as.numeric(rho %*% varmat)
         -sum(stats::dbinom(x = as.numeric(count),
                 size = as.numeric(coverage),
@@ -149,7 +148,7 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         }
 
         converged <- !res$convergence
-        if (i == 20 & verbose) {
+        if (i == 20 && verbose) {
             print("Nuclear Option failed; going with best results.")
         }
     }
@@ -178,17 +177,10 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
             iteration = rep(1:bootstrap_samples,
                 each = length(muts))
         )
-        boots <- data.frame(
-            matrix(nrow = nrow(vari2),
-                ncol = bootstrap_samples)
+
+        boots <- sapply(split(resamples, resamples[, "iteration"]),
+            function(x) provoc_optim(x, vari2)$res_df[, "rho"]
         )
-        i <- 1
-        for (iteration in split(resamples, resamples[["iteration"]])){
-            boots_column <- paste("X", i, sep = "")
-            boots[boots_column] <- provoc_optim(iteration,
-                vari2)$res_df[, "rho"]
-            i <- i + 1
-        }
 
         ci <- apply(boots, 1, quantile, prob = c(0.025, 0.975))
         boots <- t(boots)
