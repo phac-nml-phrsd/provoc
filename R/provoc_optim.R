@@ -69,19 +69,18 @@ rho_initializer <- function(varmat) {
 #' res$res_df
 provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
     verbose = TRUE) {
-    muts <- coco$mutation
-    cou2 <- coco$count
-    cov2 <- coco$coverage
-    vari2 <- varmat
+    muts <- coco$mutation[coco$coverage > 0]
+    cou2 <- coco$count[coco$coverage > 0]
+    cov2 <- coco$coverage[coco$coverage > 0]
+    vari2 <- varmat[, coco$coverage > 0]
     rho_init <- rho_initializer(vari2)
 
     objective <- function(rho, count, varmat, coverage) {
+        calls <<- calls + 1
         prob <- as.numeric(rho %*% varmat)
-        prob[coverage == 0] <- 0
-        prob[prob == 0 & count != 0] <- 0.000001
         -sum(stats::dbinom(x = as.numeric(count),
                 size = as.numeric(coverage),
-                prob = as.numeric(prob),
+                prob = 0.999 * as.numeric(prob) + 0.0001,
                 log = TRUE))
     }
 
@@ -126,7 +125,7 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         # Uniform inititialization
         i <- 0
         converged <- FALSE
-        while (i < 20 & !converged) {
+        while (i < 20 && !converged) {
             i <- i + 1
             if (!i %% 10) print(paste0("Attempt ", i, " of 20."))
 
@@ -171,7 +170,7 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
             as.integer()
         resampled_counts <- rbinom(length(resampled_coverage),
             size = resampled_coverage,
-            prob = rep(cou2 / (0.999 * (cov2 + 0.0001)), bootstrap_samples))
+            prob = rep(cou2 / cov2, bootstrap_samples))
         resamples <- data.frame(
             count = resampled_counts,
             coverage = resampled_coverage,
@@ -187,7 +186,7 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
         for (iteration in split(resamples, resamples[["iteration"]])){
             boots_column <- paste("X", i, sep = "")
             boots[boots_column] <- provoc_optim(iteration,
-                vari2[, muts])$res_df[, "rho"]
+                vari2)$res_df[, "rho"]
             i <- i + 1
         }
 
