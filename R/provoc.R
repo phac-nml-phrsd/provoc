@@ -44,12 +44,15 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     # Initial validation and processing
     validate_inputs(formula, data)
     mutation_defs <- as.matrix(process_mutation_defs(mutation_defs))
-
+    
     # Find out which column might define the mutations
     find_muation_column_output <- find_mutation_column(data, mutation_defs)
     mutation_defs <- find_muation_column_output[[1]]
     mutation_col <- find_muation_column_output[[2]]
 
+    #Finding summary statistics while mutation_defs is still in varmat form
+    similarities <- provoc:::variants_similarity(mutation_defs)
+    
     # Extract components from the formula
     components <- extract_formula_components(formula, data,
         mutation_defs, mutation_col, by)
@@ -107,6 +110,12 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     attr(provoc_obj, "formula") <- formula
     attr(provoc_obj, "convergence") <- res$convergence_list
     attr(provoc_obj, "bootstrap_cor") <- res$boot_list
+    
+    attr(provoc_obj, "Differ_by_one_or_less") <- similarities$Differ_by_one
+    attr(provoc_obj, "Jaccard_similarity") <- similarities$Jaccard_similarity
+    attr(provoc_obj, "Is_subset") <- similarities$is_subset
+    attr(provoc_obj, "Is_almost_subset") <- similarities$is_almost_subset
+    
     class(provoc_obj) <- c("provoc", "data.frame")
 
     return(provoc_obj)

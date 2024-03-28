@@ -38,10 +38,20 @@ summary.provoc <- function(provoc_obj) {
 
     bootstrap_cor <- attributes(provoc_obj)$bootstrap_cor
 
-
+    
+    cat("\nVariants that differ by zero or one mutations: \n")
+    print(attributes(provoc_obj)$Differ_by_one_or_less)
+    
+    cat("\nThe Jaccard similarity amoung all variants: \n")
+    print(attributes(provoc_obj)$Jaccard_similarity)
+    
+    cat("\nVariants that are subsets of one another: \n")
+    print(attributes(provoc_obj)$Is_subset)
+    
+    cat("\nVariants that are almost subsets of one another: \n")
+    print(attributes(provoc_obj)$Is_almost_subset)
     # TODO: Data summary
     # Number of mutations used in the fitting,
-    # Similarity of variants (Jaccard, based on data used in model)
     # Entropy of frequencies, or deviation from 0.5
     # Five-number summary for coverage
     # ...
