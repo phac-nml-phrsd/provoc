@@ -3,8 +3,6 @@ title: "ProVoC"
 format: gfm
 ---
 
-# ProVoC
-
 [![Lifecycle:
 development](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental-1)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -27,6 +25,7 @@ There are two steps to using this software: create the mutation definitions and 
 If not specified, the mutation definitions uses hardcoded definitions from the [cov-lineages/constellations](https://github.com/cov-lineages/constellations) repo, which contains the representative mutations that were identified by the PANGO team. The mutation definitions must have names that match what exists in the data.
 
 ```{r}
+#| label: load_Baaijens
 #| echo: true
 #| eval: true
 library(provoc)
@@ -37,28 +36,30 @@ b1$mutation <- parse_mutations(b1$label)
 head(b1[, c("count", "coverage", "mutation", "label")])
 ```
 
-The main fitting function is designed to mimic `glm()`, with formula notation that emphasizes the connection to binomial GLM models.
+The main fitting function is designed to mimic `glm()`, with formula notation that emphasizes the connection to binomial GLM models. The `bootstrap_samples` argument is optional, and is used to calculate confidence intervals and correlation of the parameters.
 
 ```{r}
+#| label: fit one sample
 res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2,
     data = b1,
-    verbose = FALSE)
+    verbose = FALSE,
+    bootstrap_samples = 100)
 res
 ```
 
 We have created a class for `provoc` objects with convenient methods. For example, plotting the results is achieved as follows:
 
 ```{r}
-#| fig-height: 4
 #| label: one-sample-res-base
+#| fig-height: 4
 plot(res)
 ```
 
 We use the convention of [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html) as a function that creates a `ggplot2` plot based on a particular type of data. This allows for all of `ggplot2`'s fanciness on top of a pre-made plot.
 
 ```{r}
-#| fig-height: 4
 #| label: one-sample-res-ggplot
+#| fig-height: 4
 library(ggplot2)
 autoplot(res) +
     theme_bw() +
@@ -68,18 +69,20 @@ autoplot(res) +
 # Multiple Samples
 
 ```{r}
-# First two sampls from Baaijens
+#| label: multi_sample
+# First two samples from Baaijens
 b2 <- Baaijens [Baaijens$sra %in% unique(Baaijens$sra)[1:50], ]
 b2$mutations <- parse_mutations(b2$label)
 head(b1[, c("count", "coverage", "mutation", "label", "sra")])
 ```
 
-Note the "by" argument below.
+Note the "`by`" argument below. This tells `provoc()` to fit the model separately to each sample defined by the `by` column. Since there are 50 samples, the model takes a while to run, hence why there are only 50 bootstrap samples here.
 
 ```{r}
+#| label: fit-multi-sample
 res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2,
     data = b2, by = "sra",
-    verbose = FALSE)
+    verbose = FALSE, bootstrap_samples = 50)
 res
 ```
 
@@ -104,7 +107,7 @@ In addition, we've added special functionality for data with a "date" column:
 #| fig-height: 4
 #| label: multi-date-res-ggplot
 theme_set(theme_bw())
-res$date <- lubridate::ymd(b2$date[match(res$group, b2$sra)])
+res$date <- lubridate::ymd(res$date)
 autoplot(res, date_col = "date") + scale_x_date()
 ```
 
