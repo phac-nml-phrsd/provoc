@@ -42,6 +42,7 @@ rho_initializer <- function(varmat) {
 #' @param coco A data frame containing columns labelled count, coverage, and mutation.
 #' @param varmat The variant matrix to be used in the study. The rownames must be the VoCs and the colnames must be the mutation names (in the same format as the mutation names in `coco`)
 #' @param bootstrap_samples The number of bootstrap samples to use.
+#' @param verbose Print messages to the console, default to True.
 #' 
 #' @return A list containing the results as well as convergence information from \code{constrOptim}.
 #' 

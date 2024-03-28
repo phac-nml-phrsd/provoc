@@ -8,10 +8,8 @@
 #' @param provoc_obj Named list with `proportions` and `variant_matrix`.
 #' @param newdata Not yet implemented.
 #' @param type Not yet implemented.
-#' @param se.fit Not yet implemented.
 #' @param dispersion Not yet implemented.
 #' @param terms Not yet implemented.
-#' @param na.action Not yet implemented.
 #' @return Predicted values in the same order as the input data.
 #' @export
 #' @examples

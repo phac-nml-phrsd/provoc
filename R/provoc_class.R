@@ -1,6 +1,7 @@
 #' Print the results of lineage abundance estimation
 #'
 #' @inherit summary.provoc
+#' @param provoc_obj The resulting object of class provoc to be used in printing.
 #' @param n The number of rows of the results dataframe to print
 #'
 #' @export
@@ -84,6 +85,7 @@ print.summary.provoc <- function(summary.provoc) {
 #' Plot the results of model fitting
 #'
 #' @inherit summary.provoc
+#' @param provoc_obj Resulting object of class provoc to be used in plotting.
 #' @param plot_type Currently only "barplot" is implemented. Residual plots and other diagnostics are works in progress.
 #'
 #' @export
@@ -123,6 +125,7 @@ plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
 #' Plots the results of estimating wastewater prevalence of SARS-CoV-2. Optionally plots the results over time if given a date column.
 #'
 #' @inherit summary.provoc
+#' @param provoc_obj Resulting object of class provoc to be used in plotting.
 #' @param date_col Optional - if there's a date column, the results are plotted over time. This can be problematic if there are multiple samples at each time point.
 #'
 #' @importFrom ggplot2 autoplot
@@ -168,6 +171,7 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
 #' Extract the mutation definitions used to fit the model
 #'
 #' @inherit summary.provoc
+#' @param provoc_obj Object of class provoc to be used to extract the mutation definitions.
 #'
 #' @export
 get_mutation_defs <- function(provoc_obj) {
@@ -178,6 +182,7 @@ get_mutation_defs <- function(provoc_obj) {
 #' Extract just the results of lineage estimation
 #'
 #' @inherit summary.provoc
+#' @param provoc_obj Object of class provoc to be used to extract the results.
 #'
 #' @export
 get_res <- function(provoc_obj) {
@@ -189,7 +194,7 @@ get_res <- function(provoc_obj) {
 #'
 #' If converged, returns True and prints a message. Otherwise, prints the samples and the note giving hints as to why it didn't converge.
 #'
-#' @param res The result of \code{provoc()}
+#' @param res The result of object provoc
 #' @param verbose Print a message to the screen?
 #'
 #' @return Invisbly returns TRUE if all samples converged, false otherwise.
