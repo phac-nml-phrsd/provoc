@@ -101,108 +101,111 @@ fission <- function(fused, sample = NULL) {
 
 #' Finds and prints all similarities among variants
 #' 
-#' @param data A data frame either before or after it has been fused with varmat
-#' @param is_varmat TRUE if data is a variant matrix, FALSE if data is a fused data frame
+#' @param data A variant matrix
 #' 
 #' @return A list of length 4 containing information on which variants differ by one,
 #' the Jaccard similarity between variants, which variants are subsets and almost subsets
 #' of each other. in is_subset and is_almost_subset a value is true if the variant of the
 #' column name is a subset/almost a subset of the variant of the row name.
-variants_similarity <- function(data, is_varmat) {
+variants_similarity <- function(data) {
     
-    if (is_varmat) {
-      data <- as.data.frame(t(data))
-    }
+    data <- as.data.frame(t(data))
+
     
     subset_of_variants <- data |> dplyr::select_if(~ all(. %in% c(0,1)))
     
-    similiarities <- list()
+    similarities <- list()
     
-    similiarities$Differ_by_one <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = differ_by_one, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
-    colnames(similiarities$Differ_by_one) <- colnames(subset_of_variants)
-    rownames(similiarities$Differ_by_one) <- colnames(subset_of_variants)
+    similarities$Differ_by_one_or_less <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = differ_by_one_or_less, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
+    colnames(similarities$Differ_by_one_or_less) <- colnames(subset_of_variants)
+    rownames(similarities$Differ_by_one_or_less) <- colnames(subset_of_variants)
+    diag(similarities$Differ_by_one_or_less) <- rep("place holder", nrow(similarities$Differ_by_one_or_less))
     i <- 1
-    while (!is.null(nrow(similiarities$Differ_by_one)) && i <= nrow(similiarities$Differ_by_one)) {
-      if (sum(similiarities$Differ_by_one[i, ] == rep(FALSE, ncol(similiarities$Differ_by_one))) == ncol(similiarities$Differ_by_one)) {
-        similiarities$Differ_by_one <- similiarities$Differ_by_one[-i, , drop = F]
+    while (!is.null(nrow(similarities$Differ_by_one_or_less)) && i <= nrow(similarities$Differ_by_one_or_less)) {
+      if (sum(similarities$Differ_by_one_or_less[i, ] == rep(FALSE, ncol(similarities$Differ_by_one_or_less))) == ncol(similarities$Differ_by_one_or_less) - 1) {
+        similarities$Differ_by_one_or_less <- similarities$Differ_by_one_or_less[-i, , drop = F]
       }
       else {
         i <- i + 1
       }
     }
-    if(is.null(nrow(similiarities$Differ_by_one))) {
-      similiarities$Differ_by_one <- NULL
+    if (!("place holder" %in% similarities$Differ_by_one_or_less)) {
+      similarities$Differ_by_one_or_less <- NULL
     }
     else{
       i <- 1
-      while (!is.null(ncol(similiarities$Differ_by_one)) && i <= ncol(similiarities$Differ_by_one)) {
-        if (sum(similiarities$Differ_by_one[,i] == rep(FALSE, nrow(similiarities$Differ_by_one))) == nrow(similiarities$Differ_by_one)) {
-          similiarities$Differ_by_one <- similiarities$Differ_by_one[,-i , drop = F]
+      while (!is.null(ncol(similarities$Differ_by_one_or_less)) && i <= ncol(similarities$Differ_by_one_or_less)) {
+        if (sum(similarities$Differ_by_one_or_less[,i] == rep(TRUE, nrow(similarities$Differ_by_one_or_less))) == 0) {
+          similarities$Differ_by_one_or_less <- similarities$Differ_by_one_or_less[,-i, drop = F]
         } else {
           i <- i + 1
         }
       }
     }
     
-    similiarities$Jaccard_similarity <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = jaccard_simularity, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
-    colnames(similiarities$Jaccard_similarity) <- colnames(subset_of_variants)
-    rownames(similiarities$Jaccard_similarity) <- colnames(subset_of_variants)
+    similarities$Differ_by_one_or_less[similarities$Differ_by_one_or_less == "place holder"] <- TRUE
     
-    similiarities$is_subset <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = is_subset, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
-    colnames(similiarities$is_subset) <- colnames(subset_of_variants)
-    rownames(similiarities$is_subset) <- colnames(subset_of_variants)
-    diag(similiarities$is_subset) <- rep("place holder", nrow(similiarities$is_subset))
+    similarities$Jaccard_similarity <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = jaccard_simularity, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
+    colnames(similarities$Jaccard_similarity) <- colnames(subset_of_variants)
+    rownames(similarities$Jaccard_similarity) <- colnames(subset_of_variants)
+    
+    similarities$is_subset <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = is_subset, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
+    colnames(similarities$is_subset) <- colnames(subset_of_variants)
+    rownames(similarities$is_subset) <- colnames(subset_of_variants)
+    diag(similarities$is_subset) <- rep("place holder", nrow(similarities$is_subset))
     i <- 1
-    while (!is.null(nrow(similiarities$is_subset)) && i <= nrow(similiarities$is_subset)) {
-      if (sum(similiarities$is_subset[i, ] == rep(FALSE, ncol(similiarities$is_subset))) == ncol(similiarities$is_subset) - 1) {
-        similiarities$is_subset <- similiarities$is_subset[-i, , drop = F]
+    while (!is.null(nrow(similarities$is_subset)) && i <= nrow(similarities$is_subset)) {
+      if (sum(similarities$is_subset[i, ] == rep(FALSE, ncol(similarities$is_subset))) == ncol(similarities$is_subset) - 1) {
+        similarities$is_subset <- similarities$is_subset[-i, , drop = F]
       }
       else {
         i <- i + 1
       }
     }
-    if(!("place holder" %in% similiarities$is_subset)) {
-      similiarities$is_subset <- NULL
+    if (!("place holder" %in% similarities$is_subset)) {
+      similarities$is_subset <- NULL
     }
     else{
       i <- 1
-      while (!is.null(ncol(similiarities$is_subset)) && i <= ncol(similiarities$is_subset)) {
-        if (sum(similiarities$is_subset[,i] == rep(TRUE, nrow(similiarities$is_subset))) == 0) {
-          similiarities$is_subset <- similiarities$is_subset[,-i, drop = F]
+      while (!is.null(ncol(similarities$is_subset)) && i <= ncol(similarities$is_subset)) {
+        if (sum(similarities$is_subset[,i] == rep(TRUE, nrow(similarities$is_subset))) == 0) {
+          similarities$is_subset <- similarities$is_subset[,-i, drop = F]
         } else {
           i <- i + 1
         }
       }
     }
-    similiarities$is_subset[similiarities$is_subset == "place holder"] <- TRUE
+    similarities$is_subset[similarities$is_subset == "place holder"] <- TRUE
     
-    similiarities$is_almost_subset <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = is_almost_subset, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
-    colnames(similiarities$is_almost_subset) <- colnames(subset_of_variants)
-    rownames(similiarities$is_almost_subset) <- colnames(subset_of_variants)
+    similarities$is_almost_subset <- outer(colnames(subset_of_variants), colnames(subset_of_variants), function(x,y) mapply(FUN = is_almost_subset, v1 = subset_of_variants[,x], v2 = subset_of_variants[,y]))
+    colnames(similarities$is_almost_subset) <- colnames(subset_of_variants)
+    rownames(similarities$is_almost_subset) <- colnames(subset_of_variants)
+    diag(similarities$is_almost_subset) <- rep("place holder", nrow(similarities$is_almost_subset))
     i <- 1
-    while (!is.null(nrow(similiarities$is_almost_subset)) && i <= nrow(similiarities$is_almost_subset)) {
-      if (sum(similiarities$is_almost_subset[i, ] == rep(FALSE, ncol(similiarities$is_almost_subset))) == ncol(similiarities$is_almost_subset)) {
-        similiarities$is_almost_subset <- similiarities$is_almost_subset[-i, ,drop = F]
+    while (!is.null(nrow(similarities$is_almost_subset)) && i <= nrow(similarities$is_almost_subset)) {
+      if (sum(similarities$is_almost_subset[i, ] == rep(FALSE, ncol(similarities$is_almost_subset))) == ncol(similarities$is_almost_subset) - 1) {
+        similarities$is_almost_subset <- similarities$is_almost_subset[-i, , drop = F]
       }
       else {
         i <- i + 1
       }
     }
-    if (is.null(nrow(similiarities$is_almost_subset))) {
-      similiarities$is_almost_subset <- NULL
+    if (!("place holder" %in% similarities$is_almost_subset)) {
+      similarities$is_almost_subset <- NULL
     }
     else{
       i <- 1
-      while (!is.null(ncol(similiarities$is_almost_subset)) && i <= ncol(similiarities$is_almost_subset)) {
-        if (sum(similiarities$is_almost_subset[,i] == rep(FALSE, nrow(similiarities$is_almost_subset))) == nrow(similiarities$is_almost_subset)) {
-          similiarities$is_almost_subset <- similiarities$is_almost_subset[,-i ,drop = F]
+      while (!is.null(ncol(similarities$is_almost_subset)) && i <= ncol(similarities$is_almost_subset)) {
+        if (sum(similarities$is_almost_subset[,i] == rep(TRUE, nrow(similarities$is_almost_subset))) == 0) {
+          similarities$is_almost_subset <- similarities$is_almost_subset[,-i, drop = F]
         } else {
           i <- i + 1
         }
       }
     }
+    similarities$is_almost_subset[similarities$is_almost_subset == "place holder"] <- TRUE
     
-    return(similiarities)
+    return(similarities)
 }
 
 #' Finds if two vectors only differ between one mutation
@@ -211,9 +214,9 @@ variants_similarity <- function(data, is_varmat) {
 #' @param v2 vector for comparison
 #' 
 #' @return TRUE, if they only differ by one mutation
-differ_by_one <- function(v1,v2) {
+differ_by_one_or_less <- function(v1,v2) {
   variants_difference <- v1 == v2
-  if (sum(variants_difference) == length(v1)-1) {
+  if (sum(variants_difference) == length(v1) - 1 | sum(variants_difference) == length(v1)) {
     return(TRUE)
   }
   else{
@@ -242,8 +245,8 @@ is_subset <- function(v1,v2){
   result <- TRUE
   i <- 1
   while (i <= length(v1) & result == TRUE) {
-    if(v1[i] == 0) {
-      if(v2[i] == 1) {
+    if (v1[i] == 0) {
+      if (v2[i] == 1) {
         return(FALSE)
       }
     }
@@ -263,15 +266,15 @@ is_almost_subset <- function(v1,v2){
   not_subset_count <- 0
   i <- 1
   while (i <= length(v1)) {
-    if(v1[i] == 0) {
-      if(v2[i] == 1) {
+    if (v1[i] == 0) {
+      if (v2[i] == 1) {
         not_subset_count <- not_subset_count + 1
       }
     }
     i <- i + 1 
   }
   #some work needs to be done on this part
-  if ((not_subset_count)/i < 0.1 & (not_subset_count)/i > 0) {
+  if ((not_subset_count)/i < 0.005) {
     result <- TRUE
   }
   return(result)

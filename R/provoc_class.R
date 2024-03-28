@@ -37,9 +37,22 @@ summary.provoc <- function(provoc_obj) {
     cat("\n")
     fitted <- predict(provoc_obj)
 
+    bootstrap_cor <- attributes(provoc_obj)$bootstrap_cor
+
+    
+    cat("\nVariants that differ by zero or one mutations: \n")
+    print(attributes(provoc_obj)$Differ_by_one_or_less)
+    
+    cat("\nThe Jaccard similarity amoung all variants: \n")
+    print(attributes(provoc_obj)$Jaccard_similarity)
+    
+    cat("\nVariants that are subsets of one another: \n")
+    print(attributes(provoc_obj)$Is_subset)
+    
+    cat("\nVariants that are almost subsets of one another: \n")
+    print(attributes(provoc_obj)$Is_almost_subset)
     # TODO: Data summary
     # Number of mutations used in the fitting,
-    # Similarity of variants (Jaccard, based on data used in model)
     # Entropy of frequencies, or deviation from 0.5
     # Five-number summary for coverage
     # ...
@@ -60,7 +73,8 @@ summary.provoc <- function(provoc_obj) {
     # an object, and does not print if it is assigned to an object.
     # This f'n to be split into one function to create the object
     # and a print method.
-    return(invisible(list(formula = formula, resids = fitted)))
+    return(invisible(list(formula = formula, resids = fitted,
+                boot_cor = bootstrap_cor)))
 }
 
 #' Print the summary of a provoc object
@@ -93,7 +107,7 @@ plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
                     length(unique(provoc_obj$group)),
                     1)),
             names.arg = unique(provoc_obj$group),
-            col = 1:length(unique(provoc_obj$variant)),
+            col = seq_along(unique(provoc_obj$variant)),
             horiz = TRUE,
             xlim = c(0, 1),
             xlab = "Proportion",
@@ -101,7 +115,7 @@ plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
             las = 1)
         legend("topright",
             legend = unique(provoc_obj$variant),
-            col = 1:length(unique(provoc_obj$variant)),
+            col = seq_along(unique(provoc_obj$variant)),
             pch = 15)
     }
 }

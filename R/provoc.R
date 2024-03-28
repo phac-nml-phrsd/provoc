@@ -7,6 +7,7 @@
 #' @param data Data frame containing count, coverage, and lineage columns.
 #' @param mutation_defs Optional mutation definitions; if NULL, uses astronomize().
 #' @param by Column name to group and process data. If included, the results will contain a column labelled "group".
+#' @param bootstrap_samples The number of bootstrap samples to use.
 #' @param update_interval Interval for progress messages (0 to suppress).
 #' @param verbose TRUE to print detailed messages.
 #' @param annihilate TRUE to remove duplicate variants from the data
@@ -34,20 +35,23 @@
 #' predicted_values <- predict.provoc(res)
 #'
 #' @export
-provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
-    update_interval = 20, verbose = FALSE, annihilate = FALSE) {
+provoc <- function(formula, data, mutation_defs = NULL, by = NULL, 
+    bootstrap_samples = 0, update_interval = 20, verbose = FALSE, annihilate = FALSE) {
     #creating original copy of data for later use
     data_copy <- data
 
     # Initial validation and processing
     validate_inputs(formula, data)
     mutation_defs <- as.matrix(process_mutation_defs(mutation_defs))
-
+    
     # Find out which column might define the mutations
     find_muation_column_output <- find_mutation_column(data, mutation_defs)
     mutation_defs <- find_muation_column_output[[1]]
     mutation_col <- find_muation_column_output[[2]]
 
+    #Finding summary statistics while mutation_defs is still in varmat form
+    similarities <- provoc:::variants_similarity(mutation_defs)
+    
     # Extract components from the formula
     components <- extract_formula_components(formula, data,
         mutation_defs, mutation_col, by)
@@ -72,7 +76,9 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     }
 
     # Proceed with processing each group
-    res_list <- process_optim(grouped_data, mutation_defs, by)
+    res <- process_optim(grouped_data, mutation_defs,
+        by, bootstrap_samples)
+    res_list <- res$res_list
 
     # Combine results and ensure object is of class 'provoc'
     final_results <- do.call(rbind, res_list)
@@ -101,7 +107,14 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     provoc_obj <- final_results
     attr(provoc_obj, "variant_matrix") <- mutation_defs
     attr(provoc_obj, "formula") <- formula
-    attr(provoc_obj, "convergence") <- attributes(res_list)$convergence
+    attr(provoc_obj, "convergence") <- res$convergence_list
+    attr(provoc_obj, "bootstrap_cor") <- res$boot_list
+    
+    attr(provoc_obj, "Differ_by_one_or_less") <- similarities$Differ_by_one
+    attr(provoc_obj, "Jaccard_similarity") <- similarities$Jaccard_similarity
+    attr(provoc_obj, "Is_subset") <- similarities$is_subset
+    attr(provoc_obj, "Is_almost_subset") <- similarities$is_almost_subset
+    
     class(provoc_obj) <- c("provoc", "data.frame")
 
     return(provoc_obj)
@@ -296,15 +309,18 @@ prepare_and_fuse_data <- function(data, mutation_defs, by, verbose) {
 #' @param grouped_data A list containing data frames for each group to be processed.
 #' @param mutation_defs A matrix of mutation definitions.
 #' @param by An optional string specifying the column name to group the data by.
+#' @param bootstrap_samples The number of bootstrap samples to use.
 #'
 #' @return A list of results for each group, including point estimates and convergence information.
 #' @examples
 #' # This function is internally used and not typically called by the user.
-process_optim <- function(grouped_data, mutation_defs, by) {
+process_optim <- function(grouped_data, mutation_defs, by, bootstrap_samples) {
     res_list <- vector("list", length = length(grouped_data))
     names(res_list) <- names(grouped_data)
     convergence_list <- vector("list", length = length(grouped_data))
     names(convergence_list) <- names(grouped_data)
+    boot_list <- vector("list", length = length(grouped_data))
+    names(boot_list) <- names(grouped_data)
 
     for (group_name in names(grouped_data)) {
         group_data <- grouped_data[[group_name]]
@@ -314,12 +330,17 @@ process_optim <- function(grouped_data, mutation_defs, by) {
         coco <- fissed$coco
         varmat <- fissed$varmat
 
-        optim_results <- provoc:::provoc_optim(coco = coco, varmat = varmat)
+        optim_results <- provoc:::provoc_optim(
+            coco = coco, varmat = varmat,
+            bootstrap_samples = bootstrap_samples)
         res_list[[group_name]] <- optim_results$res_df
         convergence_list[[group_name]] <- optim_results$convergence
+        boot_list[[group_name]] <- optim_results$bootstrap_samples
     }
-    attr(res_list, "convergence") <- convergence_list
-    return(res_list)
+
+    return(list(res_list = res_list,
+            convergence_list = convergence_list,
+            boot_list = boot_list))
 }
 
 #' Finds all columns of the data that are constant with the specified by group
