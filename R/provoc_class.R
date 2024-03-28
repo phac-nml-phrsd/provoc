@@ -144,8 +144,6 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
         gg <- gg  +
             aes(x = date, y = rho, fill = variant, group = group) +
             labs(y = "Proportion", x = "Date", fill = "Lineage") +
-            scale_x_continuous(minor_breaks = NULL,
-                breaks = unique(provoc_obj$date)) +
             theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
     } else if (!"group" %in% colnames(provoc_obj)) {
