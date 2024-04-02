@@ -223,14 +223,13 @@ variants_similarity <- function(data) {
 #' @param v2 vector for comparison
 #'
 #' @return TRUE, if they only differ by one mutation
-differ_by_one_or_less <- function(v1,v2) {
-  variants_difference <- v1 == v2
-  if (sum(variants_difference) == length(v1) - 1 | sum(variants_difference) == length(v1)) {
-    return(TRUE)
-  }
-  else{
-    return(FALSE)
-  }
+differ_by_one_or_less <- function(v1, v2) {
+    variants_difference <- v1 == v2
+    if (sum(variants_difference) %in% c(length(v1) - 1, length(v1))) {
+        return(TRUE)
+    } else {
+        return(FALSE)
+    }
 }
 
 #' Finds the Jaccard similarity between two vectors
@@ -250,18 +249,16 @@ jaccard_simularity <- function(v1, v2) {
 #' @param v2 vector for comparison
 #'
 #' @return Result, TRUE if v2 is a subset of v1
-is_subset <- function(v1,v2){
-  result <- TRUE
-  i <- 1
-  while (i <= length(v1) & result == TRUE) {
-    if (v1[i] == 0) {
-      if (v2[i] == 1) {
-        return(FALSE)
-      }
+is_subset <- function(v1, v2) {
+    result <- TRUE
+    i <- 1
+    while (i <= length(v1) && result == TRUE) {
+        if (v1[i] == 0 && v2[i] == 1) {
+            return(FALSE)
+        }
+        i <- i + 1
     }
-    i <- i + 1
-  }
-  return(result)
+    return(result)
 }
 
 #' Finds if one variant is almost a subset of another
@@ -270,21 +267,21 @@ is_subset <- function(v1,v2){
 #' @param v2 vector for comparison
 #'
 #' @return Result, TRUE if v2 is almost a subset of v1
-is_almost_subset <- function(v1,v2){
-  result <- FALSE
-  not_subset_count <- 0
-  i <- 1
-  while (i <= length(v1)) {
-    if (v1[i] == 0) {
-      if (v2[i] == 1) {
-        not_subset_count <- not_subset_count + 1
-      }
+is_almost_subset <- function(v1, v2) {
+    result <- FALSE
+    not_subset_count <- 0
+    i <- 1
+    while (i <= length(v1)) {
+        if (v1[i] == 0) {
+            if (v2[i] == 1) {
+                not_subset_count <- not_subset_count + 1
+            }
+        }
+        i <- i + 1
     }
-    i <- i + 1
-  }
-  #some work needs to be done on this part
-  if ((not_subset_count)/i < 0.005) {
-    result <- TRUE
-  }
-  return(result)
+    #some work needs to be done on this part
+    if ((not_subset_count) / i < 0.005) {
+        result <- TRUE
+    }
+    return(result)
 }
