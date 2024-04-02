@@ -199,7 +199,7 @@ filter_varmat <- function(
     variants = c("B.1.526", "B.1.1.7", "B.1.351", "B.1.617.2",
         "B.1.427", "B.1.429", "P.1"),
     varmat = NULL,
-    return_df = FALSE, 
+    return_df = FALSE,
     path = "../constellations",
     shared_order = TRUE) {
 
@@ -227,13 +227,15 @@ filter_varmat <- function(
 
 #' Obtain and clean barcodes file from usher_barcores in Freyja (or elsewhere)
 #' 
-#' @param url The URL (or file path) for the barcodes file. Defaults 
 #' @param path The location to store the barcodes file. Tries data/clean, data/, then the current directory.
+#' @param write Should the file be written to disk to avoid downloading? If TRUE, uses the first path that exists.
+#' @param url The URL (or file path) for the barcodes file. Defaults 
 #' @param update If TRUE, overwrite the existing barcodes file
 #' 
 #' @export
 usher_barcodes <- function(
     path = c("data/clean/", "data/", "./")[1],
+    write = TRUE,
     url = "https://raw.githubusercontent.com/andersen-lab/Freyja/main/freyja/data/usher_barcodes.csv",
     update = FALSE) {
 
@@ -243,8 +245,8 @@ usher_barcodes <- function(
 
     barcodes_exists <- FALSE
     for (pathname in c(path, "data/clean/", "data/", "./")) {
-        if (file.exists(paste0(path, "usher_barcodes.csv")) && !update) {
-            barcodes <- read.csv(paste0(path, "usher_barcodes.csv"))
+        if (file.exists(paste0(pathname, "usher_barcodes.csv")) && !update) {
+            barcodes <- read.csv(paste0(pathname, "usher_barcodes.csv"))
             barcodes_exists <- TRUE
             break
         }
@@ -268,5 +270,15 @@ usher_barcodes <- function(
         }
     }
 
+    if ("X" %in% colnames(barcodes)) {
+        rownames(barcodes) <- barcodes[, "X"]
+        barcodes[, "X"] <- NULL
+        barcodes <- as.matrix(barcodes)
+    }
+
+    colnames(barcodes) <- paste0("~",
+        sapply(colnames(barcodes), function(x) {
+            substr(x, 2, nchar(x))
+        })) |> provoc:::parse_mutations()
     barcodes
 }
