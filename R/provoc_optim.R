@@ -165,6 +165,7 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
     convergence_note <- paste("Optim results: ",
         bestres$convergence,
         "; Initialization: ", bestres$init_method, sep = "")
+    boots <- NULL
     if (bootstrap_samples > 0) {
         resampled_coverage <- rmultinom(bootstrap_samples,
             size = sum(cov2),
@@ -197,5 +198,5 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
     return(list(res_df = res_df,
             convergence = convergence,
             convergence_note = convergence_note,
-            bootstrap_samples = cor(boots)))
+            bootstrap_samples = boots))
 }
