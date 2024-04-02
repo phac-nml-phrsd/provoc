@@ -48,9 +48,6 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     find_muation_column_output <- find_mutation_column(data, mutation_defs)
     mutation_defs <- find_muation_column_output[[1]]
     mutation_col <- find_muation_column_output[[2]]
-
-    #Finding summary statistics while mutation_defs is still in varmat form
-    similarities <- provoc:::variants_similarity(mutation_defs)
     
     # Extract components from the formula
     components <- extract_formula_components(formula, data,
@@ -60,6 +57,9 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
 
     # Fuse data with mutation definitions
     data <- provoc:::fuse(data, mutation_defs, verbose = verbose)
+
+    #Finding summary statistics while mutation_defs is still in varmat form
+    similarities <- provoc:::variants_similarity(data)
 
     #remove identical variants
     data <- remove_identical_variants(data, annihilate)
