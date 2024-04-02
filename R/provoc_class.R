@@ -6,7 +6,8 @@
 #'
 #' @export
 print.provoc <- function(provoc_obj, n = 6) {
-    cat("Call: ", as.character(attributes(provoc_obj)$formula))
+    cat("Call: ")
+    print(attributes(provoc_obj)$formula)
     cat("\n\n")
     all_conv <- unlist(attributes(provoc_obj)$convergence)
     if (any(!all_conv)) {
@@ -205,7 +206,7 @@ get_convergence <- function(res, verbose = TRUE) {
 
 
 #' Summarise the similarities in variant matrices
-#' 
+#'
 #' @inherit summary.provoc
 summarise_variants <- function(provoc_obj) {
     similarities <- attributes(provoc_obj)$internal_data |>
@@ -213,32 +214,32 @@ summarise_variants <- function(provoc_obj) {
         provoc:::simplify_similarity()
 
     msg <- ""
-    if (nrow(similarities$Differ_by_one_or_less) > 0) {
+    if (length(similarities$Differ_by_one_or_less) > 0) {
         msg <- paste0(msg,
             "At least one pair of variants has a single difference. ",
             collapse = " ")
     }
-    if (nrow(similarities$Jaccard_similarity) > 0) {
+    if (length(similarities$Jaccard_similarity) > 0) {
         msg <- paste0(msg,
             "At least one pair of variants has a Jaccard similarity > 0.99",
             collapse = " ")
     }
-    if (nrow(similarities$Is_subset) > 0) {
+    if (length(similarities$Is_subset) > 0) {
         msg <- paste0(msg,
             "At least one variant is a subset of another.",
             collapse = " ")
     }
-    if (nrow(similarities$Is_almost_subset) > 0) {
+    if (length(similarities$Is_almost_subset) > 0) {
         msg <- paste0(msg,
             "At least one variant is almost a subset of another.",
             collapse = " ")
     }
-    
+
     if (nchar(msg) > 0) {
-        msg <- paste0(msg, "See variants_similarity() for more info.",
+        msg <- paste0(msg, "See variants_similarity() for more info.\n",
             collapse = "\n")
     } else {
-        msg <- "No issues detected for mutation definition."
+        msg <- "No issues detected for mutation definition.\n"
     }
 
     msg
