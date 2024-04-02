@@ -35,7 +35,7 @@
 #' predicted_values <- predict.provoc(res)
 #'
 #' @export
-provoc <- function(formula, data, mutation_defs = NULL, by = NULL, 
+provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     bootstrap_samples = 0, update_interval = 20, verbose = FALSE, annihilate = FALSE) {
     #creating original copy of data for later use
     data_copy <- data
@@ -43,12 +43,13 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     # Initial validation and processing
     validate_inputs(formula, data)
     mutation_defs <- as.matrix(process_mutation_defs(mutation_defs))
-    
+
     # Find out which column might define the mutations
     find_muation_column_output <- find_mutation_column(data, mutation_defs)
     mutation_defs <- find_muation_column_output[[1]]
     mutation_col <- find_muation_column_output[[2]]
-    
+
+
     # Extract components from the formula
     components <- extract_formula_components(formula, data,
         mutation_defs, mutation_col, by)
@@ -108,13 +109,10 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     attr(provoc_obj, "variant_matrix") <- mutation_defs
     attr(provoc_obj, "formula") <- formula
     attr(provoc_obj, "convergence") <- res$convergence_list
-    attr(provoc_obj, "bootstrap_cor") <- res$boot_list
-    
-    attr(provoc_obj, "Differ_by_one_or_less") <- similarities$Differ_by_one
-    attr(provoc_obj, "Jaccard_similarity") <- similarities$Jaccard_similarity
-    attr(provoc_obj, "Is_subset") <- similarities$is_subset
-    attr(provoc_obj, "Is_almost_subset") <- similarities$is_almost_subset
-    
+    attr(provoc_obj, "bootstrap") <- res$boot_list
+    attr(provoc_obj, "similarities") <- similarities
+    attr(provoc_obj, "internal_data") <- data
+
     class(provoc_obj) <- c("provoc", "data.frame")
 
     return(provoc_obj)
@@ -141,7 +139,7 @@ validate_inputs <- function(formula, data) {
 #'
 #' Checks the columns of mutation_defs and if not found in columns will check the rows
 #' and transpose mutation_defs.
-#' 
+#'
 #' @param data Data frame containing count, coverage, and lineage columns
 #' @param mutation_defs Optional mutation definitions
 #'

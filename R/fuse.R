@@ -5,7 +5,7 @@
 #' @param coco A data frame with a column labelled \code{mutation}.
 #' @param varmat Rownames are variants, column names are Mutations.
 #' @param min_perc A variant must have at least \code{min_perc} of the mutations.
-#' @param vebose Print information about mutations that were removed by the fusion.
+#' @param vebose Print information about mutations that were removed by the fusion. 0 (FALSE) returns errors, 1 (TRUE) returns warnings and some info about relative mutation counts, and 2 returns all mutations in each.
 #'
 #' @return A data frame with the same columns as coco (possibly fewer rows) and the same columns plus new columns for the variants of concern. The provoc function expects this structure.
 #' @export
@@ -17,7 +17,7 @@
 #' After removing mutations, it's possible that some rows lose their distinctive mutations and become identical. In this case the names of the lineages are pasted together and only one of the rows are kept.
 #'
 #' Duplicate mutation names in coco are NOT removed. It is safe to use this function on a data frame that contains multiple samples.
-fuse <- function(coco, varmat, min_perc = 0.01, verbose = TRUE) {
+fuse <- function(coco, varmat, min_perc = 0.01, verbose = FALSE) {
     if (any(colnames(coco) %in% paste0("var_", rownames(varmat)))) {
         stop("coco should not contain column names that are names of lineages. Is this object already fused?")
     }
@@ -32,20 +32,20 @@ fuse <- function(coco, varmat, min_perc = 0.01, verbose = TRUE) {
         stop("Too few shared mutations. Are they in the same format?")
     } else if (length(shared) <= 10 && ncol(varmat) > 10 && verbose) {
         warning("Fewer than 10 shared mutations. Results may be very difficult to interpret.")
-    } else if (length(shared) / pre < 0.5 && verbose) {
+    } else if (length(shared) / pre < 0.1 && verbose) {
         warning(paste0("Less than ", length(shared) / pre,
             "% of coco's mutations are being used. Consider a larger variant matrix."))
     }
-    if (verbose) {
+    if (verbose > 0) {
         perc_rm <- 1 - round(length(shared) / pre, 3)
         print(paste0(100 * perc_rm,
                 "% of the rows of coco have been removed."))
         coco_only <- coco$mutation[!coco$mutation %in% shared]
         varmat_only <- colnames(varmat)[!colnames(varmat) %in% shared]
         print("coco-only mutations removed:")
-        print(coco_only)
+        print(length(coco_only))
         print("varmat-only mutations removed")
-        print(varmat_only)
+        print(length(varmat_only))
     }
 
 
@@ -125,15 +125,6 @@ variants_similarity <- function(data) {
     colnames(similarities$Differ_by_one_or_less) <- colnames(subset_of_variants)
     rownames(similarities$Differ_by_one_or_less) <- colnames(subset_of_variants)
 
-    keep_vars <- apply(X = similarities$Differ_by_one_or_less,
-        MARGIN = 1,
-        FUN = function(x) {
-            sum(x) > 1
-        })
-
-    similarities$Differ_by_one_or_less <-
-        similarities$Differ_by_one_or_less[keep_vars, keep_vars]
-
     # JACCARD ---------------------------------------------
     similarities$Jaccard_similarity <- outer(
         colnames(subset_of_variants),
@@ -147,17 +138,6 @@ variants_similarity <- function(data) {
     colnames(similarities$Jaccard_similarity) <- colnames(subset_of_variants)
     rownames(similarities$Jaccard_similarity) <- colnames(subset_of_variants)
 
-    diag(similarities$Jaccard_similarity) <- 0
-    keep_vars <- apply(X = similarities$Jaccard_similarity,
-        MARGIN = 1,
-        FUN = function(x) {
-            any(x > 0.99)
-        })
-    diag(similarities$Jaccard_similarity) <- 1
-
-    similarities$Jaccard_similarity <-
-        similarities$Jaccard_similarity[keep_vars, keep_vars]
-
     # SUBSET ----------------------------------------------
     similarities$is_subset <- outer(
         colnames(subset_of_variants),
@@ -170,6 +150,50 @@ variants_similarity <- function(data) {
         })
     colnames(similarities$is_subset) <- colnames(subset_of_variants)
     rownames(similarities$is_subset) <- colnames(subset_of_variants)
+
+
+    # ALMOST SUBSET ---------------------------------------
+    similarities$is_almost_subset <- outer(
+        colnames(subset_of_variants),
+        colnames(subset_of_variants),
+        function(x, y) {
+            mapply(
+                FUN = is_almost_subset,
+                v1 = subset_of_variants[, x],
+                v2 = subset_of_variants[, y])
+        })
+    colnames(similarities$is_almost_subset) <- colnames(subset_of_variants)
+    rownames(similarities$is_almost_subset) <- colnames(subset_of_variants)
+
+    return(similarities)
+}
+
+#' Simplifies variant similarity matrices for easier interpretation
+#' 
+#' @param similarities Result of \code{variants_similarity()}
+#' @param almost Degree of similarity.
+simplify_similarity <- function(similarities, almost) {
+
+
+    keep_vars <- apply(X = similarities$Differ_by_one_or_less,
+        MARGIN = 1,
+        FUN = function(x) {
+            sum(x) > 1
+        })
+
+    similarities$Differ_by_one_or_less <-
+        similarities$Differ_by_one_or_less[keep_vars, keep_vars]
+
+    diag(similarities$Jaccard_similarity) <- 0
+    keep_vars <- apply(X = similarities$Jaccard_similarity,
+        MARGIN = 1,
+        FUN = function(x) {
+            any(x > 0.99)
+        })
+    diag(similarities$Jaccard_similarity) <- 1
+
+    similarities$Jaccard_similarity <-
+        similarities$Jaccard_similarity[keep_vars, keep_vars]
 
     keep_vars1 <- apply(X = similarities$is_subset,
         MARGIN = 1,
@@ -186,19 +210,6 @@ variants_similarity <- function(data) {
     similarities$is_subset <-
         similarities$is_subset[keep_vars, keep_vars]
 
-    # ALMOST SUBSET ---------------------------------------
-    similarities$is_almost_subset <- outer(
-        colnames(subset_of_variants),
-        colnames(subset_of_variants),
-        function(x, y) {
-            mapply(
-                FUN = is_almost_subset,
-                v1 = subset_of_variants[, x],
-                v2 = subset_of_variants[, y])
-        })
-    colnames(similarities$is_almost_subset) <- colnames(subset_of_variants)
-    rownames(similarities$is_almost_subset) <- colnames(subset_of_variants)
-
     keep_vars1 <- apply(X = similarities$is_almost_subset,
         MARGIN = 1,
         FUN = function(x) {
@@ -214,8 +225,9 @@ variants_similarity <- function(data) {
     similarities$is_almost_subset <-
         similarities$is_almost_subset[keep_vars, keep_vars]
 
-    return(similarities)
+    similarities
 }
+
 
 #' Finds if two vectors only differ between one mutation
 #'

@@ -39,18 +39,7 @@ summary.provoc <- function(provoc_obj) {
 
     bootstrap_cor <- attributes(provoc_obj)$bootstrap_cor
 
-    
-    cat("\nVariants that differ by zero or one mutations: \n")
-    print(attributes(provoc_obj)$Differ_by_one_or_less)
-    
-    cat("\nThe Jaccard similarity amoung all variants: \n")
-    print(attributes(provoc_obj)$Jaccard_similarity)
-    
-    cat("\nVariants that are subsets of one another: \n")
-    print(attributes(provoc_obj)$Is_subset)
-    
-    cat("\nVariants that are almost subsets of one another: \n")
-    print(attributes(provoc_obj)$Is_almost_subset)
+    cat(summarise_variants(provoc_obj))
     # TODO: Data summary
     # Number of mutations used in the fitting,
     # Entropy of frequencies, or deviation from 0.5
@@ -212,4 +201,45 @@ get_convergence <- function(res, verbose = TRUE) {
         if (verbose) cat("All samples converged\n")
         return(invisible(TRUE))
     }
+}
+
+
+#' Summarise the similarities in variant matrices
+#' 
+#' @inherit summary.provoc
+summarise_variants <- function(provoc_obj) {
+    similarities <- attributes(provoc_obj)$internal_data |>
+        provoc:::variants_similarity() |>
+        provoc:::simplify_similarity()
+
+    msg <- ""
+    if (nrow(similarities$Differ_by_one_or_less) > 0) {
+        msg <- paste0(msg,
+            "At least one pair of variants has a single difference. ",
+            collapse = " ")
+    }
+    if (nrow(similarities$Jaccard_similarity) > 0) {
+        msg <- paste0(msg,
+            "At least one pair of variants has a Jaccard similarity > 0.99",
+            collapse = " ")
+    }
+    if (nrow(similarities$Is_subset) > 0) {
+        msg <- paste0(msg,
+            "At least one variant is a subset of another.",
+            collapse = " ")
+    }
+    if (nrow(similarities$Is_almost_subset) > 0) {
+        msg <- paste0(msg,
+            "At least one variant is almost a subset of another.",
+            collapse = " ")
+    }
+    
+    if (nchar(msg) > 0) {
+        msg <- paste0(msg, "See variants_similarity() for more info.",
+            collapse = "\n")
+    } else {
+        msg <- "No issues detected for mutation definition."
+    }
+
+    msg
 }
