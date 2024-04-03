@@ -55,7 +55,6 @@ predict.provoc <- function(provoc_obj,
 #' 
 #' @export
 resid.provoc <- function(provoc_obj, type = "deviance") {
-    # TODO: Calculate deviance residuals
     counts <- attributes(provoc_obj)$internal_data$count
     covs <- attributes(provoc_obj)$internal_data$coverage
     covs <- ifelse(covs == 0, yes = 1, no = covs)

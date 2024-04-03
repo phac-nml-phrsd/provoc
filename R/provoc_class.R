@@ -8,7 +8,7 @@
 print.provoc <- function(provoc_obj, n = 6) {
     cat("Call: ")
     print(attributes(provoc_obj)$formula)
-    cat("\n\n")
+    cat("\n")
     all_conv <- unlist(attributes(provoc_obj)$convergence)
     if (any(!all_conv)) {
         cat("Some models did not converge:\n")
@@ -255,8 +255,7 @@ plot_resids <- function(provoc_obj, type = "deviance", by_variant = TRUE) {
     vardf <- data[, startsWith(colnames(data), "var_")]
     varnames <- colnames(vardf)[startsWith(colnames(vardf), "var_")]
     vardf$fitted <- as.numeric(predict(provoc_obj))
-    dcov <- ifelse(data$coverage == 0, 1, data$coverage)
-    vardf$residuals <- provoc:::resids.provoc(provoc_obj, type = type)
+    vardf$residuals <- provoc:::resid.provoc(provoc_obj, type = type)
 
     plot(NA,
         xlim = c(0, 1),
@@ -268,7 +267,9 @@ plot_resids <- function(provoc_obj, type = "deviance", by_variant = TRUE) {
     abline(h = 0, col = "lightgrey", lty = 2, lwd = 2)
     if (by_variant) {
         for (i in seq_len(ncol(vardf) - 2)) {
-            points(residuals ~ fitted, data = vardf[vardf[, i] == 1, ], col = i, pch = 16)
+            points(residuals ~ fitted,
+                data = vardf[vardf[, i] == 1, ],
+                col = i, pch = 16)
         }
         legend("bottomright",
             legend = gsub("var_", "", varnames),
