@@ -244,3 +244,37 @@ summarise_variants <- function(provoc_obj) {
 
     msg
 }
+
+#' Plot the residuals, by variant
+#'
+#' @param provoc_obj Result of fitting provoc().
+#' @param type Deviance or raw residuals.
+#'
+plot_resids <- function(provoc_obj, type = "deviance", by_variant = TRUE) {
+    data <- attributes(provoc_obj)$internal_data
+    vardf <- data[, startsWith(colnames(data), "var_")]
+    varnames <- colnames(vardf)[startsWith(colnames(vardf), "var_")]
+    vardf$fitted <- as.numeric(predict(provoc_obj))
+    dcov <- ifelse(data$coverage == 0, 1, data$coverage)
+    vardf$residuals <- provoc:::resids.provoc(provoc_obj, type = type)
+
+    plot(NA,
+        xlim = c(0, 1),
+        ylim = range(vardf$residuals, na.rm = TRUE),
+        xlab = "Fitted",
+        ylab = paste0(tools::toTitleCase(type), " Residuals"),
+        main = "Residuals versus Fitted"
+    )
+    abline(h = 0, col = "lightgrey", lty = 2, lwd = 2)
+    if (by_variant) {
+        for (i in seq_len(ncol(vardf) - 2)) {
+            points(residuals ~ fitted, data = vardf[vardf[, i] == 1, ], col = i, pch = 16)
+        }
+        legend("bottomright",
+            legend = gsub("var_", "", varnames),
+            col = seq_along(varnames),
+            pch = 1)
+    } else {
+        points(residuals ~ fitted, data = vardf, pch = 16)
+    }
+}

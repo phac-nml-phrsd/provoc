@@ -88,6 +88,8 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
             final_results <- as.data.frame(res_list[[1]])
             if (!is.null(by)) {
                 final_results$group <- unique(data[, by])[1]
+            } else {
+                final_results$group <- 1
             }
         } else {
             res_list[[i]]$group <- unique(data[, by])[i]
@@ -112,6 +114,7 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     attr(provoc_obj, "bootstrap") <- res$boot_list
     attr(provoc_obj, "similarities") <- similarities
     attr(provoc_obj, "internal_data") <- data
+    attr(provoc_obj, "by_col") <- by
 
     class(provoc_obj) <- c("provoc", "data.frame")
 
