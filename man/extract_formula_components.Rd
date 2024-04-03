@@ -12,6 +12,10 @@ extract_formula_components(formula, data, mutation_defs, mutation_col, by_col)
 \item{data}{The dataframe containing the dataset.}
 
 \item{mutation_defs}{A matrix containing mutation definitions.}
+
+\item{mutation_col}{The column containing the mutations.}
+
+\item{by_col}{The column to group the data by.}
 }
 \value{
 A list containing \code{data}, a dataframe filtered based on the formula's LHS

@@ -7,7 +7,7 @@
 \method{print}{provoc}(provoc_obj, n = 6)
 }
 \arguments{
-\item{provoc_obj}{The result of provoc(), or an object coerced via as.provoc().}
+\item{provoc_obj}{The resulting object of class provoc to be used in printing.}
 
 \item{n}{The number of rows of the results dataframe to print}
 }

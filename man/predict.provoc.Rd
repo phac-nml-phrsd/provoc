@@ -22,10 +22,6 @@
 \item{dispersion}{Not yet implemented.}
 
 \item{terms}{Not yet implemented.}
-
-\item{se.fit}{Not yet implemented.}
-
-\item{na.action}{Not yet implemented.}
 }
 \value{
 Predicted values in the same order as the input data.

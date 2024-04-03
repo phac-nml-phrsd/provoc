@@ -4,7 +4,13 @@
 \alias{provoc_optim}
 \title{Estimate the proportions of VOCs using Constrained Optimization}
 \usage{
-provoc_optim(coco, varmat, bootstrap_samples = 0, verbose = TRUE)
+provoc_optim(
+  coco,
+  varmat,
+  bootstrap_samples = 0,
+  verbose = TRUE,
+  rho_init = NULL
+)
 }
 \arguments{
 \item{coco}{A data frame containing columns labelled count, coverage, and mutation.}
@@ -12,6 +18,8 @@ provoc_optim(coco, varmat, bootstrap_samples = 0, verbose = TRUE)
 \item{varmat}{The variant matrix to be used in the study. The rownames must be the VoCs and the colnames must be the mutation names (in the same format as the mutation names in \code{coco})}
 
 \item{bootstrap_samples}{The number of bootstrap samples to use.}
+
+\item{verbose}{Print messages to the console, default to True.}
 }
 \value{
 A list containing the results as well as convergence information from \code{constrOptim}.

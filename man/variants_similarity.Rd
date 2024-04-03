@@ -4,15 +4,16 @@
 \alias{variants_similarity}
 \title{Finds and prints all similarities among variants}
 \usage{
-variants_similarity(data, is_varmat)
+variants_similarity(data)
 }
 \arguments{
-\item{data}{A dataframe either before or after it has been fused with varmat}
-
-\item{is_varmat}{TRUE if data is a varaint matrix, FALSE if data is a fused dataframe}
+\item{data}{A variant matrix}
 }
 \value{
-none
+A list of length 4 containing information on which variants differ by one,
+the Jaccard similarity between variants, which variants are subsets and almost subsets
+of each other. in is_subset and is_almost_subset a value is true if the variant of the
+column name is a subset/almost a subset of the variant of the row name.
 }
 \description{
 Finds and prints all similarities among variants

@@ -7,7 +7,7 @@
 \method{plot}{provoc}(provoc_obj, plot_type = c("barplot"))
 }
 \arguments{
-\item{provoc_obj}{The result of provoc(), or an object coerced via as.provoc().}
+\item{provoc_obj}{Resulting object of class provoc to be used in plotting.}
 
 \item{plot_type}{Currently only "barplot" is implemented. Residual plots and other diagnostics are works in progress.}
 }

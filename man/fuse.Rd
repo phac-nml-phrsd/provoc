@@ -4,7 +4,7 @@
 \alias{fuse}
 \title{Ensure mutations are present in both coco and varmat}
 \usage{
-fuse(coco, varmat, min_perc = 0.01, verbose = TRUE)
+fuse(coco, varmat, min_perc = 0.01, verbose = FALSE)
 }
 \arguments{
 \item{coco}{A data frame with a column labelled \code{mutation}.}
@@ -13,7 +13,7 @@ fuse(coco, varmat, min_perc = 0.01, verbose = TRUE)
 
 \item{min_perc}{A variant must have at least \code{min_perc} of the mutations.}
 
-\item{vebose}{Print information about mutations that were removed by the fusion.}
+\item{vebose}{Print information about mutations that were removed by the fusion. 0 (FALSE) returns errors, 1 (TRUE) returns warnings and some info about relative mutation counts, and 2 returns all mutations in each.}
 }
 \value{
 A data frame with the same columns as coco (possibly fewer rows) and the same columns plus new columns for the variants of concern. The provoc function expects this structure.

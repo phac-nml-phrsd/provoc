@@ -4,12 +4,16 @@
 \alias{process_optim}
 \title{Process Optimization}
 \usage{
-process_optim(grouped_data, mutation_defs, by)
+process_optim(grouped_data, mutation_defs, by, bootstrap_samples)
 }
 \arguments{
 \item{grouped_data}{A list containing data frames for each group to be processed.}
 
 \item{mutation_defs}{A matrix of mutation definitions.}
+
+\item{by}{An optional string specifying the column name to group the data by.}
+
+\item{bootstrap_samples}{The number of bootstrap samples to use.}
 }
 \value{
 A list of results for each group, including point estimates and convergence information.

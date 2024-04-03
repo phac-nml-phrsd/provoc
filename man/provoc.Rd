@@ -9,8 +9,9 @@ provoc(
   data,
   mutation_defs = NULL,
   by = NULL,
+  bootstrap_samples = 0,
   update_interval = 20,
-  verbose = TRUE,
+  verbose = FALSE,
   annihilate = FALSE
 )
 }
@@ -22,6 +23,8 @@ provoc(
 \item{mutation_defs}{Optional mutation definitions; if NULL, uses astronomize().}
 
 \item{by}{Column name to group and process data. If included, the results will contain a column labelled "group".}
+
+\item{bootstrap_samples}{The number of bootstrap samples to use.}
 
 \item{update_interval}{Interval for progress messages (0 to suppress).}
 

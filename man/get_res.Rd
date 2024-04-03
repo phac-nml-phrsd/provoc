@@ -7,7 +7,7 @@
 get_res(provoc_obj)
 }
 \arguments{
-\item{provoc_obj}{The result of provoc(), or an object coerced via as.provoc().}
+\item{provoc_obj}{Object of class provoc to be used to extract the results.}
 }
 \description{
 Prints the most useful diagnostics to the screen, invisibly returning them as a list.

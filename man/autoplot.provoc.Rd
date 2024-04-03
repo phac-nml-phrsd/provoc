@@ -7,7 +7,7 @@
 \method{autoplot}{provoc}(provoc_obj, date_col = NULL)
 }
 \arguments{
-\item{provoc_obj}{The result of provoc(), or an object coerced via as.provoc().}
+\item{provoc_obj}{Resulting object of class provoc to be used in plotting.}
 
 \item{date_col}{Optional - if there's a date column, the results are plotted over time. This can be problematic if there are multiple samples at each time point.}
 }

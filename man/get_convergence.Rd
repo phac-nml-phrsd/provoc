@@ -7,7 +7,7 @@
 get_convergence(res, verbose = TRUE)
 }
 \arguments{
-\item{res}{The result of \code{provoc()}}
+\item{res}{The result of object provoc}
 
 \item{verbose}{Print a message to the screen?}
 }
