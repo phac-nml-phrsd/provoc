@@ -36,7 +36,8 @@
 #'
 #' @export
 provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
-    bootstrap_samples = 0, update_interval = 20, verbose = FALSE, annihilate = FALSE) {
+    bootstrap_samples = 0, update_interval = 20,
+    verbose = FALSE, annihilate = FALSE) {
     #creating original copy of data for later use
     data_copy <- data
 
@@ -49,6 +50,27 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     mutation_defs <- find_muation_column_output[[1]]
     mutation_col <- find_muation_column_output[[2]]
 
+    # Find how many mutations they have in common
+    if (is.null(by)) {
+        mutations_used <- length(intersect(
+            data[, mutation_col],
+            colnames(mutation_defs)))
+        mutations_in_data <- length(unique(data[, mutation_col]))
+    } else {
+        mutations_used <- sapply(unique(data[, by]), function(x) {
+            length(intersect(
+                data[data[, by] == x, mutation_col],
+                colnames(mutation_defs)
+            ))
+        })
+        mutations_in_data <- sapply(unique(data[, by]),
+            function(x) {
+                length(unique(data[data[, by] == x, mutation_col]))
+            }
+        )
+    }
+    mutation_info <- list(mutations_used = mutations_used,
+        mutations_in_data = mutations_in_data)
 
     # Extract components from the formula
     components <- extract_formula_components(formula, data,
@@ -115,6 +137,7 @@ provoc <- function(formula, data, mutation_defs = NULL, by = NULL,
     attr(provoc_obj, "similarities") <- similarities
     attr(provoc_obj, "internal_data") <- data
     attr(provoc_obj, "by_col") <- by
+    attr(provoc_obj, "mutation_info") <- mutation_info
 
     class(provoc_obj) <- c("provoc", "data.frame")
 

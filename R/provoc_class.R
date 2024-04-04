@@ -9,6 +9,19 @@ print.provoc <- function(provoc_obj, n = 6) {
     cat("Call: ")
     print(attributes(provoc_obj)$formula)
     cat("\n")
+    minfo <- attributes(provoc_obj)$mutation_info
+    cat("Mutations in lineage definitions: ",
+        ncol(attributes(provoc_obj)$variant_matrix),
+        "\n")
+    if (length(minfo[[1]]) <= 10) {
+        cat("Mutations used in analysis/mutations in data:\n")
+        cat(paste(minfo[[1]], minfo[[2]], sep = "/", collapse = "\t"))
+        cat("\n\n")
+    } else {
+        cat("Summary of percent of mutations used:\n")
+        print(summary(minfo[[1]] / minfo[[2]]))
+        cat("\n\n")
+    }
     all_conv <- unlist(attributes(provoc_obj)$convergence)
     if (any(!all_conv)) {
         cat("Some models did not converge:\n")
