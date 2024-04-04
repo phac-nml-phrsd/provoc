@@ -56,22 +56,28 @@ notation that emphasizes the connection to binomial GLM models. The
 confidence intervals and correlation of the parameters.
 
 ``` r
-res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2,
+res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + AY.4 + P.1,
     data = b1,
     verbose = FALSE,
     bootstrap_samples = 100)
 res
 ```
 
-    Call:  ~ cbind(count, coverage) B.1.1.7 + B.1.429 + B.1.617.2
+    Call: cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + 
+        AY.4 + P.1
+
+    Mutations in lineage definitions:  325 
+    Mutations used in analysis/mutations in data:
+    74/772
 
     All models converged.
 
-    Top 3 variants:
-         rho   ci_low  ci_high   variant
-    2  0.454 4.51e-01 4.57e-01   B.1.429
-    1  0.008 6.50e-03 8.89e-03   B.1.1.7
-    3 <0.001 1.35e-09 4.72e-05 B.1.617.2
+    Top 4 variants:
+         rho   ci_low  ci_high   variant group
+    2   0.33 3.23e-01 3.39e-01   B.1.429     1
+    4  0.124 1.16e-01 1.31e-01   B.1.427     1
+    1  0.008 7.06e-03 8.14e-03   B.1.1.7     1
+    3 <0.001 2.02e-09 4.67e-05 B.1.617.2     1
 
 We have created a class for `provoc` objects with convenient methods.
 For example, plotting the results is achieved as follows:
@@ -101,7 +107,7 @@ autoplot(res) +
 
 ``` r
 # First two samples from Baaijens
-b2 <- Baaijens [Baaijens$sra %in% unique(Baaijens$sra)[1:50], ]
+b2 <- Baaijens [Baaijens$sra %in% unique(Baaijens$sra)[1:30], ]
 b2$mutations <- parse_mutations(b2$label)
 head(b1[, c("count", "coverage", "mutation", "label", "sra")])
 ```
@@ -120,31 +126,45 @@ samples, the model takes a while to run, hence why there are only 50
 bootstrap samples here.
 
 ``` r
-res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2,
-    data = b2, by = "sra",
-    verbose = FALSE, bootstrap_samples = 50)
+system.time(
+    res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + AY.4 + P.1,
+        data = b2, by = "sra",
+        verbose = FALSE, bootstrap_samples = 50)
+)
+```
+       user  system elapsed 
+     27.626   0.078  28.001 
+
+``` r
 res
 ```
 
-    Call:  ~ cbind(count, coverage) B.1.1.7 + B.1.429 + B.1.617.2
+    Call: cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + 
+        AY.4 + P.1
+
+    Mutations in lineage definitions:  325 
+    Summary of percent of mutations used:
+       Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    0.09585 0.09585 0.09585 0.09585 0.09585 0.09585 
+
 
     All models converged.
 
     Top 6 variants:
           rho ci_low ci_high variant       group avg_spot_len sample_name     bases
-    37  0.899  0.837   0.944 B.1.1.7 SRR15505114          302         FX2 385650980
-    83  0.846  0.835   0.851 B.1.429 SRR15505129          302         FE1 339620744
-    143 0.816  0.813   0.819 B.1.429 SRR15505149          302         EE4 903043118
-    46  0.781  0.772   0.782 B.1.1.7 SRR15505117          302         FU2 651084518
-    59    0.7  0.693   0.708 B.1.429 SRR15505121          302         FP1 568356752
-    25  0.694  0.690   0.697 B.1.1.7 SRR15505110          302         GC3 462319720
+    108 0.956  0.946   0.966 B.1.427 SRR15505128          302         FH1 417245918
+    49  0.898  0.856   0.944 B.1.1.7 SRR15505114          302         FX2 385650980
+    61  0.766  0.765   0.772 B.1.1.7 SRR15505117          302         FU2 651084518
+    80  0.709  0.699   0.714 B.1.427 SRR15505121          302         FP1 568356752
+    33  0.696  0.686   0.705 B.1.1.7 SRR15505110          302         GC3 462319720
+    65  0.683  0.678   0.687 B.1.1.7 SRR15505118          302         FS3 609182622
          bioproject       date
-    37  PRJNA741211 2021-04-11
-    83  PRJNA741211 2021-03-16
-    143 PRJNA741211 2021-02-08
-    46  PRJNA741211 2021-04-07
-    59  PRJNA741211 2021-03-30
-    25  PRJNA741211 2021-04-19
+    108 PRJNA741211 2021-03-18
+    49  PRJNA741211 2021-04-11
+    61  PRJNA741211 2021-04-07
+    80  PRJNA741211 2021-03-30
+    33  PRJNA741211 2021-04-19
+    65  PRJNA741211 2021-04-05
 
 The plotting functions above work as expected.
 
@@ -166,10 +186,46 @@ column:
 ``` r
 theme_set(theme_bw())
 res$date <- lubridate::ymd(res$date)
-autoplot(res, date_col = "date") + scale_x_date()
+autoplot(res, date_col = "date")
 ```
 
-    Scale for x is already present.
-    Adding another scale for x, which will replace the existing scale.
-
 ![](README_files/figure-commonmark/multi-date-res-ggplot-1.png)
+
+## Searching for Different Variants
+
+``` r
+library(patchwork)
+res_with <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427,
+    data = b2, by = "sra",
+    verbose = FALSE, bootstrap_samples = 0)
+res_with$date <- lubridate::ymd(res_with$date)
+
+res_without <- provoc(cbind(count, coverage) ~ B.1.429 + B.1.617.2 + B.1.427,
+    data = b2, by = "sra",
+    verbose = FALSE, bootstrap_samples = 0)
+res_without$date <- lubridate::ymd(res_without$date)
+
+g_with <- autoplot(res_with, date_col = "date") +
+    scale_fill_manual(values = 2:5)
+g_without <- autoplot(res_without, date_col = "date") +
+    scale_fill_manual(values = 3:5)
+
+g_with / g_without
+```
+
+![](README_files/figure-commonmark/with-without-1.png)
+
+# Roadmap
+
+- Soon
+  - [ ] Finish approximations to Freyja and Alcov.
+  - [ ] Full suite of model diagnostics.
+  - [ ] Process data from iVar for use in models.
+  - [ ] Tools to investigate the effect of different lineage
+    definitions.
+- Medium future
+  - [ ] Convert Freyja and Alcov outputs to R objects that can take
+    advantage of the diagnostics.
+  - [ ] Hypothesis tests for whether a coefficient (or group) is 0.
+- Far future
+  - [ ] Make available on CRAN

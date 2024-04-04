@@ -40,7 +40,7 @@ The main fitting function is designed to mimic `glm()`, with formula notation th
 
 ```{r}
 #| label: fit one sample
-res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2,
+res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + AY.4 + P.1,
     data = b1,
     verbose = FALSE,
     bootstrap_samples = 100)
@@ -71,7 +71,7 @@ autoplot(res) +
 ```{r}
 #| label: multi_sample
 # First two samples from Baaijens
-b2 <- Baaijens [Baaijens$sra %in% unique(Baaijens$sra)[1:50], ]
+b2 <- Baaijens [Baaijens$sra %in% unique(Baaijens$sra)[1:30], ]
 b2$mutations <- parse_mutations(b2$label)
 head(b1[, c("count", "coverage", "mutation", "label", "sra")])
 ```
@@ -80,9 +80,13 @@ Note the "`by`" argument below. This tells `provoc()` to fit the model separatel
 
 ```{r}
 #| label: fit-multi-sample
-res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2,
-    data = b2, by = "sra",
-    verbose = FALSE, bootstrap_samples = 50)
+#| warning: false
+#| message: false
+system.time(
+    res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + AY.4 + P.1,
+        data = b2, by = "sra",
+        verbose = FALSE, bootstrap_samples = 50)
+)
 res
 ```
 
@@ -108,6 +112,41 @@ In addition, we've added special functionality for data with a "date" column:
 #| label: multi-date-res-ggplot
 theme_set(theme_bw())
 res$date <- lubridate::ymd(res$date)
-autoplot(res, date_col = "date") + scale_x_date()
+autoplot(res, date_col = "date")
 ```
 
+## Searching for Different Variants
+
+```{r}
+#| label: with-without
+library(patchwork)
+res_with <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427,
+    data = b2, by = "sra",
+    verbose = FALSE, bootstrap_samples = 0)
+res_with$date <- lubridate::ymd(res_with$date)
+
+res_without <- provoc(cbind(count, coverage) ~ B.1.429 + B.1.617.2 + B.1.427,
+    data = b2, by = "sra",
+    verbose = FALSE, bootstrap_samples = 0)
+res_without$date <- lubridate::ymd(res_without$date)
+
+g_with <- autoplot(res_with, date_col = "date") +
+    scale_fill_manual(values = 2:5)
+g_without <- autoplot(res_without, date_col = "date") +
+    scale_fill_manual(values = 3:5)
+
+g_with / g_without
+```
+
+# Roadmap
+
+- Soon
+    - [ ] Finish approximations to Freyja and Alcov.
+    - [ ] Full suite of model diagnostics.
+    - [ ] Process data from iVar for use in models.
+    - [ ] Tools to investigate the effect of different lineage definitions.
+- Medium future
+    - [ ] Convert Freyja and Alcov outputs to R objects that can take advantage of the diagnostics.
+    - [ ] Hypothesis tests for whether a coefficient (or group) is 0.
+- Far future
+    - [ ] Make available on CRAN
