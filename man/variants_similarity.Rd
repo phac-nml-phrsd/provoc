@@ -4,7 +4,7 @@
 \alias{variants_similarity}
 \title{Finds and prints all similarities among variants}
 \usage{
-variants_similarity(data)
+variants_similarity(data, simplify = FALSE, almost = 1)
 }
 \arguments{
 \item{data}{A variant matrix}

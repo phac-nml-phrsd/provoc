@@ -291,6 +291,7 @@ summarise_variants <- function(provoc_obj) {
 #' @param provoc_obj Result of fitting provoc().
 #' @param type Deviance or raw residuals.
 #'
+#' @export
 plot_resids <- function(provoc_obj, type = "deviance", by_variant = TRUE) {
     data <- attributes(provoc_obj)$internal_data
     vardf <- data[, startsWith(colnames(data), "var_")]
