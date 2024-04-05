@@ -71,4 +71,11 @@ resid.provoc <- function(provoc_obj, type = "deviance") {
         return(raw_resids)
     }
 }
+
+#' Calculate the residuals of a provoc object
+#' 
+#' @param provoc_obj The result of provoc()
+#' @param type "deviance" or "raw"
+#' 
+#' @export
 residuals.provoc <- resid.provoc
