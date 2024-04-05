@@ -323,6 +323,7 @@ plot_resids <- function(provoc_obj, type = "deviance", by_variant = TRUE) {
 }
 
 #' plot the similarities of variants
+#' @export
 plot_variants <- function(provoc_obj,
     type = "Jaccard_similarity", labels = TRUE) {
     
