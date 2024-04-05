@@ -18,9 +18,9 @@ print.provoc <- function(provoc_obj, n = 6) {
         cat(paste(minfo[[1]], minfo[[2]], sep = "/", collapse = "\t"))
         cat("\n\n")
     } else {
-        cat("Summary of percent of mutations used:\n")
+        cat("Summary of percent of mutations in data used:\n")
         print(summary(minfo[[1]] / minfo[[2]]))
-        cat("\n\n")
+        cat("\n")
     }
     all_conv <- unlist(attributes(provoc_obj)$convergence)
     if (any(!all_conv)) {
@@ -46,38 +46,69 @@ print.provoc <- function(provoc_obj, n = 6) {
 #'
 #' @export
 summary.provoc <- function(provoc_obj) {
-    cat("Call: ")
+    cat("\nCall:\n")
     print(attributes(provoc_obj)$formula)
     cat("\n")
-    fitted <- predict(provoc_obj)
 
-    bootstrap_cor <- attributes(provoc_obj)$bootstrap_cor
+    # Deviance is intentionally misspelled by Devan
+    devance_res <- residuals(provoc_obj, type = "deviance")
+    cat("Deviance Residuals:\n")
+    print(summary(devance_res))
 
-    cat(summarise_variants(provoc_obj))
-    # TODO: Data summary
-    # Number of mutations used in the fitting,
-    # Entropy of frequencies, or deviation from 0.5
-    # Five-number summary for coverage
-    # ...
+    minfo <- attributes(provoc_obj)$mutation_info
+    cat("\nMutations in lineage definitions:",
+        ncol(attributes(provoc_obj)$variant_matrix),
+        "\n")
+    if (length(minfo[[1]]) <= 10) {
+        cat("Mutations used in analysis/mutations in data:\n")
+        cat(paste(minfo[[1]], minfo[[2]], sep = "/", collapse = "\t"))
+        cat("\n")
+    } else {
+        cat("Summary of percent of mutations in data used:\n")
+        print(summary(minfo[[1]] / minfo[[2]]))
+        cat("\n")
+    }
 
-    # TODO: Per-variant goodness of fit diagnostics
-    # | variant | total deviance | n_obs | ...
-    # |---------|----------------|-------| ...
-    # | Overall | ...
-    # | B.1.1.7 | ...
-    # | B.1.427 | ...
+    cat("\nCoefficients:\n")
+    coef_table <- as.data.frame(provoc_obj)
+    coef_table_length <- seq_len(min(30,
+            nrow(coef_table)))
+    by_col <- attributes(provoc_obj)$by_col
+    if (is.null(by_col)) {
+        coef_table <- coef_table[, 1:4]
+    } else {
+        coef_table <- coef_table[, 1:5]
+    }
+    print(coef_table[
+            coef_table_length, ])
 
-    # TODO: Overall goodness of fit diagnostics
-    # R^2 analogue, Chi-squaretest for deviance, number of parameters
-    # convergence diagnostics, ...
-
-    # TODO: return a summary.provoc object with associated print method.
-    # This is how summary.lm prints to the screen if not assigned to
-    # an object, and does not print if it is assigned to an object.
-    # This f'n to be split into one function to create the object
-    # and a print method.
-    return(invisible(list(formula = formula, resids = fitted,
-                boot_cor = bootstrap_cor)))
+    cat("\nCorrelation of coefficients:\n")
+    bootstraps <- attributes(provoc_obj)$bootstrap
+    if (length(bootstraps) > 1) {
+        cat("\nMultiple samples detected, see boot_corr() for info.\n")
+    } else {
+        boot_corr <- cor(bootstraps[[1]])
+        if (ncol(boot_corr) <= 6) {
+            print(boot_corr)
+        } else {
+            cat("Top 6 are shown; see coef_cor() for more.")
+            boot_corr[lower.tri(boot_corr)] <- 0
+            diag(boot_corr) <- 0
+            max_corrs <- apply(boot_corr, 2, max)
+            top_6 <- names(sort(-max_corrs))[1:6]
+            print(boot_corr[top_6, top_6])
+        }
+    }
+    return(
+        invisible(
+            list(
+                formula = formula,
+                resids = devance_res,
+                coef = coef_table,
+                boot_corr = boot_corr
+            )
+        )
+    )
 }
 
 #' Print the summary of a provoc object
@@ -93,8 +124,6 @@ print.summary.provoc <- function(summary.provoc) {
 #'
 #' @export
 plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
-    #plot_types <- c("b", "r")
-    #if(!all(plot_type %in% plot_types)) stop("Invalid plot choice.")
 
     mfrow <- switch(as.character(length(plot_type)),
         "1" = c(1, 1),
@@ -222,34 +251,33 @@ get_convergence <- function(res, verbose = TRUE) {
 #'
 #' @inherit summary.provoc
 summarise_variants <- function(provoc_obj) {
-    similarities <- attributes(provoc_obj)$internal_data |>
-        provoc:::variants_similarity() |>
+    similarities <- attributes(provoc_obj)$similarities |>
         provoc:::simplify_similarity()
 
     msg <- ""
     if (length(similarities$Differ_by_one_or_less) > 0) {
         msg <- paste0(msg,
-            "At least one pair of variants has a single difference. ",
+            "At least one pair of variants has a single difference.\n",
             collapse = " ")
     }
     if (length(similarities$Jaccard_similarity) > 0) {
         msg <- paste0(msg,
-            "At least one pair of variants has a Jaccard similarity > 0.99",
+            "At least one pair of variants has a Jaccard similarity > 0.99.\n",
             collapse = " ")
     }
-    if (length(similarities$Is_subset) > 0) {
+    if (length(similarities$is_subset) > 0) {
         msg <- paste0(msg,
-            "At least one variant is a subset of another.",
+            "At least one variant is a subset of another.\n",
             collapse = " ")
     }
-    if (length(similarities$Is_almost_subset) > 0) {
+    if (length(similarities$is_almost_subset) > 0) {
         msg <- paste0(msg,
-            "At least one variant is almost a subset of another.",
+            "At least one variant is almost a subset of another.\n",
             collapse = " ")
     }
 
     if (nchar(msg) > 0) {
-        msg <- paste0(msg, "See variants_similarity() for more info.\n",
+        msg <- paste0(msg, "See variants_similarity(res) for more info.\n",
             collapse = "\n")
     } else {
         msg <- "No issues detected for mutation definition.\n"
@@ -287,8 +315,9 @@ plot_resids <- function(provoc_obj, type = "deviance", by_variant = TRUE) {
         legend("bottomright",
             legend = gsub("var_", "", varnames),
             col = seq_along(varnames),
-            pch = 1)
+            pch = 16)
     } else {
         points(residuals ~ fitted, data = vardf, pch = 16)
     }
 }
+
