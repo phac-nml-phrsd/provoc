@@ -321,3 +321,38 @@ plot_resids <- function(provoc_obj, type = "deviance", by_variant = TRUE) {
     }
 }
 
+#' plot the similarities of variants
+plot_variants <- function(provoc_obj,
+    type = "Jaccard_similarity", labels = TRUE) {
+    
+    old_par <- par()
+    similarities <- attributes(provoc_obj)$similarities[[type]]
+    similarities[upper.tri(similarities)] <- NA
+    diag(similarities) <- NA
+    similarities <- similarities[-1, -ncol(similarities)]
+    rownames <- gsub("var_", "", rownames(similarities))
+    colnames <- gsub("var_", "", colnames(similarities))
+    atseq <- (seq_along(rownames) - 1) / (length(rownames) - 1)
+
+    omar <- par()$mar
+    par(mar = c(6, 2, 2, 6))
+    image(similarities, xaxt = "n", yaxt = "n", bty = "n",
+        zlim = c(0, 1), main = type,
+        col = hcl.colors(
+            n = length(atseq)^4,
+            palette = "Spectral",
+            rev = TRUE))
+    axis(side = 1, at = atseq, las = 2,
+        labels = rownames)
+    axis(side = 4, at = atseq,
+        labels = colnames, las = 1)
+
+    if (labels) {
+        sims <- round(as.numeric(similarities), 3)
+        sims[is.na(sims)] <- ""
+        atseqy <- rep(atseq, each = length(atseq))
+        atseqx <- rep(atseq, times = length(atseq))
+        text(x = atseqx, y = atseqy, labels = sims)
+    }
+    par(mar = omar)
+}
