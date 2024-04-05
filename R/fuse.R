@@ -107,7 +107,7 @@ fission <- function(fused, sample = NULL) {
 #' the Jaccard similarity between variants, which variants are subsets and almost subsets
 #' of each other. in is_subset and is_almost_subset a value is true if the variant of the
 #' column name is a subset/almost a subset of the variant of the row name.
-variants_similarity <- function(data) {
+variants_similarity <- function(data, simplify = FALSE, almost = 1) {
 
     subset_of_variants <- data[, startsWith(names(data), "var_")]
 
@@ -165,6 +165,10 @@ variants_similarity <- function(data) {
     colnames(similarities$is_almost_subset) <- colnames(subset_of_variants)
     rownames(similarities$is_almost_subset) <- colnames(subset_of_variants)
 
+    if (simplify) {
+        similarities <- simplify_similarity(similarities,
+            almost = almost)
+    }
     return(similarities)
 }
 
