@@ -253,6 +253,11 @@ extract_formula_components <- function(formula, data,
     # Split RHS by '+' and trim whitespace
     variant_names <- strsplit(rhs, "\\+")[[1]]
     variant_names <- sapply(variant_names, trimws)
+    if (length(variant_names) == 1) {
+        if (variant_names == ".") {
+            variant_names <- rownames(mutation_defs)
+        }
+    }
 
     # Extract necessary data based on LHS
     response_vars <- all.vars(formula[[2]])
