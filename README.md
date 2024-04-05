@@ -144,6 +144,12 @@ summary(res)
     B.1.427   -0.09719734 -0.88296571  0.02233181  1.00000000 -0.07725833
     AY.4       0.07089729  0.06095588  0.04138764 -0.07725833  1.00000000
 
+``` r
+plot_variants(res)
+```
+
+![](README_files/figure-commonmark/one-sample-variant-plot-1.png)
+
 # Multiple Samples
 
 ``` r
@@ -213,6 +219,12 @@ res
     50  PRJNA741211 2021-04-17
     35  PRJNA741211 2021-04-23
 
+``` r
+plot_variants(res)
+```
+
+![](README_files/figure-commonmark/multi-sample-variant-plot-1.png)
+
 The plotting functions above work as expected.
 
 ``` r
@@ -220,6 +232,12 @@ plot(res)
 ```
 
 ![](README_files/figure-commonmark/multi-sample-res-base-1.png)
+
+``` r
+plot_resids(res)
+```
+
+![](README_files/figure-commonmark/multi-sample-resid-base-1.png)
 
 ``` r
 autoplot(res)

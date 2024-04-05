@@ -76,6 +76,11 @@ plot_resids(res)
 summary(res)
 ```
 
+```{r}
+#| label: one-sample-variant-plot
+plot_variants(res)
+```
+
 # Multiple Samples
 
 ```{r}
@@ -103,6 +108,13 @@ system.time(
 res
 ```
 
+
+```{r}
+#| label: multi-sample-variant-plot
+plot_variants(res)
+```
+
+
 The plotting functions above work as expected.
 
 ```{r}
@@ -110,6 +122,14 @@ The plotting functions above work as expected.
 #| label: multi-sample-res-base
 plot(res)
 ```
+
+
+```{r}
+#| fig-height: 8
+#| label: multi-sample-resid-base
+plot_resids(res)
+```
+
 
 
 ```{r}
