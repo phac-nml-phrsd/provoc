@@ -19,15 +19,15 @@ In particular, every mutation that was observed with at least 20% frequency was 
 
 Let's try some linear modelling approaches!
 
-```{r}
+```{R}
 library(provoc)
 varmat <- astronomize()
 baaijens_lineages <- c("B.1.1.7", "B.1.427",
-    "B.1.429", "B.1.526")
+    "B.1.429", "B.1.526", "B.1.617.2")
 varmat <- varmat[baaijens_lineages, ]
 
 data(Baaijens)
-baaijens1 <- Baaijens[Baaijens$date == "2021-01-11", ]
+baaijens1 <- Baaijens[Baaijens$date == "2021-01-01", ]
 baaijens1$mutation <- parse_mutations(baaijens1$label)
 fused <- fuse(baaijens1, varmat, verbose = FALSE)
 
@@ -43,6 +43,38 @@ data.frame(
         lineage = baaijens_lineages,
         lm = round(unname(lmcoef), 3)) |>
     knitr::kable(digits = 3)
+```
+
+```{R}
+# Analyze the dataset using the default mutation definitions
+res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2,
+              data = baaijens1, by = "sample_name",
+              mutation_defs = as.matrix(varmat), verbose = FALSE)
+res
+
+preds <- predict(res)
+predsdf <- as.data.frame(t(preds))
+names(predsdf) <- "pred"
+predsdf$mutation <- rownames(predsdf)
+rownames(predsdf) <- NULL
+
+obsdf <- baaijens1[, c("frequency", "count", "coverage", "mutation")]
+
+library(dplyr)
+library(ggplot2)
+augdf <- inner_join(predsdf, obsdf, by = "mutation")
+aug <- fuse(augdf, varmat, verbose = FALSE)
+
+aug$variant <- apply(select(aug, starts_with("var")), 1, function(x) {
+    paste(names(x)[x == 1], collapse = "-")
+})
+
+head(aug)
+ggplot(aug) +
+    aes(x = pred, y = frequency - pred) +
+    geom_point(shape = 1) +
+    geom_hline(yintercept = 0) +
+    facet_wrap(~ variant)
 ```
 
 Oooh that's bad! Negative estimates??? That's not possible. 
