@@ -56,15 +56,16 @@ notation that emphasizes the connection to binomial GLM models. The
 confidence intervals and correlation of the parameters.
 
 ``` r
-res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + AY.4 + P.1,
+res <- provoc(
+    formula = count / coverage ~ B.1.1.7 + B.1.429 + B.1.617.2 + 
+        B.1.427 + AY.4 + P.1,
     data = b1,
-    verbose = FALSE,
     bootstrap_samples = 100)
 res
 ```
 
-    Call: cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + 
-        AY.4 + P.1
+    Call: count/coverage ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + AY.4 + 
+        P.1
 
     Mutations in lineage definitions:  325 
     Mutations used in analysis/mutations in data:
@@ -72,12 +73,13 @@ res
 
     All models converged.
 
-    Top 4 variants:
+    Top 5 variants:
          rho   ci_low  ci_high   variant group
-    2   0.33 3.23e-01 3.39e-01   B.1.429     1
-    4  0.124 1.16e-01 1.31e-01   B.1.427     1
-    1  0.008 7.06e-03 8.14e-03   B.1.1.7     1
-    3 <0.001 2.02e-09 4.67e-05 B.1.617.2     1
+    5  0.515 5.09e-01 5.20e-01      AY.4     1
+    2   0.33 3.23e-01 3.36e-01   B.1.429     1
+    4  0.124 1.19e-01 1.30e-01   B.1.427     1
+    1  0.008 7.09e-03 7.98e-03   B.1.1.7     1
+    3 <0.001 7.45e-10 8.13e-05 B.1.617.2     1
 
 We have created a class for `provoc` objects with convenient methods.
 For example, plotting the results is achieved as follows:
@@ -103,6 +105,45 @@ autoplot(res) +
 
 ![](README_files/figure-commonmark/one-sample-res-ggplot-1.png)
 
+``` r
+plot_resids(res)
+```
+
+![](README_files/figure-commonmark/one-sample-resid-plot-1.png)
+
+``` r
+summary(res)
+```
+
+
+    Call:
+    count/coverage ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + AY.4 + 
+        P.1
+
+    Deviance Residuals:
+        Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+    -10.3051  -1.9998   0.0000  -0.7594   0.0000   8.1775 
+
+    Mutations in lineage definitions: 325 
+    Mutations used in analysis/mutations in data:
+    74/772
+
+    Coefficients:
+               rho       ci_low      ci_high   variant
+    1 7.599439e-03 7.092760e-03 7.983944e-03   B.1.1.7
+    2 3.301205e-01 3.229204e-01 3.355859e-01   B.1.429
+    3 9.512833e-09 7.446244e-10 8.130071e-05 B.1.617.2
+    4 1.242872e-01 1.193353e-01 1.298808e-01   B.1.427
+    5 5.150303e-01 5.088075e-01 5.202288e-01      AY.4
+
+    Correlation of coefficients:
+                  B.1.1.7     B.1.429   B.1.617.2     B.1.427        AY.4
+    B.1.1.7    1.00000000  0.04022470  0.15339528 -0.09719734  0.07089729
+    B.1.429    0.04022470  1.00000000 -0.08722878 -0.88296571  0.06095588
+    B.1.617.2  0.15339528 -0.08722878  1.00000000  0.02233181  0.04138764
+    B.1.427   -0.09719734 -0.88296571  0.02233181  1.00000000 -0.07725833
+    AY.4       0.07089729  0.06095588  0.04138764 -0.07725833  1.00000000
+
 # Multiple Samples
 
 ``` r
@@ -121,50 +162,56 @@ head(b1[, c("count", "coverage", "mutation", "label", "sra")])
     6 13866    27715 aa:orf1a:L3352F ~10319T SRR15505102
 
 Note the “`by`” argument below. This tells `provoc()` to fit the model
-separately to each sample defined by the `by` column. Since there are 50
+separately to each sample defined by the `by` column. Since there are 30
 samples, the model takes a while to run, hence why there are only 50
 bootstrap samples here.
 
 ``` r
 system.time(
-    res <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + AY.4 + P.1,
-        data = b2, by = "sra",
-        verbose = FALSE, bootstrap_samples = 50)
+    res <- provoc(
+        formula = count / coverage ~ B.1.1.7 + B.1.429 + B.1.617.2 +
+            B.1.427 + AY.4 + P.1,
+        data = b2, 
+        by = "sra",
+        bootstrap_samples = 0)
 )
 ```
+
+    [1] "Attempt 10 of 20."
+    [1] "Attempt 20 of 20."
+
        user  system elapsed 
-     27.626   0.078  28.001 
+      1.456   0.015   1.477 
 
 ``` r
 res
 ```
 
-    Call: cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + 
-        AY.4 + P.1
+    Call: count/coverage ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427 + AY.4 + 
+        P.1
 
     Mutations in lineage definitions:  325 
-    Summary of percent of mutations used:
+    Summary of percent of mutations in data used:
        Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
     0.09585 0.09585 0.09585 0.09585 0.09585 0.09585 
-
 
     All models converged.
 
     Top 6 variants:
           rho ci_low ci_high variant       group avg_spot_len sample_name     bases
-    108 0.956  0.946   0.966 B.1.427 SRR15505128          302         FH1 417245918
-    49  0.898  0.856   0.944 B.1.1.7 SRR15505114          302         FX2 385650980
-    61  0.766  0.765   0.772 B.1.1.7 SRR15505117          302         FU2 651084518
-    80  0.709  0.699   0.714 B.1.427 SRR15505121          302         FP1 568356752
-    33  0.696  0.686   0.705 B.1.1.7 SRR15505110          302         GC3 462319720
-    65  0.683  0.678   0.687 B.1.1.7 SRR15505118          302         FS3 609182622
+    61  0.899     NA      NA B.1.1.7 SRR15505114          302         FX2 385650980
+    15  0.846     NA      NA    AY.4 SRR15505104          302         DR2 412520222
+    139  0.84     NA      NA B.1.427 SRR15505129          302         FE1 339620744
+    114 0.709     NA      NA B.1.427 SRR15505124          302         FK2 433136554
+    50  0.695     NA      NA    AY.4 SRR15505111          302         GC1 484282368
+    35  0.687     NA      NA    AY.4 SRR15505108          302         GF2 615765014
          bioproject       date
-    108 PRJNA741211 2021-03-18
-    49  PRJNA741211 2021-04-11
-    61  PRJNA741211 2021-04-07
-    80  PRJNA741211 2021-03-30
-    33  PRJNA741211 2021-04-19
-    65  PRJNA741211 2021-04-05
+    61  PRJNA741211 2021-04-11
+    15  PRJNA741211 2021-01-15
+    139 PRJNA741211 2021-03-16
+    114 PRJNA741211 2021-03-24
+    50  PRJNA741211 2021-04-17
+    35  PRJNA741211 2021-04-23
 
 The plotting functions above work as expected.
 
@@ -190,6 +237,12 @@ autoplot(res, date_col = "date")
 ```
 
 ![](README_files/figure-commonmark/multi-date-res-ggplot-1.png)
+
+``` r
+plot_resids(res)
+```
+
+![](README_files/figure-commonmark/multi-sample-resid-plot-1.png)
 
 ## Searching for Different Variants
 
@@ -218,14 +271,17 @@ g_with / g_without
 # Roadmap
 
 - Soon
-  - [ ] Finish approximations to Freyja and Alcov.
-  - [ ] Full suite of model diagnostics.
+  - [ ] Finish simplified versions of Freyja and Alcov models.
+  - [ ] Full suite of model diagnostic visualizations.
   - [ ] Process data from iVar for use in models.
+    - [ ] Process a list or directory of iVar data into an appropriate
+      object.
   - [ ] Tools to investigate the effect of different lineage
     definitions.
 - Medium future
   - [ ] Convert Freyja and Alcov outputs to R objects that can take
     advantage of the diagnostics.
-  - [ ] Hypothesis tests for whether a coefficient (or group) is 0.
+  - [ ] Allow lists of formulae, lists of mutation_defs, and lists of
+    data.
 - Far future
   - [ ] Make available on CRAN
