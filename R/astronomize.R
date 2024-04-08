@@ -195,12 +195,12 @@ astronomize <- function(path = NULL) {
 #' @details After removing some variants, the remaining mutations might not be present in any of the remaining variants. This function will remove mutations that no longer belong to any variants.
 #'
 #' Note that return_df will
-filter_varmat <- function(
+filter_variants <- function(
     variants = c("B.1.526", "B.1.1.7", "B.1.351", "B.1.617.2",
         "B.1.427", "B.1.429", "P.1"),
     varmat = NULL,
     return_df = FALSE,
-    path = "../constellations",
+    path = NULL,
     shared_order = TRUE) {
 
     if (is.null(varmat)) {
