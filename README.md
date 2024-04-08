@@ -33,7 +33,7 @@ It may be helpful to look at the structure of the simulated objects to know what
 ```R
 library(provoc)
 
-# Siumlate with defaul parameters
+# Siumlate with default parameters
 # (Omicron sublineages with a handful of mutations chosen randomly)
 varmat <- simulate_varmat()
 
