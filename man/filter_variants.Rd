@@ -5,17 +5,17 @@
 \title{Filter varmat for specific variants, keeping mutations that are present in at least one variant}
 \usage{
 filter_variants(
-  variants = c("B.1.526", "B.1.1.7", "B.1.351", "B.1.617.2", "B.1.427", "B.1.429", "P.1"),
   varmat = NULL,
+  variants = c("B.1.526", "B.1.1.7", "B.1.351", "B.1.617.2", "B.1.427", "B.1.429", "P.1"),
   return_df = FALSE,
   path = NULL,
   shared_order = TRUE
 )
 }
 \arguments{
-\item{variants}{Vector of variant names (must be in \code{rownmaes(varmat)}). Defaults to variants circulating in 2021-2022.}
-
 \item{varmat}{The result of \code{astronomize()}. If NULL, tries to run \code{astronoimize}.}
+
+\item{variants}{Vector of variant names (must be in \code{rownmaes(varmat)}). Defaults to variants circulating in 2021-2022.}
 
 \item{return_df}{Should the function return a data frame? Note that returned df is transposed compared to varmat. Default FALSE.}
 

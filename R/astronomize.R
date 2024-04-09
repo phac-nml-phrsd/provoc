@@ -196,9 +196,9 @@ astronomize <- function(path = NULL) {
 #'
 #' Note that return_df will
 filter_variants <- function(
+    varmat = NULL,
     variants = c("B.1.526", "B.1.1.7", "B.1.351", "B.1.617.2",
         "B.1.427", "B.1.429", "P.1"),
-    varmat = NULL,
     return_df = FALSE,
     path = NULL,
     shared_order = TRUE) {
