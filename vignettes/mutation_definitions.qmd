@@ -1,0 +1,190 @@
+---
+title: "Lineage Definitions in ProVoC"
+author: "Devan Becker"
+bibliography: provoc_package.bib
+execute:
+  cache: true
+format: pdf
+---
+
+## Introduction
+
+This vignette demonstrates some different ways of defining and comparing lineage definitions, including a discussion of why it matters.
+
+## Data Prep
+
+This package contains data from @baaijensLineageAbundanceEstimation2022, as downloaded from NCBI SRA and processed via a custom pipeline (heavily based on GromStole, with some post-processing). 
+
+In this paper, they explicitly look for B.1.1.7, B.1.427, B.1.429, and B.1.526. I'm going to add B.1.617.2 to this list, and take this list as given (another vignette will be written to test this assumption).
+
+To make the code run faster, I'll look at every third day of data.
+
+```{r}
+#| label: get-data
+library(provoc)
+library(lubridate) # ymd()
+data(Baaijens)
+
+Baaijens$date <- ymd(Baaijens$date)
+dates <- sort(unique(Baaijens$date))
+dates3 <- (1:floor(length(dates) / 3)) * 3
+dates <- dates[dates3]
+
+b3 <- Baaijens[Baaijens$date %in% dates, 
+    c("count", "coverage", "sra", "date", "label")]
+b3$mutation <- parse_mutations(b3$label)
+head(b3)
+```
+
+## Built-in Constellation Files
+
+The PANGO team used to maintain a GitHub repository called "[Constellations](https://github.com/cov-lineages/constellations)" [@CovlineagesConstellations2023], which contained mutations that were believed to be more-or-less unique to the lineages. This is no longer updated, but is useful for historical analyses.
+
+This set of lineage definitions is available via the `astronomize()` function.
+
+```{r}
+#| label: get-astro
+astro <- astronomize() |>
+    filter_variants(c("B.1.1.7", "B.1.427", "B.1.429", "B.1.526", "B.1.617.2"))
+dim(astro)
+astro[, 1:5]
+```
+
+In this matrix, the rows represent the variants and the columns represent the mutations, with a 1 representing the presence of a mutation in a given variant.
+
+Notice the use of `filter_variants()`. This function gets the rows corresponding to the variants, but it also ensures that we are only dealing with columns that have at least one "1". In other words, it only uses mutations that are present in at least one variant. 
+
+## Usher Barcodes
+
+The [Freyja](https://github.com/andersen-lab/Freyja) [@karthikeyanWastewaterSequencingReveals2022; @AndersenlabFreyja2024] repository keeps an up-to-date barcodes file, which serves the same purpose as the definitions in constellations.
+
+The `usher_barcodes()` function will check for this file, then download it if it's not present in a number of common locations. It's quite a large file, so I recommend storing the file and using the `filter_variants()` function.
+
+```{r}
+#| label: get-bar
+bar <- provoc::usher_barcodes(path = "working") |>
+    filter_variants(c("B.1.1.7", "B.1.427", "B.1.429", "B.1.526", "B.1.617.2"))
+dim(bar)
+```
+
+## Constellations versus Barcodes
+
+Let's quickly look at the mutations present in `astro` but not `bar`, then the mutations present in `bar` but not `astro` (all other mutations are in both).
+
+```{r}
+#| label: def-compare-setdiff
+# In astro but not bar
+setdiff(colnames(astro), colnames(bar))
+# In bar but not astro
+setdiff(colnames(bar), colnames(astro))
+```
+
+Okay, so there are some differences. But, surely, the mutations that are present in both definition files are the same across all variants! 
+
+```{r}
+#| label: def-compare-same
+# Mutations in both
+same_names <- intersect(colnames(astro), colnames(bar))
+length(same_names)
+
+# Percent disagreement among mutations that are in both
+mean(astro[, same_names] == bar[, same_names])
+```
+
+**Only 53\% of the mutations are the same between the two!** Even when the mutations are the same, the definitions are different. (This is possibly an issue with the code I wrote to process the constellations file.)
+
+## Results
+
+Since we chose variants when choosing the lineage definitions, we can use the convenient "~ ." notation to fit the models with all lineages.
+
+Note that the Baaijens data were processed in such a way that each sample contains the same mutations. This means that each bar you see below is based on the exact same set of mutations. This isn't necessary, but I believe it improves the interpretability of the results.
+
+```{r}
+#| label: gg-lapis-bar
+library(ggplot2)
+library(patchwork) # Patching ggplots together
+res_astro <- provoc(count / coverage ~ .,
+    mutation_defs = astro,
+    data = b3, by = "sra")
+res_astro$date <- ymd(res_astro$date)
+res_bar <- provoc(count / coverage ~ .,
+    mutation_defs = bar,
+    data = b3, by = "sra")
+res_bar$date <- ymd(res_bar$date)
+
+gg_astro <- autoplot(res_astro, date_col = "date") +
+    labs(title = "Constellations")
+gg_bar <- autoplot(res_bar, date_col = "date") +
+    labs(title = "Usher Barcodes")
+
+gg_astro / gg_bar + plot_layout(guides = "collect") &
+    theme_bw() &
+    facet_wrap(~ variant, nrow = 1)
+```
+
+Those are two *very* different looking plots! I'm really hoping it's not a problem with my code. 
+
+## LAPIS (CoV-Spectrum)
+
+Since I have not managed to find where to get an API key, the mutations within each lineage were manually downloaded from cov-spectrum.org [@chenCoVSpectrumAnalysisGlobally2022a]. I set the date range to go from 2020-01-01 to 2021-04-27, with the latter being the last sample in the Baaijens data. 
+
+The following code is very very hopefully going to change very soon. An API key would be nice, and I desperately need better mutation processing. It is, however, comforting that the column names match with `bar`, so at least my parsing is consistent!
+
+```{r}
+#| label: get-lapis
+variants <- c("B.1.1.7", "B.1.427", "B.1.429", "B.1.526", "B.1.617.2")
+lapis_list <- lapply(variants, function(x) {
+    file <- read.csv(paste0("../working/", x, ".csv"))
+    file$mutation[file$proportion > 0.8]
+})
+names(lapis_list) <- variants
+lapis <- varmat_from_list(lapis_list)
+
+# Avoiding parsing deletions, only looking at substitutions
+lapis <- lapis[, !grepl("-", colnames(lapis))]
+# TODO: user-friendly parsing
+colnames(lapis) <- sapply(colnames(lapis), function(x) {
+    provoc:::parse_mutation(
+        type = "~",
+        pos = substr(x, 2, nchar(x) - 1),
+        alt = substr(x, nchar(x), nchar(x)))
+})
+
+# In lapis but not bar
+setdiff(colnames(lapis), colnames(bar))
+# In bar but not lapis
+setdiff(colnames(bar), colnames(lapis))
+# In both bar and lapis
+bar_lapis <- intersect(colnames(lapis), colnames(bar))
+length(bar_lapis)
+
+mean(bar[, bar_lapis] == lapis[, bar_lapis])
+```
+
+87% the same is workable!
+
+```{r}
+#| label: gg-astro-bar-lapis
+#| fig-height: 5
+res_lapis <- provoc(count / coverage ~ .,
+    mutation_defs = lapis,
+    data = b3, by = "sra")
+res_lapis$date <- ymd(res_lapis$date)
+
+gg_lapis <- autoplot(res_lapis, date_col = "date") +
+    labs(title = "CoV-Spectrum")
+
+gg_astro / gg_bar / gg_lapis + plot_layout(guides = "collect") &
+    theme_bw() &
+    facet_grid(~ variant)
+```
+
+Usher Barcodes and Cov-Spectrum generally agree, but what's going on with B.1.617.2??? It sort of looks like B.1.429 has taken some of the weight from B.1.617.2, but this is worth looking into. For example, did B.1.429 have mutations that are in B.1.617.2? Is there a
+
+Hopefully this vignette has successfully completed its two goals:
+
+1. Demonstrate some of the functionality of `provoc` with lineage definitions.
+2. Demonstrate the importance of choosing good lineage definitions!
+
+
+# References
