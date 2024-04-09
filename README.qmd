@@ -211,18 +211,28 @@ plot_variants(res_all)
 
 ```
 
-# Roadmap
+# Version Roadmap
 
--   Soon
-    -   [ ] Finish simplified versions of Freyja and Alcov models.
-    -   [ ] Full suite of model diagnostic visualizations.
-    -   [ ] Process data from iVar for use in models.
-        -   [ ] Process a list or directory of iVar data into an appropriate object.
-    -   [ ] Tools to investigate the effect of different lineage definitions.
-    -   [ ] Interface with the LAPIS API (cov-spectrum data) to build mutation definitions on the fly.
--   Medium future
-    -   [ ] Convert Freyja and Alcov outputs to R objects that can take advantage of the diagnostics.
-    -   [ ] Allow list arguments to fit several different models/mutation definitions in one call
-    -   [ ] Interactive (`shiny`) applications for exploring lineage definition matrices
--   Far future
-    -   [ ] Make available on CRAN
+- [x] 0.5: Current version
+- [ ] 0.6: Refactor and add methods
+    - [ ] Standardize to use "lineage" everywhere
+    - [ ] General ease of use for fitting multiple models, checking lineage definitions, and checking diagnostics.
+    - [ ] Correct documentation errors and vestiges
+- [ ] 0.7: Better handling of multiple samples
+    - [ ] Proper diagnostics, easily applied to all samples
+    - [ ] `multiprovoc` class so functions know how to handle things?
+- [ ] 0.8: Multiple methods
+    - [ ] Freyja and AlCoV (possibly others) as first-class objects, with access to methods for `provoc` objects.
+        - Potentially loading in Freyja output files as `provoc` objects
+    - [ ] Stacking (`cbind()`) models for ease of comparison
+    - [ ] Import and process iVar data.
+    - [ ] Main function works for multiple methods and data sources.
+    - [ ] Unified `parse_mutations()` function with minimal user input.
+- [ ] 0.9: The shiny minor version
+    - [ ] Shiny app to interact with lineage defitions
+    - [ ] Shiny app to interact with results
+- [ ] 1.0: First major release
+    - [ ] All functions unit-tested and debugged
+    - [ ] Vignettes fully built
+    - [ ] All documentation up-to-date and built via `pkgdown`
+    - [ ] 
