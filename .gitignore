@@ -7,3 +7,5 @@ working/
 .Rproj.user
 README_cache/*
 provoc.Rproj
+.Rhistory
+.R_outbreak-info-token
