@@ -5,20 +5,18 @@ execute:
   cache: true
 ---
 
-[![Lifecycle:
-development](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental-1)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Lifecycle: development](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental-1) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 PROportions of Variants of Concern using counts, coverage, and a variant matrix.
 
 Builds and diagnoses a model based on:
 
-- Counts: The number of times a given mutation was observed.
-- Coverage: The number of times the position of a given variant was read.
-- Mutation names: whatever format you want, as long as they match the names in the Variant Matrix.
-- Variant Matrix: A matrix where the row names are variants, the column names are mutations, and the entries are 1 if the row variant has the column mutation and 0 otherwise. 
-    - For example: Usher Barcodes
-    - All current methods accept fractional entries.
+-   Counts: The number of times a given mutation was observed.
+-   Coverage: The number of times the position of a given variant was read.
+-   Mutation names: whatever format you want, as long as they match the names in the Variant Matrix.
+-   Variant Matrix: A matrix where the row names are variants, the column names are mutations, and the entries are 1 if the row variant has the column mutation and 0 otherwise.
+    -   For example: Usher Barcodes
+    -   All current methods accept fractional entries.
 
 # Usage
 
@@ -30,7 +28,8 @@ If not specified, the mutation definitions uses hardcoded definitions from the [
 #| label: load_Baaijens
 #| echo: true
 #| eval: true
-library(provoc)
+#library(provoc)
+devtools::load_all()
 data(Baaijens)
 b1 <- Baaijens [Baaijens$sra == Baaijens$sra[1], ]
 b1$mutation <- parse_mutations(b1$label)
@@ -85,13 +84,13 @@ plot_variants(res)
 
 ```{r}
 #| label: multi_sample
-# First two samples from Baaijens
+# First thirty samples from Baaijens
 b2 <- Baaijens [Baaijens$sra %in% unique(Baaijens$sra)[1:30], ]
 b2$mutations <- parse_mutations(b2$label)
 head(b1[, c("count", "coverage", "mutation", "label", "sra")])
 ```
 
-Note the "`by`" argument below. This tells `provoc()` to fit the model separately to each sample defined by the `by` column. Since there are 30 samples, the model takes a while to run, hence why there are only 50 bootstrap samples here.
+Note the "`by`" argument below. This tells `provoc()` to fit the model separately to each sample defined by the `by` column. Since there are 30 samples, the model takes a while to run, hence why there are no bootstrap samples here.
 
 ```{r}
 #| label: fit-multi-sample
@@ -108,12 +107,10 @@ system.time(
 res
 ```
 
-
 ```{r}
 #| label: multi-sample-variant-plot
 plot_variants(res)
 ```
-
 
 The plotting functions above work as expected.
 
@@ -123,14 +120,11 @@ The plotting functions above work as expected.
 plot(res)
 ```
 
-
 ```{r}
 #| fig-height: 8
 #| label: multi-sample-resid-base
 plot_resids(res)
 ```
-
-
 
 ```{r}
 #| fig-height: 4
@@ -148,6 +142,17 @@ res$date <- lubridate::ymd(res$date)
 autoplot(res, date_col = "date")
 ```
 
+Since `autoplot()` returns a `ggplot2` object, you can use all your knowledge of ggplot2:
+
+```{r}
+#| label: faceting
+autoplot(res, date_col = "date") +
+    facet_wrap(~ variant, nrow = 1) +
+    labs(title = "Proportions of Lineages over Time") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Finally, the residual plot still works (although it's a bunch of samples stuffed into one plot, so its use is limited.)
 
 ```{r}
 #| label: multi-sample-resid-plot
@@ -178,16 +183,46 @@ g_without <- autoplot(res_without, date_col = "date") +
 g_with / g_without
 ```
 
+Notice two important points:
+
+1. Since proportions can't sum to greater than one, including B.1.1.7 when it should be excluded means it will take away from the other lineages!
+    - Erroneously **increasing** one means **decreasing** true lineages.
+2. Due to shared mutations, excluding B.1.1.7 when it should be included means other lineages increase to make up for it.
+    - Erroneously **decreasing** one means **increasing** other lineages.
+
+`provoc` also accepts the `~ .` formula notation. This is useful if you want to manipulate the lineages in the lineage definitions matrix, which is easier programmatically than dealing with formulae in R. The `filter_variants()` function will remove mutations that are not present in any of the remaining lineages.
+
+```{r}
+#| label: load-usher
+mutation_defs <- usher_barcodes(path = "working") |>
+    filter_variants(c("B.1.1.7", "B.1.617.2", "B.1.427",
+        "B.1.429", "AY.4", "BA.4", "BA.5"))
+```
+
+With these definitions, we can just use all of them:
+
+```{r}
+#| label: run-barcodes
+res_all <- provoc(count / coverage ~ ., data = b1, 
+    bootstrap_samples = 0,
+    mutation_defs = mutation_defs)
+
+plot_variants(res_all)
+
+```
+
 # Roadmap
 
-- Soon
-    - [ ] Finish simplified versions of Freyja and Alcov models.
-    - [ ] Full suite of model diagnostic visualizations.
-    - [ ] Process data from iVar for use in models.
-        - [ ] Process a list or directory of iVar data into an appropriate object.
-    - [ ] Tools to investigate the effect of different lineage definitions.
-- Medium future
-    - [ ] Convert Freyja and Alcov outputs to R objects that can take advantage of the diagnostics.
-    - [ ] Allow lists of formulae, lists of mutation_defs, and lists of data.
-- Far future
-    - [ ] Make available on CRAN
+-   Soon
+    -   [ ] Finish simplified versions of Freyja and Alcov models.
+    -   [ ] Full suite of model diagnostic visualizations.
+    -   [ ] Process data from iVar for use in models.
+        -   [ ] Process a list or directory of iVar data into an appropriate object.
+    -   [ ] Tools to investigate the effect of different lineage definitions.
+    -   [ ] Interface with the LAPIS API (cov-spectrum data) to build mutation definitions on the fly.
+-   Medium future
+    -   [ ] Convert Freyja and Alcov outputs to R objects that can take advantage of the diagnostics.
+    -   [ ] Allow list arguments to fit several different models/mutation definitions in one call
+    -   [ ] Interactive (`shiny`) applications for exploring lineage definition matrices
+-   Far future
+    -   [ ] Make available on CRAN

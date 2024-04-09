@@ -34,7 +34,13 @@ by the PANGO team. The mutation definitions must have names that match
 what exists in the data.
 
 ``` r
-library(provoc)
+#library(provoc)
+devtools::load_all()
+```
+
+    ℹ Loading provoc
+
+``` r
 data(Baaijens)
 b1 <- Baaijens [Baaijens$sra == Baaijens$sra[1], ]
 b1$mutation <- parse_mutations(b1$label)
@@ -153,7 +159,7 @@ plot_variants(res)
 # Multiple Samples
 
 ``` r
-# First two samples from Baaijens
+# First thirty samples from Baaijens
 b2 <- Baaijens [Baaijens$sra %in% unique(Baaijens$sra)[1:30], ]
 b2$mutations <- parse_mutations(b2$label)
 head(b1[, c("count", "coverage", "mutation", "label", "sra")])
@@ -169,7 +175,7 @@ head(b1[, c("count", "coverage", "mutation", "label", "sra")])
 
 Note the “`by`” argument below. This tells `provoc()` to fit the model
 separately to each sample defined by the `by` column. Since there are 30
-samples, the model takes a while to run, hence why there are only 50
+samples, the model takes a while to run, hence why there are no
 bootstrap samples here.
 
 ``` r
@@ -256,6 +262,21 @@ autoplot(res, date_col = "date")
 
 ![](README_files/figure-commonmark/multi-date-res-ggplot-1.png)
 
+Since `autoplot()` returns a `ggplot2` object, you can use all your
+knowledge of ggplot2:
+
+``` r
+autoplot(res, date_col = "date") +
+    facet_wrap(~ variant, nrow = 1) +
+    labs(title = "Proportions of Lineages over Time") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+![](README_files/figure-commonmark/faceting-1.png)
+
+Finally, the residual plot still works (although it’s a bunch of samples
+stuffed into one plot, so its use is limited.)
+
 ``` r
 plot_resids(res)
 ```
@@ -286,6 +307,27 @@ g_with / g_without
 
 ![](README_files/figure-commonmark/with-without-1.png)
 
+`provoc` also accepts the `~ .` formula notation. This is useful if you
+want to manipulate the variants used in an automated way.
+
+``` r
+mutation_defs <- usher_barcodes(path = "working") |>
+    filter_variants(c("B.1.1.7", "B.1.617.2", "B.1.427",
+        "B.1.429", "AY.4", "BA.4", "BA.5"))
+```
+
+With these definitions, we can just use all of them:
+
+``` r
+res_all <- provoc(count / coverage ~ ., data = b1, 
+    bootstrap_samples = 0,
+    mutation_defs = mutation_defs)
+
+plot_variants(res_all)
+```
+
+![](README_files/figure-commonmark/unnamed-chunk-18-1.png)
+
 # Roadmap
 
 - Soon
@@ -296,10 +338,14 @@ g_with / g_without
       object.
   - [ ] Tools to investigate the effect of different lineage
     definitions.
+  - [ ] Interface with the LAPIS API (cov-spectrum data) to build
+    mutation definitions on the fly.
 - Medium future
   - [ ] Convert Freyja and Alcov outputs to R objects that can take
     advantage of the diagnostics.
-  - [ ] Allow lists of formulae, lists of mutation_defs, and lists of
-    data.
+  - [ ] Allow list arguments to fit several different models/mutation
+    definitions in one call
+  - [ ] Interactive (`shiny`) applications for exploring lineage
+    definition matrices
 - Far future
   - [ ] Make available on CRAN
