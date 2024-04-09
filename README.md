@@ -307,11 +307,25 @@ g_with / g_without
 
 ![](README_files/figure-commonmark/with-without-1.png)
 
+Notice two important points:
+
+1.  Since proportions can’t sum to greater than one, including B.1.1.7
+    when it should be excluded means it will take away from the other
+    lineages!
+    - Erroneously **increasing** one means **decreasing** true lineages.
+2.  Due to shared mutations, excluding B.1.1.7 when it should be
+    included means other lineages increase to make up for it.
+    - Erroneously **decreasing** one means **increasing** other
+      lineages.
+
 `provoc` also accepts the `~ .` formula notation. This is useful if you
-want to manipulate the variants used in an automated way.
+want to manipulate the lineages in the lineage definitions matrix, which
+is easier programmatically than dealing with formulae in R. The
+`filter_variants()` function will remove mutations that are not present
+in any of the remaining lineages.
 
 ``` r
-mutation_defs <- usher_barcodes(path = "working") |>
+mutation_defs <- provoc::usher_barcodes(path = "working") |>
     filter_variants(c("B.1.1.7", "B.1.617.2", "B.1.427",
         "B.1.429", "AY.4", "BA.4", "BA.5"))
 ```
@@ -326,7 +340,7 @@ res_all <- provoc(count / coverage ~ ., data = b1,
 plot_variants(res_all)
 ```
 
-![](README_files/figure-commonmark/unnamed-chunk-18-1.png)
+![](README_files/figure-commonmark/run-barcodes-1.png)
 
 # Roadmap
 
