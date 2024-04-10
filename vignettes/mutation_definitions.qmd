@@ -21,7 +21,8 @@ To make the code run faster, I'll look at every third day of data.
 
 ```{r}
 #| label: get-data
-library(provoc)
+#library(provoc)
+devtools::load_all()
 library(lubridate) # ymd()
 data(Baaijens)
 
