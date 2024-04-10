@@ -194,7 +194,7 @@ Notice two important points:
 
 ```{r}
 #| label: load-usher
-mutation_defs <- provoc::usher_barcodes(path = "working") |>
+lineage_defs <- provoc::usher_barcodes(path = "working") |>
     filter_lineages(c("B.1.1.7", "B.1.617.2", "B.1.427",
         "B.1.429", "AY.4", "BA.4", "BA.5"))
 ```
@@ -205,7 +205,7 @@ With these definitions, we can just use all of them:
 #| label: run-barcodes
 res_all <- provoc(count / coverage ~ ., data = b1, 
     bootstrap_samples = 0,
-    mutation_defs = mutation_defs)
+    lineage_defs = lineage_defs)
 
 plot_lineages(res_all)
 

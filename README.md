@@ -5,32 +5,32 @@ development](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](ht
 [![License:
 MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-PROportions of Variants of Concern using counts, coverage, and a variant
-matrix.
+PROportions of Variants of Concern using counts, coverage, and a lineage
+definition matrix.
 
 Builds and diagnoses a model based on:
 
 - Counts: The number of times a given mutation was observed.
-- Coverage: The number of times the position of a given variant was
+- Coverage: The number of times the position of a given mutation was
   read.
 - Mutation names: whatever format you want, as long as they match the
-  names in the Variant Matrix.
-- Variant Matrix: A matrix where the row names are variants, the column
-  names are mutations, and the entries are 1 if the row variant has the
-  column mutation and 0 otherwise.
+  names in the lineage definition matrix.
+- Lineage definition matrix: A matrix where the row names are lineage,
+  the column names are mutations, and the entries are 1 if the row
+  lineage has the column mutation and 0 otherwise.
   - For example: Usher Barcodes
   - All current methods accept fractional entries.
 
 # Usage
 
-There are two steps to using this software: create the mutation
+There are two steps to using this software: create the lineage
 definitions and run the model(s).
 
-If not specified, the mutation definitions uses hardcoded definitions
+If not specified, the lineage definitions uses hardcoded definitions
 from the
 [cov-lineages/constellations](https://github.com/cov-lineages/constellations)
 repo, which contains the representative mutations that were identified
-by the PANGO team. The mutation definitions must have names that match
+by the PANGO team. The lineage definitions must have names that match
 what exists in the data.
 
 ``` r
@@ -79,13 +79,13 @@ res
 
     All models converged.
 
-    Top 5 variants:
-         rho   ci_low  ci_high   variant group
-    5  0.515 5.09e-01 5.20e-01      AY.4     1
-    2   0.33 3.23e-01 3.36e-01   B.1.429     1
-    4  0.124 1.19e-01 1.30e-01   B.1.427     1
-    1  0.008 7.09e-03 7.98e-03   B.1.1.7     1
-    3 <0.001 7.45e-10 8.13e-05 B.1.617.2     1
+    Top 5 lineages:
+         rho   ci_low ci_high   lineage group
+    5  0.515 5.09e-01 0.52084      AY.4     1
+    2   0.33 3.23e-01 0.33823   B.1.429     1
+    4  0.124 1.18e-01 0.13045   B.1.427     1
+    1  0.008 7.08e-03 0.00805   B.1.1.7     1
+    3 <0.001 1.36e-09 0.00007 B.1.617.2     1
 
 We have created a class for `provoc` objects with convenient methods.
 For example, plotting the results is achieved as follows:
@@ -135,26 +135,26 @@ summary(res)
     74/772
 
     Coefficients:
-               rho       ci_low      ci_high   variant
-    1 7.599439e-03 7.092760e-03 7.983944e-03   B.1.1.7
-    2 3.301205e-01 3.229204e-01 3.355859e-01   B.1.429
-    3 9.512833e-09 7.446244e-10 8.130071e-05 B.1.617.2
-    4 1.242872e-01 1.193353e-01 1.298808e-01   B.1.427
-    5 5.150303e-01 5.088075e-01 5.202288e-01      AY.4
+               rho       ci_low      ci_high   lineage
+    1 7.599439e-03 7.081703e-03 8.050048e-03   B.1.1.7
+    2 3.301205e-01 3.234749e-01 3.382267e-01   B.1.429
+    3 9.512833e-09 1.362086e-09 6.996912e-05 B.1.617.2
+    4 1.242872e-01 1.184034e-01 1.304502e-01   B.1.427
+    5 5.150303e-01 5.086749e-01 5.208370e-01      AY.4
 
     Correlation of coefficients:
-                  B.1.1.7     B.1.429   B.1.617.2     B.1.427        AY.4
-    B.1.1.7    1.00000000  0.04022470  0.15339528 -0.09719734  0.07089729
-    B.1.429    0.04022470  1.00000000 -0.08722878 -0.88296571  0.06095588
-    B.1.617.2  0.15339528 -0.08722878  1.00000000  0.02233181  0.04138764
-    B.1.427   -0.09719734 -0.88296571  0.02233181  1.00000000 -0.07725833
-    AY.4       0.07089729  0.06095588  0.04138764 -0.07725833  1.00000000
+                  B.1.1.7     B.1.429  B.1.617.2     B.1.427        AY.4
+    B.1.1.7    1.00000000  0.01371296  0.2091873 -0.02628246 -0.18810506
+    B.1.429    0.01371296  1.00000000  0.1868977 -0.89024937  0.03164538
+    B.1.617.2  0.20918734  0.18689767  1.0000000 -0.16716463 -0.11556907
+    B.1.427   -0.02628246 -0.89024937 -0.1671646  1.00000000  0.03870984
+    AY.4      -0.18810506  0.03164538 -0.1155691  0.03870984  1.00000000
 
 ``` r
-plot_variants(res)
+plot_lineages(res)
 ```
 
-![](README_files/figure-commonmark/one-sample-variant-plot-1.png)
+![](README_files/figure-commonmark/one-sample-lineage-plot-1.png)
 
 # Multiple Samples
 
@@ -193,7 +193,7 @@ system.time(
     [1] "Attempt 20 of 20."
 
        user  system elapsed 
-      1.456   0.015   1.477 
+      1.819   0.020   1.848 
 
 ``` r
 res
@@ -209,8 +209,8 @@ res
 
     All models converged.
 
-    Top 6 variants:
-          rho ci_low ci_high variant       group avg_spot_len sample_name     bases
+    Top 6 lineages:
+          rho ci_low ci_high lineage       group avg_spot_len sample_name     bases
     61  0.899     NA      NA B.1.1.7 SRR15505114          302         FX2 385650980
     15  0.846     NA      NA    AY.4 SRR15505104          302         DR2 412520222
     139  0.84     NA      NA B.1.427 SRR15505129          302         FE1 339620744
@@ -226,10 +226,10 @@ res
     35  PRJNA741211 2021-04-23
 
 ``` r
-plot_variants(res)
+plot_lineages(res)
 ```
 
-![](README_files/figure-commonmark/multi-sample-variant-plot-1.png)
+![](README_files/figure-commonmark/multi-sample-lineage-plot-1.png)
 
 The plotting functions above work as expected.
 
@@ -267,7 +267,7 @@ knowledge of ggplot2:
 
 ``` r
 autoplot(res, date_col = "date") +
-    facet_wrap(~ variant, nrow = 1) +
+    facet_wrap(~ lineage, nrow = 1) +
     labs(title = "Proportions of Lineages over Time") +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
@@ -283,7 +283,7 @@ plot_resids(res)
 
 ![](README_files/figure-commonmark/multi-sample-resid-plot-1.png)
 
-## Searching for Different Variants
+## Searching for Different Lineages
 
 ``` r
 library(patchwork)
@@ -321,12 +321,12 @@ Notice two important points:
 `provoc` also accepts the `~ .` formula notation. This is useful if you
 want to manipulate the lineages in the lineage definitions matrix, which
 is easier programmatically than dealing with formulae in R. The
-`filter_variants()` function will remove mutations that are not present
+`filter_lineages()` function will remove mutations that are not present
 in any of the remaining lineages.
 
 ``` r
-mutation_defs <- provoc::usher_barcodes(path = "working") |>
-    filter_variants(c("B.1.1.7", "B.1.617.2", "B.1.427",
+lineage_defs <- provoc::usher_barcodes(path = "working") |>
+    filter_lineages(c("B.1.1.7", "B.1.617.2", "B.1.427",
         "B.1.429", "AY.4", "BA.4", "BA.5"))
 ```
 
@@ -335,9 +335,9 @@ With these definitions, we can just use all of them:
 ``` r
 res_all <- provoc(count / coverage ~ ., data = b1, 
     bootstrap_samples = 0,
-    mutation_defs = mutation_defs)
+    lineage_defs = lineage_defs)
 
-plot_variants(res_all)
+plot_lineages(res_all)
 ```
 
 ![](README_files/figure-commonmark/run-barcodes-1.png)
