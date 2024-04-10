@@ -4,14 +4,14 @@
 \alias{extract_formula_components}
 \title{Extract Formula Components}
 \usage{
-extract_formula_components(formula, data, mutation_defs, mutation_col, by_col)
+extract_formula_components(formula, data, lineage_defs, mutation_col, by_col)
 }
 \arguments{
 \item{formula}{The formula input by the user.}
 
 \item{data}{The dataframe containing the dataset.}
 
-\item{mutation_defs}{A matrix containing mutation definitions.}
+\item{lineage_defs}{A matrix containing mutation definitions.}
 
 \item{mutation_col}{The column containing the mutations.}
 
@@ -19,7 +19,7 @@ extract_formula_components(formula, data, mutation_defs, mutation_col, by_col)
 }
 \value{
 A list containing \code{data}, a dataframe filtered based on the formula's LHS
-and \code{mutation_defs}, a matrix filtered to only include mutations on the formula's RHS
+and \code{lineage_defs}, a matrix filtered to only include mutations on the formula's RHS
 }
 \description{
 Extracts and processes components from the formula provided to the provoc function.

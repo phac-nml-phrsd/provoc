@@ -2,15 +2,15 @@
 % Please edit documentation in R/fuse.R
 \name{simplify_similarity}
 \alias{simplify_similarity}
-\title{Simplifies variant similarity matrices for easier interpretation}
+\title{Simplifies lineage similarity matrices for easier interpretation}
 \usage{
 simplify_similarity(similarities, almost)
 }
 \arguments{
-\item{similarities}{Result of \code{variants_similarity()}}
+\item{similarities}{Result of \code{lineage_similarity()}}
 
 \item{almost}{Degree of similarity.}
 }
 \description{
-Simplifies variant similarity matrices for easier interpretation
+Simplifies lineage similarity matrices for easier interpretation
 }

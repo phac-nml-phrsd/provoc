@@ -2,17 +2,17 @@
 % Please edit documentation in R/fuse.R
 \name{fission}
 \alias{fission}
-\title{Un-fuse coco and varmat.}
+\title{Un-fuse coco and linmat.}
 \usage{
 fission(fused, sample = NULL)
 }
 \arguments{
-\item{fused}{The result of \code{fuse(coco, varmat)}}
+\item{fused}{The result of \code{fuse(coco, linmat)}}
 
 \item{sample}{The name of the sample being used.}
 }
 \value{
-A list containing coco and varmat.
+A list containing coco and linmat.
 }
 \description{
 Fusion ensures that the mutation lists match and are in the correct order, but the two must be separated.

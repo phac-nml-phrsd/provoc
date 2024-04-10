@@ -4,12 +4,12 @@
 \alias{prepare_and_fuse_data}
 \title{Prepare and Fuse Data}
 \usage{
-prepare_and_fuse_data(data, mutation_defs, by, verbose)
+prepare_and_fuse_data(data, lineage_defs, by, verbose)
 }
 \arguments{
 \item{data}{A data frame containing the variables in the model.}
 
-\item{mutation_defs}{A matrix of mutation definitions.}
+\item{lineage_defs}{A matrix of mutation definitions.}
 
 \item{by}{An optional string specifying the column name to group the data by.}
 

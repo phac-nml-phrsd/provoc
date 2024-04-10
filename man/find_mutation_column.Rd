@@ -2,20 +2,20 @@
 % Please edit documentation in R/provoc.R
 \name{find_mutation_column}
 \alias{find_mutation_column}
-\title{Finds the right mutation column in mutation_defs.}
+\title{Finds the right mutation column in lineage_defs.}
 \usage{
-find_mutation_column(data, mutation_defs)
+find_mutation_column(data, lineage_defs)
 }
 \arguments{
 \item{data}{Data frame containing count, coverage, and lineage columns}
 
-\item{mutation_defs}{Optional mutation definitions}
+\item{lineage_defs}{Optional mutation definitions}
 }
 \value{
-A list of length 2 containing the possibly transposed mutation_defs and
+A list of length 2 containing the possibly transposed lineage_defs and
 the right mutation column.
 }
 \description{
-Checks the columns of mutation_defs and if not found in columns will check the rows
-and transpose mutation_defs.
+Checks the columns of lineage_defs and if not found in columns will check the rows
+and transpose lineage_defs.
 }

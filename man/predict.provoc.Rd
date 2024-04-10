@@ -2,7 +2,7 @@
 % Please edit documentation in R/provoc_methods.R
 \name{predict.provoc}
 \alias{predict.provoc}
-\title{Predict using Proportions of Variants of Concern}
+\title{Predict using Proportions of Lineages}
 \usage{
 \method{predict}{provoc}(
   provoc_obj,
@@ -13,7 +13,7 @@
 )
 }
 \arguments{
-\item{provoc_obj}{Named list with \code{proportions} and \code{variant_matrix}.}
+\item{provoc_obj}{Named list with \code{proportions} and \code{lineage_matrix}.}
 
 \item{newdata}{Not yet implemented.}
 
@@ -28,7 +28,7 @@ Predicted values in the same order as the input data.
 }
 \description{
 Takes a named list with an estimate of the proportions and the
-associated variant matrix, performs matrix multiplication to
+associated lineage matrix, performs matrix multiplication to
 predict outcomes, and returns results in the same order as the original data.
 }
 \examples{

@@ -4,12 +4,12 @@
 \alias{process_optim}
 \title{Process Optimization}
 \usage{
-process_optim(grouped_data, mutation_defs, by, bootstrap_samples, verbose)
+process_optim(grouped_data, lineage_defs, by, bootstrap_samples, verbose)
 }
 \arguments{
 \item{grouped_data}{A list containing data frames for each group to be processed.}
 
-\item{mutation_defs}{A matrix of mutation definitions.}
+\item{lineage_defs}{A matrix of mutation definitions.}
 
 \item{by}{An optional string specifying the column name to group the data by.}
 

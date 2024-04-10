@@ -2,7 +2,7 @@
 % Please edit documentation in R/fuse.R
 \name{is_subset}
 \alias{is_subset}
-\title{Finds if one variant is a subset of another}
+\title{Finds if one lineage is a subset of another}
 \usage{
 is_subset(v1, v2)
 }
@@ -15,5 +15,5 @@ is_subset(v1, v2)
 Result, TRUE if v2 is a subset of v1
 }
 \description{
-Finds if one variant is a subset of another
+Finds if one lineage is a subset of another
 }

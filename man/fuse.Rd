@@ -2,29 +2,29 @@
 % Please edit documentation in R/fuse.R
 \name{fuse}
 \alias{fuse}
-\title{Ensure mutations are present in both coco and varmat}
+\title{Ensure mutations are present in both coco and linmat}
 \usage{
-fuse(coco, varmat, min_perc = 0.01, verbose = FALSE)
+fuse(coco, linmat, min_perc = 0.01, verbose = FALSE)
 }
 \arguments{
 \item{coco}{A data frame with a column labelled \code{mutation}.}
 
-\item{varmat}{Rownames are variants, column names are Mutations.}
+\item{linmat}{Rownames are lineages, column names are Mutations.}
 
-\item{min_perc}{A variant must have at least \code{min_perc} of the mutations.}
+\item{min_perc}{A lineage must have at least \code{min_perc} of the mutations.}
 
 \item{vebose}{Print information about mutations that were removed by the fusion. 0 (FALSE) returns errors, 1 (TRUE) returns warnings and some info about relative mutation counts, and 2 returns all mutations in each.}
 }
 \value{
-A data frame with the same columns as coco (possibly fewer rows) and the same columns plus new columns for the variants of concern. The provoc function expects this structure.
+A data frame with the same columns as coco (possibly fewer rows) and the same columns plus new columns for the lineages. The provoc function expects this structure.
 }
 \description{
-Finds the intersection between the mutations present in coco and varmat. Will squash lineages together if the resulting mutation list is too similar (see details).
+Finds the intersection between the mutations present in coco and linmat. Will squash lineages together if the resulting mutation list is too similar (see details).
 }
 \details{
 First, the intersection of the mutations is found.
 
-The columns of varmat are subsetted according to this intersection. If this removes all mutations for any lineage, that lineage is removed from the study (a warning is given if the lineage was a pre-specified voc).
+The columns of linmat are subsetted according to this intersection. If this removes all mutations for any lineage, that lineage is removed from the study (a warning is given if the lineage was a pre-specified voc).
 
 After removing mutations, it's possible that some rows lose their distinctive mutations and become identical. In this case the names of the lineages are pasted together and only one of the rows are kept.
 

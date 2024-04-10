@@ -7,7 +7,7 @@
 provoc(
   formula,
   data,
-  mutation_defs = NULL,
+  lineage_defs = NULL,
   by = NULL,
   bootstrap_samples = 0,
   update_interval = 20,
@@ -20,7 +20,7 @@ provoc(
 
 \item{data}{Data frame containing count, coverage, and lineage columns.}
 
-\item{mutation_defs}{Optional mutation definitions; if NULL, uses astronomize().}
+\item{lineage_defs}{Optional mutation definitions; if NULL, uses astronomize().}
 
 \item{by}{Column name to group and process data. If included, the results will contain a column labelled "group".}
 
@@ -30,19 +30,19 @@ provoc(
 
 \item{verbose}{TRUE to print detailed messages.}
 
-\item{annihilate}{TRUE to remove duplicate variants from the data}
+\item{annihilate}{TRUE to remove duplicate lineages from the data}
 }
 \value{
 Returns an object of class 'provoc' with results from applying \code{provoc_optim} to the input data. The object has methods for print(), plot(), and summary(), but otherwise is treated as a dataframe. Fit information can be extracted as follows:
 \itemize{
 \item convergence(res)
-\item get_mutation_defs(res): Mutation definitions used for analysis, provided \code{mutation_defs} or default \code{astronomize()}.
+\item get_lineage_defs(res): Mutation definitions used for analysis, provided \code{lineage_defs} or default \code{astronomize()}.
 }
 
 Outputs necessary information for subsequent analysis, including the use of the \code{predict.provoc()}.
 }
 \description{
-Applies provoc_optim to analyze COVID-19 Variant of Concern proportions.
+Applies provoc_optim to analyze COVID-19 lineage proportions.
 It allows flexible lineage and mutation definitions.
 }
 \examples{
