@@ -10,5 +10,5 @@ get_res(provoc_obj)
 \item{provoc_obj}{Object of class provoc to be used to extract the results.}
 }
 \description{
-Prints the most useful diagnostics to the screen, invisibly returning them as a list.
+Extract just the results of lineage estimation
 }

@@ -74,7 +74,7 @@ coverage_at_aa <- function(coverage, aa) {
 #' 
 #' @param coco The data set.
 #' @param coverage The coverage filen with position as the first column and coverage as the second.
-#' @param mutation_list The mutations to be added (usually \code{colnames(linmat)}).
+#' @param mutation_list The mutations to be added (usually \code{colnames(lineage_defs)}).
 #' 
 #' @return coco, but with added rows.
 #' @export

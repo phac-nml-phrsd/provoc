@@ -104,11 +104,11 @@ Note that the Baaijens data were processed in such a way that each sample contai
 library(ggplot2)
 library(patchwork) # Patching ggplots together
 res_astro <- provoc(count / coverage ~ .,
-    mutation_defs = astro,
+    lineage_defs = astro,
     data = b3, by = "sra")
 res_astro$date <- ymd(res_astro$date)
 res_bar <- provoc(count / coverage ~ .,
-    mutation_defs = bar,
+    lineage_defs = bar,
     data = b3, by = "sra")
 res_bar$date <- ymd(res_bar$date)
 
@@ -167,7 +167,7 @@ mean(bar[, bar_lapis] == lapis[, bar_lapis])
 #| label: gg-astro-bar-lapis
 #| fig-height: 5
 res_lapis <- provoc(count / coverage ~ .,
-    mutation_defs = lapis,
+    lineage_defs = lapis,
     data = b3, by = "sra")
 res_lapis$date <- ymd(res_lapis$date)
 

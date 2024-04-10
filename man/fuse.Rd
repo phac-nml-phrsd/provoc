@@ -2,14 +2,14 @@
 % Please edit documentation in R/fuse.R
 \name{fuse}
 \alias{fuse}
-\title{Ensure mutations are present in both coco and linmat}
+\title{Ensure mutations are present in both coco and lineage_defs}
 \usage{
-fuse(coco, linmat, min_perc = 0.01, verbose = FALSE)
+fuse(coco, lineage_defs, min_perc = 0.01, verbose = FALSE)
 }
 \arguments{
 \item{coco}{A data frame with a column labelled \code{mutation}.}
 
-\item{linmat}{Rownames are lineages, column names are Mutations.}
+\item{lineage_defs}{Rownames are lineages, column names are Mutations.}
 
 \item{min_perc}{A lineage must have at least \code{min_perc} of the mutations.}
 
@@ -19,12 +19,12 @@ fuse(coco, linmat, min_perc = 0.01, verbose = FALSE)
 A data frame with the same columns as coco (possibly fewer rows) and the same columns plus new columns for the lineages. The provoc function expects this structure.
 }
 \description{
-Finds the intersection between the mutations present in coco and linmat. Will squash lineages together if the resulting mutation list is too similar (see details).
+Finds the intersection between the mutations present in coco and lineage_defs. Will squash lineages together if the resulting mutation list is too similar (see details).
 }
 \details{
 First, the intersection of the mutations is found.
 
-The columns of linmat are subsetted according to this intersection. If this removes all mutations for any lineage, that lineage is removed from the study (a warning is given if the lineage was a pre-specified voc).
+The columns of lineage_defs are subsetted according to this intersection. If this removes all mutations for any lineage, that lineage is removed from the study (a warning is given if the lineage was a pre-specified voc).
 
 After removing mutations, it's possible that some rows lose their distinctive mutations and become identical. In this case the names of the lineages are pasted together and only one of the rows are kept.
 

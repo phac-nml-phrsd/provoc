@@ -12,5 +12,5 @@
 \item{n}{The number of rows of the results dataframe to print}
 }
 \description{
-Prints the most useful diagnostics to the screen, invisibly returning them as a list.
+Print the results of lineage abundance estimation
 }

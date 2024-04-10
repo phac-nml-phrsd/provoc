@@ -1,9 +1,9 @@
-#' Ensure mutations are present in both coco and linmat
+#' Ensure mutations are present in both coco and lineage_defs
 #'
-#' Finds the intersection between the mutations present in coco and linmat. Will squash lineages together if the resulting mutation list is too similar (see details).
+#' Finds the intersection between the mutations present in coco and lineage_defs. Will squash lineages together if the resulting mutation list is too similar (see details).
 #'
 #' @param coco A data frame with a column labelled \code{mutation}.
-#' @param linmat Rownames are lineages, column names are Mutations.
+#' @param lineage_defs Rownames are lineages, column names are Mutations.
 #' @param min_perc A lineage must have at least \code{min_perc} of the mutations.
 #' @param vebose Print information about mutations that were removed by the fusion. 0 (FALSE) returns errors, 1 (TRUE) returns warnings and some info about relative mutation counts, and 2 returns all mutations in each.
 #'
@@ -12,25 +12,25 @@
 #'
 #' @details First, the intersection of the mutations is found.
 #'
-#' The columns of linmat are subsetted according to this intersection. If this removes all mutations for any lineage, that lineage is removed from the study (a warning is given if the lineage was a pre-specified voc).
+#' The columns of lineage_defs are subsetted according to this intersection. If this removes all mutations for any lineage, that lineage is removed from the study (a warning is given if the lineage was a pre-specified voc).
 #'
 #' After removing mutations, it's possible that some rows lose their distinctive mutations and become identical. In this case the names of the lineages are pasted together and only one of the rows are kept.
 #'
 #' Duplicate mutation names in coco are NOT removed. It is safe to use this function on a data frame that contains multiple samples.
-fuse <- function(coco, linmat, min_perc = 0.01, verbose = FALSE) {
-    if (any(colnames(coco) %in% paste0("lin_", rownames(linmat)))) {
+fuse <- function(coco, lineage_defs, min_perc = 0.01, verbose = FALSE) {
+    if (any(colnames(coco) %in% paste0("lin_", rownames(lineage_defs)))) {
         stop("coco should not contain column names that are names of lineages. Is this object already fused?")
     }
 
     pre <- nrow(coco)
-    shared <- intersect(unique(coco$mutation), colnames(linmat))
-    # We can't say anything about mutations not in linmat.
+    shared <- intersect(unique(coco$mutation), colnames(lineage_defs))
+    # We can't say anything about mutations not in lineage_defs.
     coco <- coco[!is.na(coco$mutation), ]
     coco <- coco[coco$mutation %in% shared, ]
 
     if (length(shared) < 3) {
         stop("Too few shared mutations. Are they in the same format?")
-    } else if (length(shared) <= 10 && ncol(linmat) > 10 && verbose) {
+    } else if (length(shared) <= 10 && ncol(lineage_defs) > 10 && verbose) {
         warning("Fewer than 10 shared mutations. Results may be very difficult to interpret.")
     } else if (length(shared) / pre < 0.1 && verbose) {
         warning(paste0("Less than ", length(shared) / pre,
@@ -41,17 +41,17 @@ fuse <- function(coco, linmat, min_perc = 0.01, verbose = FALSE) {
         print(paste0(100 * perc_rm,
                 "% of the rows of coco have been removed."))
         coco_only <- coco$mutation[!coco$mutation %in% shared]
-        linmat_only <- colnames(linmat)[!colnames(linmat) %in% shared]
+        lineage_defs_only <- colnames(lineage_defs)[!colnames(lineage_defs) %in% shared]
         print("coco-only mutations removed:")
         print(length(coco_only))
-        print("linmat-only mutations removed")
-        print(length(linmat_only))
+        print("lineage_defs-only mutations removed")
+        print(length(lineage_defs_only))
     }
 
 
     # Lineages with too few mutations (less than 10% are 1s)
     # TODO: Make this a parameter?
-    lin2 <- linmat[, shared]
+    lin2 <- lineage_defs[, shared]
     too_many_zeros <- apply(lin2, 1, sum) <= (ncol(lin2) * min_perc)
     lin2 <- lin2[!too_many_zeros, ]
 
@@ -76,14 +76,14 @@ fuse <- function(coco, linmat, min_perc = 0.01, verbose = FALSE) {
     dplyr::left_join(coco, lin_df, by = "mutation")
 }
 
-#' Un-fuse coco and linmat.
+#' Un-fuse coco and lineage_defs.
 #'
 #' Fusion ensures that the mutation lists match and are in the correct order, but the two must be separated.
 #'
-#' @param fused The result of \code{fuse(coco, linmat)}
+#' @param fused The result of \code{fuse(coco, lineage_defs)}
 #' @param sample The name of the sample being used.
 #'
-#' @return A list containing coco and linmat.
+#' @return A list containing coco and lineage_defs.
 fission <- function(fused, sample = NULL) {
     if (!is.null(sample)) fused <- fused[fused$sample == sample, ]
     lineages <- startsWith(names(fused), "lin_")
@@ -91,12 +91,12 @@ fission <- function(fused, sample = NULL) {
     coco <- fused[, !lineages]
 
     lin_df <- fused[, lineages]
-    linmat <- t(as.matrix(lin_df))
-    linmat <- matrix(as.numeric(linmat), ncol = ncol(linmat))
-    rownames(linmat) <- gsub("lin_", "", lin_names)
-    colnames(linmat) <- coco$mutation
+    lineage_defs <- t(as.matrix(lin_df))
+    lineage_defs <- matrix(as.numeric(lineage_defs), ncol = ncol(lineage_defs))
+    rownames(lineage_defs) <- gsub("lin_", "", lin_names)
+    colnames(lineage_defs) <- coco$mutation
 
-    return(list(coco = coco, linmat = linmat))
+    return(list(coco = coco, lineage_defs = lineage_defs))
 }
 
 #' Finds and prints all similarities among lineage

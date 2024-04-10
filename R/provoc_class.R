@@ -1,6 +1,5 @@
 #' Print the results of lineage abundance estimation
 #'
-#' @inherit summary.provoc
 #' @param provoc_obj The resulting object of class provoc to be used in printing.
 #' @param n The number of rows of the results dataframe to print
 #'
@@ -118,7 +117,6 @@ print.summary.provoc <- function(summary.provoc) {
 
 #' Plot the results of model fitting
 #'
-#' @inherit summary.provoc
 #' @param provoc_obj Resulting object of class provoc to be used in plotting.
 #' @param plot_type Currently only "barplot" is implemented. Residual plots and other diagnostics are works in progress.
 #'
@@ -156,7 +154,6 @@ plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
 #'
 #' Plots the results of estimating wastewater prevalence of SARS-CoV-2. Optionally plots the results over time if given a date column.
 #'
-#' @inherit summary.provoc
 #' @param provoc_obj Resulting object of class provoc to be used in plotting.
 #' @param date_col Optional - if there's a date column, the results are plotted over time. This can be problematic if there are multiple samples at each time point.
 #'
@@ -200,18 +197,16 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
 
 #' Extract the mutation definitions used to fit the model
 #'
-#' @inherit summary.provoc
 #' @param provoc_obj Object of class provoc to be used to extract the mutation definitions.
 #'
 #' @export
-get_mutation_defs <- function(provoc_obj) {
+get_lineage_defs <- function(provoc_obj) {
     attributes(provoc_obj)$lineage_defs
 }
 
 
 #' Extract just the results of lineage estimation
 #'
-#' @inherit summary.provoc
 #' @param provoc_obj Object of class provoc to be used to extract the results.
 #'
 #' @export

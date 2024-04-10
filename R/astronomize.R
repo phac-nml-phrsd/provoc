@@ -37,21 +37,21 @@ re_findall <- function(pat, s) {
 #'
 #' If this is not the case, a path to the root folder of the constellations repo is required. The path is to the root folder, not the folder with the constellation files.
 #'
-#' There are no options to specify which lineages to include. I am working on a \code{annihilate(coco, linmat)} function to remove mutations that aren't shared between coco and linmat and squash lineages that have too few observed mutations or are too similar to other lineages.
+#' There are no options to specify which lineages to include. I am working on a \code{annihilate(coco, lineage_defs)} function to remove mutations that aren't shared between coco and lineage_defs and squash lineages that have too few observed mutations or are too similar to other lineages.
 #'
 #' @examples
 #' if(dir.exists("../constellations")) {
-#'     linmat <- astronomize()
+#'     lineage_defs <- astronomize()
 #' }
 #'
 astronomize <- function(path = NULL) {
 
     if (is.null(path)) {
-        return(provoc::linmat_from_list(provoc::constellation_lists))
+        return(provoc::lineage_defs_from_list(provoc::constellation_lists))
     }
 
     if (!dir.exists(path)) {
-        return(provoc::linmat_from_list(provoc::constellation_lists))
+        return(provoc::lineage_defs_from_list(provoc::constellation_lists))
     }
 
     orfs <- list(
@@ -147,82 +147,82 @@ astronomize <- function(path = NULL) {
         sites <- unlist(sites, recursive = FALSE)
     })
 
-    linmat <- as.matrix(dplyr::bind_rows(sapply(sitelist, function(sites) {
+    lineage_defs <- as.matrix(dplyr::bind_rows(sapply(sitelist, function(sites) {
         x <- rep(1, length(sites))
         names(x) <- sites
         x
     })))
 
-    linmat[is.na(linmat)] <- 0
-    rownames(linmat) <- gsub(".json", "", list.files(path, full.names = FALSE))
-    rownames(linmat) <- gsub("_constellation", "", rownames(linmat),
+    lineage_defs[is.na(lineage_defs)] <- 0
+    rownames(lineage_defs) <- gsub(".json", "", list.files(path, full.names = FALSE))
+    rownames(lineage_defs) <- gsub("_constellation", "", rownames(lineage_defs),
         fixed = TRUE)
-    rownames(linmat) <- gsub("c", "", rownames(linmat))
+    rownames(lineage_defs) <- gsub("c", "", rownames(lineage_defs))
 
-    linmat <- linmat[, colSums(linmat) > 0]
+    lineage_defs <- lineage_defs[, colSums(lineage_defs) > 0]
 
     # Manual fixes based on known naming anomalies
-    colnames(linmat)[which(colnames(linmat) == "+22205.GAGCCAGAA")] <-
+    colnames(lineage_defs)[which(colnames(lineage_defs) == "+22205.GAGCCAGAA")] <-
         "ins:22205:9"
-    colnames(linmat)[which(colnames(linmat) == "+28262.AACA")] <- "ins:28262:4"
-    colnames(linmat)[which(colnames(linmat) == "28271-")] <- "del:28271:1"
-    colnames(linmat)[which(colnames(linmat) == "A28271-")] <- "del:28271:1"
+    colnames(lineage_defs)[which(colnames(lineage_defs) == "+28262.AACA")] <- "ins:28262:4"
+    colnames(lineage_defs)[which(colnames(lineage_defs) == "28271-")] <- "del:28271:1"
+    colnames(lineage_defs)[which(colnames(lineage_defs) == "A28271-")] <- "del:28271:1"
     # Spike protein starts at position 21562
     # Position reported as index of amino acids, hence 3*246
-    colnames(linmat)[which(colnames(linmat) == "aa:S:RSYLTPG246-")] <-
+    colnames(lineage_defs)[which(colnames(lineage_defs) == "aa:S:RSYLTPG246-")] <-
         paste0("del:", 21562 + 3 * 246, ":21")
-    colnames(linmat)[which(colnames(linmat) == "aa:S:Y144-")] <-
+    colnames(lineage_defs)[which(colnames(lineage_defs) == "aa:S:Y144-")] <-
         paste0("del:", 21562 + 3 * 144, ":1")
-    colnames(linmat)[which(colnames(linmat) == "aa:S:HV69-")] <-
+    colnames(lineage_defs)[which(colnames(lineage_defs) == "aa:S:HV69-")] <-
         paste0("del:", 21562 + 3 * 69, ":2")
     # ORF 1a starts at 265
-    colnames(linmat)[which(colnames(linmat) == "aa:orf1a:SGF3675-")] <-
+    colnames(lineage_defs)[which(colnames(lineage_defs) == "aa:orf1a:SGF3675-")] <-
         paste0("del:", 265 + 3 * 3675 - 1, ":9")
-    as.matrix(linmat)
+    as.matrix(lineage_defs)
 }
 
-#' Filter linmat for specific lineages, keeping mutations that are present in at least one lineage
+#' Filter lineage_defs for specific lineages, keeping mutations that are present in at least one lineage
 #'
-#' @param linmat The result of \code{astronomize()}. If NULL, tries to run \code{astronoimize}.
-#' @param lineages Vector of lineage names (must be in \code{rownmaes(linmat)}). Defaults to lineages circulating in 2021-2022.
-#' @param return_df Should the function return a data frame? Note that returned df is transposed compared to linmat. Default FALSE.
-#' @param path Passed on to \code{astronomize} if \code{linmat} is NULL.
+#' @param lineage_defs The result of \code{astronomize()}. If NULL, tries to run \code{astronoimize}.
+#' @param lineages Vector of lineage names (must be in \code{rownmaes(lineage_defs)}). Defaults to lineages circulating in 2021-2022.
+#' @param return_df Should the function return a data frame? Note that returned df is transposed compared to lineage_defs. Default FALSE.
+#' @param path Passed on to \code{astronomize} if \code{lineage_defs} is NULL.
 #' @param shared_order Put shared mutations first? Default TRUE.
 #'
-#' @return A lineage matrix with fewer rows and columns than \code{linmat}. If \code{return_df}, the columns represent lineage names and a \code{mutations} column is added.
+#' @return A lineage matrix with fewer rows and columns than \code{lineage_defs}. If \code{return_df}, the columns represent lineage names and a \code{mutations} column is added.
 #' @export
 #'
 #' @details After removing some lineage, the remaining mutations might not be present in any of the remaining lineage. This function will remove mutations that no longer belong to any lineage.
 #'
 #' Note that return_df will
 filter_lineages <- function(
-    linmat = NULL,
+    lineage_defs = NULL,
     lineages = c("B.1.526", "B.1.1.7", "B.1.351", "B.1.617.2",
         "B.1.427", "B.1.429", "P.1"),
     return_df = FALSE,
     path = NULL,
     shared_order = TRUE) {
 
-    if (is.null(linmat)) {
-        linmat <- astronomize(path = path)
+    if (is.null(lineage_defs)) {
+        lineage_defs <- astronomize(path = path)
     }
 
-    linmat <- linmat[lineages, ]
-    linmat <- linmat[, apply(linmat, 2, sum) > 0]
+    lineage_defs <- lineage_defs[lineages, ]
+    lineage_defs <- lineage_defs[, apply(lineage_defs, 2, sum) > 0]
 
     if (shared_order) {
-        linmat <- linmat[rev(order(apply(linmat, 1, sum))),
-            rev(order(apply(linmat, 2, sum)))]
+        lineage_defs <- lineage_defs[rev(order(apply(lineage_defs, 1, sum))),
+            rev(order(apply(lineage_defs, 2, sum)))]
     }
 
     if (return_df) {
-        mutnames <- colnames(linmat)
-        linmat <- as.data.frame(t(linmat))
-        linmat$mutation <- mutnames
-        rownames(linmat) <- NULL
+        mutnames <- colnames(lineage_defs)
+        lineage_defs <- as.data.frame(t(lineage_defs))
+        lineage_defs$mutation <- mutnames
+        rownames(lineage_defs) <- NULL
     }
 
-    return(linmat)
+    return(lineage_defs)
 }
 
 #' Obtain and clean barcodes file from usher_barcores in Freyja (or elsewhere)

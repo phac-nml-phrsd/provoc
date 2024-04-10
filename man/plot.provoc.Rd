@@ -12,5 +12,5 @@
 \item{plot_type}{Currently only "barplot" is implemented. Residual plots and other diagnostics are works in progress.}
 }
 \description{
-Prints the most useful diagnostics to the screen, invisibly returning them as a list.
+Plot the results of model fitting
 }

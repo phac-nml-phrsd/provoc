@@ -92,7 +92,7 @@ lineage_defs_from_lineage <- function(lineages,
 #'
 #' @return A lineage matrix (rownames are lineage, colnames are mutations, entry i,j is 1 if lineage i contains mutation j, 0 otherwise).
 #' @export
-lineage_de_from_data <- function(type = NULL, pos = NULL, alt = NULL,
+lineage_defs_from_data <- function(type = NULL, pos = NULL, alt = NULL,
     aa = NULL, data = NULL,
     mutation_format = c("tpa", "aa"),
     max_n = 80, top_quantile = 0.05,
