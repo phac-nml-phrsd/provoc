@@ -12,8 +12,8 @@ test_that("rho values between 0 and 1", {
     }
   }
   create_provoc_table <- function(rel_counts){
-    varmat <- simulate_varmat() #simulates a new variant matrix
-    coco <- simulate_coco(varmat, rel_counts)
+    lineage_defs <- simulate_lineage_defs() #simulates a new lineage matrix
+    coco <- simulate_coco(lineage_defs, rel_counts)
     count <- coco$count
     coverage <- coco$coverage
     data <- as.data.frame(Baaijens)

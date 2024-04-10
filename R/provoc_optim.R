@@ -10,24 +10,24 @@ to_feasible <- function(x) {
 }
 
 
-#' Initialize a vector of proportions for the variants of concern, prioritizing current (March 2022) most probable VoCs.
+#' Initialize a vector of proportions for the lineages of concern, prioritizing current (March 2022) most probable VoCs.
 #' 
-#' @param varmat The variant matrix to be used in the study; only used for the rownames (which should be VOCs in the expected format)
+#' @param lineage_defs The lineage matrix to be used in the study; only used for the rownames (which should be VOCs in the expected format)
 #' 
-#' @return varmat a vector with the same length as the number of rows of varmat, such that the values sum to less than one and each value is between 0 and 1
-rho_initializer <- function(varmat) {
-    rho_init <- rep(10, length = nrow(varmat))
+#' @return lineage_defs a vector with the same length as the number of rows of lineage_defs, such that the values sum to less than one and each value is between 0 and 1
+rho_initializer <- function(lineage_defs) {
+    rho_init <- rep(10, length = nrow(lineage_defs))
     # Omicron
     probables1 <- c("BA.1$", "BA.2$", "^B.1.1.529$")
     for (i in seq_along(probables1)) {
-        var_in_names <- grepl(probables1[i], rownames(varmat))
-        if (any(var_in_names)) {
-            rho_init[which(var_in_names)] <- 50
+        lin_in_names <- grepl(probables1[i], rownames(lineage_defs))
+        if (any(lin_in_names)) {
+            rho_init[which(lin_in_names)] <- 50
         }
     }
 
     # Delta
-    probables2 <- grepl("AY*", rownames(varmat))
+    probables2 <- grepl("AY*", rownames(lineage_defs))
     rho_init[which(probables2)] <- 25
 
     # Ensure it's not on the boundary
@@ -40,21 +40,21 @@ rho_initializer <- function(varmat) {
 #' If 
 #' 
 #' @param coco A data frame containing columns labelled count, coverage, and mutation.
-#' @param varmat The variant matrix to be used in the study. The rownames must be the VoCs and the colnames must be the mutation names (in the same format as the mutation names in `coco`)
+#' @param lineage_defs The lineage matrix to be used in the study. The rownames must be the VoCs and the colnames must be the mutation names (in the same format as the mutation names in `coco`)
 #' @param bootstrap_samples The number of bootstrap samples to use.
 #' @param verbose Print messages to the console, default to True.
 #' 
 #' @return A list containing the results as well as convergence information from \code{constrOptim}.
 #' 
 #' \describe{
-#'      \item{res_df}{The estimated proportions of the variants of concern (\eqn{rho}), including CI if \code{bootstrap_samples > 0}}
+#'      \item{res_df}{The estimated proportions of the lineage (\eqn{rho}), including CI if \code{bootstrap_samples > 0}}
 #'      \item{convergence}{Logical}
 #'      \item{convergence_note}{Convergence code from \code{constrOptim}. Also includes the method used for initializing \eqn{\rho}.}
 #' }
 #' 
 #' @export
 #' 
-#' @details The estimates are found by minimizing the squared difference between the frequency of each mutation and the prediction of a binomial model where the proportion is equal to the sum of rho times the relevant column of varmat and the size parameter is equal to the coverage. 
+#' @details The estimates are found by minimizing the squared difference between the frequency of each mutation and the prediction of a binomial model where the proportion is equal to the sum of rho times the relevant column of lineage_defs and the size parameter is equal to the coverage. 
 #' 
 #' The algorithm will first try a prior guess based on the current (March 2022) most common VOCs, then will try a uniform proportion, then (the nuclear option) will try 20 random perturbations until it works. Fails gracefully, with list elements indicating the convergence status and the initialization of rho, and returns the results that had the lowest value of the objective function. 
 #' 
@@ -63,27 +63,27 @@ rho_initializer <- function(varmat) {
 #' @seealso \code{\link[stats]{constrOptim}}
 #' 
 #' @examples
-#' varmat <- simulate_varmat() # default values (Omicron)
-#' varmat <- varmat[row.names(varmat) %in% c("B.1.1.529", "BA.1", "BA.2")]
-#' coco <- simulate_coco(varmat, rel_counts = c(100, 200, 300)) # expect 1/6, 2/6, and 3/6
-#' res <- copt_binom(coco, varmat)
+#' lineage_defs <- simulate_lineage_defs() # default values (Omicron)
+#' lineage_defs <- lineage_defs[row.names(lineage_defs) %in% c("B.1.1.529", "BA.1", "BA.2")]
+#' coco <- simulate_coco(lineage_defs, rel_counts = c(100, 200, 300)) # expect 1/6, 2/6, and 3/6
+#' res <- copt_binom(coco, lineage_defs)
 #' res$res_df
-provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
+provoc_optim <- function(coco, lineage_defs, bootstrap_samples = 0,
     verbose = TRUE, rho_init = NULL) {
     muts <- coco$mutation[coco$coverage > 0]
     cou2 <- coco$count[coco$coverage > 0]
     cov2 <- coco$coverage[coco$coverage > 0]
-    vari2 <- varmat[, coco$coverage > 0]
+    lin2 <- lineage_defs[, coco$coverage > 0]
     if (is.null(rho_init)) {
-        rho_init <- rho_initializer(vari2)
+        rho_init <- rho_initializer(lin2)
     } else {
         rho_init <- to_feasible(rho_init)
     }
 
-    objective <- function(rho, count, varmat, coverage) {
+    objective <- function(rho, count, lineage_defs, coverage) {
         -sum(stats::dbinom(x = as.numeric(count),
                 size = as.numeric(coverage),
-                prob = 0.999 * rho %*% varmat + 0.0001,
+                prob = 0.999 * rho %*% lineage_defs + 0.0001,
                 log = TRUE))
     }
 
@@ -103,17 +103,17 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
     res <- stats::constrOptim(rho_init,
         f = objective, grad = NULL,
         ui = ui, ci = ci,
-        count = cou2, coverage = cov2, varmat = vari2,
+        count = cou2, coverage = cov2, lineage_defs = lin2,
         control = list(maxit = 10000))
     res$init_method <- "Prior_Assumption"
 
     if (res$convergence) { # if not converged,
         # Try a different initialization
-        rho_init <- 0.99 * rep(1 / nrow(vari2), nrow(vari2))
+        rho_init <- 0.99 * rep(1 / nrow(lin2), nrow(lin2))
         res <- stats::constrOptim(rho_init,
             f = objective, grad = NULL,
             ui = ui, ci = ci,
-            count = cou2, coverage = cov2, varmat = vari2,
+            count = cou2, coverage = cov2, lineage_defs = lin2,
             control = list(maxit = 10000))
         res$init_method <- "Uniform"
     }
@@ -141,7 +141,7 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
             res <- stats::constrOptim(rho_init,
                 f = objective, grad = NULL,
                 ui = ui, ci = ci,
-                count = cou2, coverage = cov2, varmat = vari2,
+                count = cou2, coverage = cov2, lineage_defs = lin2,
                 control = list(maxit = 1000))
         }
         res$init_method <- "Nuclear"
@@ -160,7 +160,7 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
     res_df <- data.frame(rho = bestres$par,
         ci_low = NA,
         ci_high = NA,
-        variant = rownames(varmat))
+        lineage = rownames(lineage_defs))
     convergence <- ifelse(bestres$convergence == 0, TRUE, bestres$convergence)
     convergence_note <- paste("Optim results: ",
         bestres$convergence,
@@ -184,11 +184,11 @@ provoc_optim <- function(coco, varmat, bootstrap_samples = 0,
 
         boots <- sapply(split(resamples, resamples[, "iteration"]),
             function(x) {
-                provoc_optim(x, vari2,
+                provoc_optim(x, lin2,
                     rho_init = res_df$rho)$res_df[, "rho"]
             }
         ) |> t()
-        colnames(boots) <- res_df$variant
+        colnames(boots) <- res_df$lineage
 
         ci <- apply(boots, 2, quantile, prob = c(0.025, 0.975))
         res_df$ci_low <- ci[1, ]

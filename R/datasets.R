@@ -9,7 +9,7 @@
 
 #' Lists of mutations per lineage, as per Constellations
 #' 
-#' The names of mutations according to Pangolin's "Constellations" files. These are current as of October 2024. The constellation files for pre-Omicron variants are not expected to change.
+#' The names of mutations according to Pangolin's "Constellations" files. These are current as of October 2024. The constellation files for pre-Omicron lineages are not expected to change.
 #' 
 #' @format A data frame
 #' 

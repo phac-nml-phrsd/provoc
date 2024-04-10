@@ -45,25 +45,25 @@ This set of lineage definitions is available via the `astronomize()` function.
 ```{r}
 #| label: get-astro
 astro <- astronomize() |>
-    filter_variants(c("B.1.1.7", "B.1.427", "B.1.429", "B.1.526", "B.1.617.2"))
+    filter_lineages(c("B.1.1.7", "B.1.427", "B.1.429", "B.1.526", "B.1.617.2"))
 dim(astro)
 astro[, 1:5]
 ```
 
-In this matrix, the rows represent the variants and the columns represent the mutations, with a 1 representing the presence of a mutation in a given variant.
+In this matrix, the rows represent the lineages and the columns represent the mutations, with a 1 representing the presence of a mutation in a given lineage.
 
-Notice the use of `filter_variants()`. This function gets the rows corresponding to the variants, but it also ensures that we are only dealing with columns that have at least one "1". In other words, it only uses mutations that are present in at least one variant. 
+Notice the use of `filter_lineages()`. This function gets the rows corresponding to the lineages, but it also ensures that we are only dealing with columns that have at least one "1". In other words, it only uses mutations that are present in at least one lineage. 
 
 ## Usher Barcodes
 
 The [Freyja](https://github.com/andersen-lab/Freyja) [@karthikeyanWastewaterSequencingReveals2022; @AndersenlabFreyja2024] repository keeps an up-to-date barcodes file, which serves the same purpose as the definitions in constellations.
 
-The `usher_barcodes()` function will check for this file, then download it if it's not present in a number of common locations. It's quite a large file, so I recommend storing the file and using the `filter_variants()` function.
+The `usher_barcodes()` function will check for this file, then download it if it's not present in a number of common locations. It's quite a large file, so I recommend storing the file and using the `filter_lineages()` function.
 
 ```{r}
 #| label: get-bar
 bar <- provoc::usher_barcodes(path = "working") |>
-    filter_variants(c("B.1.1.7", "B.1.427", "B.1.429", "B.1.526", "B.1.617.2"))
+    filter_lineages(c("B.1.1.7", "B.1.427", "B.1.429", "B.1.526", "B.1.617.2"))
 dim(bar)
 ```
 
@@ -79,7 +79,7 @@ setdiff(colnames(astro), colnames(bar))
 setdiff(colnames(bar), colnames(astro))
 ```
 
-Okay, so there are some differences. But, surely, the mutations that are present in both definition files are the same across all variants! 
+Okay, so there are some differences. But, surely, the mutations that are present in both definition files are the same across all lineages! 
 
 ```{r}
 #| label: def-compare-same
@@ -95,7 +95,7 @@ mean(astro[, same_names] == bar[, same_names])
 
 ## Results
 
-Since we chose variants when choosing the lineage definitions, we can use the convenient "~ ." notation to fit the models with all lineages.
+Since we chose lineages when choosing the lineage definitions, we can use the convenient "~ ." notation to fit the models with all lineages.
 
 Note that the Baaijens data were processed in such a way that each sample contains the same mutations. This means that each bar you see below is based on the exact same set of mutations. This isn't necessary, but I believe it improves the interpretability of the results.
 
@@ -119,7 +119,7 @@ gg_bar <- autoplot(res_bar, date_col = "date") +
 
 gg_astro / gg_bar + plot_layout(guides = "collect") &
     theme_bw() &
-    facet_wrap(~ variant, nrow = 1)
+    facet_wrap(~ lineage, nrow = 1)
 ```
 
 Those are two *very* different looking plots! I'm really hoping it's not a problem with my code. 
@@ -132,13 +132,13 @@ The following code is very very hopefully going to change very soon. An API key 
 
 ```{r}
 #| label: get-lapis
-variants <- c("B.1.1.7", "B.1.427", "B.1.429", "B.1.526", "B.1.617.2")
-lapis_list <- lapply(variants, function(x) {
+lineages <- c("B.1.1.7", "B.1.427", "B.1.429", "B.1.526", "B.1.617.2")
+lapis_list <- lapply(lineages, function(x) {
     file <- read.csv(paste0("../working/", x, ".csv"))
     file$mutation[file$proportion > 0.8]
 })
-names(lapis_list) <- variants
-lapis <- varmat_from_list(lapis_list)
+names(lapis_list) <- lineages
+lapis <- lineage_defs_from_list(lapis_list)
 
 # Avoiding parsing deletions, only looking at substitutions
 lapis <- lapis[, !grepl("-", colnames(lapis))]
@@ -176,7 +176,7 @@ gg_lapis <- autoplot(res_lapis, date_col = "date") +
 
 gg_astro / gg_bar / gg_lapis + plot_layout(guides = "collect") &
     theme_bw() &
-    facet_grid(~ variant)
+    facet_grid(~ lineage)
 ```
 
 Usher Barcodes and Cov-Spectrum generally agree, but what's going on with B.1.617.2??? It sort of looks like B.1.429 has taken some of the weight from B.1.617.2, but this is worth looking into. For example, did B.1.429 have mutations that are in B.1.617.2? Is there a

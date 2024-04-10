@@ -1,11 +1,11 @@
 
-#' Predict using Proportions of Variants of Concern
+#' Predict using Proportions of Lineages
 #'
 #' Takes a named list with an estimate of the proportions and the
-#' associated variant matrix, performs matrix multiplication to
+#' associated lineage matrix, performs matrix multiplication to
 #' predict outcomes, and returns results in the same order as the original data.
 #'
-#' @param provoc_obj Named list with `proportions` and `variant_matrix`.
+#' @param provoc_obj Named list with `proportions` and `lineage_matrix`.
 #' @param newdata Not yet implemented.
 #' @param type Not yet implemented.
 #' @param dispersion Not yet implemented.
@@ -31,20 +31,20 @@ predict.provoc <- function(provoc_obj,
     }
 
     # Get matching lineage names
-    varind <- startsWith(names(internal_data), "var_")
-    varnames <- names(internal_data)[varind]
+    lin_index <- startsWith(names(internal_data), "lin_")
+    lin_names <- names(internal_data)[lin_index]
 
     # Reshape res and prepare for element-wise multiplication
     res_wide <- tidyr::pivot_wider(
-        provoc_obj[, c("rho", "variant", "group")],
-        values_from = rho, names_from = variant,
-        names_prefix = "var_"
+        provoc_obj[, c("rho", "lineage", "group")],
+        values_from = rho, names_from = lineage,
+        names_prefix = "lin_"
     )
     res_wide <- res_wide[match(data_groups, res_wide$group), ]
 
     # Multiply the correct rows together, return as result
-    rowSums(as.matrix(res_wide[, varnames]) *
-            as.matrix(internal_data[, varnames]))
+    rowSums(as.matrix(res_wide[, lin_names]) *
+            as.matrix(internal_data[, lin_names]))
 
 }
 

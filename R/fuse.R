@@ -1,169 +1,169 @@
-#' Ensure mutations are present in both coco and varmat
+#' Ensure mutations are present in both coco and linmat
 #'
-#' Finds the intersection between the mutations present in coco and varmat. Will squash lineages together if the resulting mutation list is too similar (see details).
+#' Finds the intersection between the mutations present in coco and linmat. Will squash lineages together if the resulting mutation list is too similar (see details).
 #'
 #' @param coco A data frame with a column labelled \code{mutation}.
-#' @param varmat Rownames are variants, column names are Mutations.
-#' @param min_perc A variant must have at least \code{min_perc} of the mutations.
+#' @param linmat Rownames are lineages, column names are Mutations.
+#' @param min_perc A lineage must have at least \code{min_perc} of the mutations.
 #' @param vebose Print information about mutations that were removed by the fusion. 0 (FALSE) returns errors, 1 (TRUE) returns warnings and some info about relative mutation counts, and 2 returns all mutations in each.
 #'
-#' @return A data frame with the same columns as coco (possibly fewer rows) and the same columns plus new columns for the variants of concern. The provoc function expects this structure.
+#' @return A data frame with the same columns as coco (possibly fewer rows) and the same columns plus new columns for the lineages. The provoc function expects this structure.
 #' @export
 #'
 #' @details First, the intersection of the mutations is found.
 #'
-#' The columns of varmat are subsetted according to this intersection. If this removes all mutations for any lineage, that lineage is removed from the study (a warning is given if the lineage was a pre-specified voc).
+#' The columns of linmat are subsetted according to this intersection. If this removes all mutations for any lineage, that lineage is removed from the study (a warning is given if the lineage was a pre-specified voc).
 #'
 #' After removing mutations, it's possible that some rows lose their distinctive mutations and become identical. In this case the names of the lineages are pasted together and only one of the rows are kept.
 #'
 #' Duplicate mutation names in coco are NOT removed. It is safe to use this function on a data frame that contains multiple samples.
-fuse <- function(coco, varmat, min_perc = 0.01, verbose = FALSE) {
-    if (any(colnames(coco) %in% paste0("var_", rownames(varmat)))) {
+fuse <- function(coco, linmat, min_perc = 0.01, verbose = FALSE) {
+    if (any(colnames(coco) %in% paste0("lin_", rownames(linmat)))) {
         stop("coco should not contain column names that are names of lineages. Is this object already fused?")
     }
 
     pre <- nrow(coco)
-    shared <- intersect(unique(coco$mutation), colnames(varmat))
-    # We can't say anything about mutations not in varmat.
+    shared <- intersect(unique(coco$mutation), colnames(linmat))
+    # We can't say anything about mutations not in linmat.
     coco <- coco[!is.na(coco$mutation), ]
     coco <- coco[coco$mutation %in% shared, ]
 
     if (length(shared) < 3) {
         stop("Too few shared mutations. Are they in the same format?")
-    } else if (length(shared) <= 10 && ncol(varmat) > 10 && verbose) {
+    } else if (length(shared) <= 10 && ncol(linmat) > 10 && verbose) {
         warning("Fewer than 10 shared mutations. Results may be very difficult to interpret.")
     } else if (length(shared) / pre < 0.1 && verbose) {
         warning(paste0("Less than ", length(shared) / pre,
-            "% of coco's mutations are being used. Consider a larger variant matrix."))
+            "% of coco's mutations are being used. Consider a larger lineage matrix."))
     }
     if (verbose > 0) {
         perc_rm <- 1 - round(length(shared) / pre, 3)
         print(paste0(100 * perc_rm,
                 "% of the rows of coco have been removed."))
         coco_only <- coco$mutation[!coco$mutation %in% shared]
-        varmat_only <- colnames(varmat)[!colnames(varmat) %in% shared]
+        linmat_only <- colnames(linmat)[!colnames(linmat) %in% shared]
         print("coco-only mutations removed:")
         print(length(coco_only))
-        print("varmat-only mutations removed")
-        print(length(varmat_only))
+        print("linmat-only mutations removed")
+        print(length(linmat_only))
     }
 
 
     # Lineages with too few mutations (less than 10% are 1s)
     # TODO: Make this a parameter?
-    vari2 <- varmat[, shared]
-    too_many_zeros <- apply(vari2, 1, sum) <= (ncol(vari2) * min_perc)
-    vari2 <- vari2[!too_many_zeros, ]
+    lin2 <- linmat[, shared]
+    too_many_zeros <- apply(lin2, 1, sum) <= (ncol(lin2) * min_perc)
+    lin2 <- lin2[!too_many_zeros, ]
 
     # Squash (nearly) identical lineages
     i <- 0
-    while (i < nrow(vari2)) {
+    while (i < nrow(lin2)) {
         i <- i + 1
-        this_row <- vari2[i, ]
-        dupes <- apply(vari2, 1, function(x) mean(this_row == x))
+        this_row <- lin2[i, ]
+        dupes <- apply(lin2, 1, function(x) mean(this_row == x))
         dupes[i] <- 0
         if (any(dupes > 0.99)) {
-            squashed <- rownames(vari2)[c(i, which(dupes > 0.99))]
-            rownames(vari2)[i] <- paste(squashed, collapse = "|")
-            vari2 <- vari2[dupes <= 0.99, ]
+            squashed <- rownames(lin2)[c(i, which(dupes > 0.99))]
+            rownames(lin2)[i] <- paste(squashed, collapse = "|")
+            lin2 <- lin2[dupes <= 0.99, ]
         }
     }
 
-    vardf <- as.data.frame(t(vari2))
-    names(vardf) <- paste0("var_", names(vardf))
-    vardf$mutation <- rownames(vardf)
+    lin_df <- as.data.frame(t(lin2))
+    names(lin_df) <- paste0("lin_", names(lin_df))
+    lin_df$mutation <- rownames(lin_df)
 
-    dplyr::left_join(coco, vardf, by = "mutation")
+    dplyr::left_join(coco, lin_df, by = "mutation")
 }
 
-#' Un-fuse coco and varmat.
+#' Un-fuse coco and linmat.
 #'
 #' Fusion ensures that the mutation lists match and are in the correct order, but the two must be separated.
 #'
-#' @param fused The result of \code{fuse(coco, varmat)}
+#' @param fused The result of \code{fuse(coco, linmat)}
 #' @param sample The name of the sample being used.
 #'
-#' @return A list containing coco and varmat.
+#' @return A list containing coco and linmat.
 fission <- function(fused, sample = NULL) {
     if (!is.null(sample)) fused <- fused[fused$sample == sample, ]
-    variants <- startsWith(names(fused), "var_")
-    varnames <- names(fused)[variants]
-    coco <- fused[, !variants]
+    lineages <- startsWith(names(fused), "lin_")
+    lin_names <- names(fused)[lineages]
+    coco <- fused[, !lineages]
 
-    vardf <- fused[, variants]
-    varmat <- t(as.matrix(vardf))
-    varmat <- matrix(as.numeric(varmat), ncol = ncol(varmat))
-    rownames(varmat) <- gsub("var_", "", varnames)
-    colnames(varmat) <- coco$mutation
+    lin_df <- fused[, lineages]
+    linmat <- t(as.matrix(lin_df))
+    linmat <- matrix(as.numeric(linmat), ncol = ncol(linmat))
+    rownames(linmat) <- gsub("lin_", "", lin_names)
+    colnames(linmat) <- coco$mutation
 
-    return(list(coco = coco, varmat = varmat))
+    return(list(coco = coco, linmat = linmat))
 }
 
-#' Finds and prints all similarities among variants
+#' Finds and prints all similarities among lineage
 #'
-#' @param data A variant matrix
+#' @param data A lineage matrix
 #'
-#' @return A list of length 4 containing information on which variants differ by one,
-#' the Jaccard similarity between variants, which variants are subsets and almost subsets
-#' of each other. in is_subset and is_almost_subset a value is true if the variant of the
-#' column name is a subset/almost a subset of the variant of the row name.
-variants_similarity <- function(data, simplify = FALSE, almost = 1) {
+#' @return A list of length 4 containing information on which lineages differ by one,
+#' the Jaccard similarity between lineages, which lineages are subsets and almost subsets
+#' of each other. in is_subset and is_almost_subset a value is true if the lineages of the
+#' column name is a subset/almost a subset of the lineages of the row name.
+lineage_similarity <- function(data, simplify = FALSE, almost = 1) {
 
-    subset_of_variants <- data[, startsWith(names(data), "var_")]
+    subset_of_lineages <- data[, startsWith(names(data), "lin_")]
 
     similarities <- list()
 
     # DIFFER BY ONE OR LESS -------------------------------
     similarities$Differ_by_one_or_less <- outer(
-        colnames(subset_of_variants),
-        colnames(subset_of_variants),
+        colnames(subset_of_lineages),
+        colnames(subset_of_lineages),
         function(x, y) {
             mapply(FUN = differ_by_one_or_less,
-                v1 = subset_of_variants[, x],
-                v2 = subset_of_variants[, y])
+                v1 = subset_of_lineages[, x],
+                v2 = subset_of_lineages[, y])
         })
-    colnames(similarities$Differ_by_one_or_less) <- colnames(subset_of_variants)
-    rownames(similarities$Differ_by_one_or_less) <- colnames(subset_of_variants)
+    colnames(similarities$Differ_by_one_or_less) <- colnames(subset_of_lineages)
+    rownames(similarities$Differ_by_one_or_less) <- colnames(subset_of_lineages)
 
     # JACCARD ---------------------------------------------
     similarities$Jaccard_similarity <- outer(
-        colnames(subset_of_variants),
-        colnames(subset_of_variants),
+        colnames(subset_of_lineages),
+        colnames(subset_of_lineages),
         function(x, y) {
             mapply(
                 FUN = jaccard_simularity,
-                v1 = subset_of_variants[, x],
-                v2 = subset_of_variants[, y])
+                v1 = subset_of_lineages[, x],
+                v2 = subset_of_lineages[, y])
         })
-    colnames(similarities$Jaccard_similarity) <- colnames(subset_of_variants)
-    rownames(similarities$Jaccard_similarity) <- colnames(subset_of_variants)
+    colnames(similarities$Jaccard_similarity) <- colnames(subset_of_lineages)
+    rownames(similarities$Jaccard_similarity) <- colnames(subset_of_lineages)
 
     # SUBSET ----------------------------------------------
     similarities$is_subset <- outer(
-        colnames(subset_of_variants),
-        colnames(subset_of_variants),
+        colnames(subset_of_lineages),
+        colnames(subset_of_lineages),
         function(x, y) {
             mapply(
                 FUN = is_subset,
-                v1 = subset_of_variants[, x],
-                v2 = subset_of_variants[, y])
+                v1 = subset_of_lineages[, x],
+                v2 = subset_of_lineages[, y])
         })
-    colnames(similarities$is_subset) <- colnames(subset_of_variants)
-    rownames(similarities$is_subset) <- colnames(subset_of_variants)
+    colnames(similarities$is_subset) <- colnames(subset_of_lineages)
+    rownames(similarities$is_subset) <- colnames(subset_of_lineages)
 
 
     # ALMOST SUBSET ---------------------------------------
     similarities$is_almost_subset <- outer(
-        colnames(subset_of_variants),
-        colnames(subset_of_variants),
+        colnames(subset_of_lineages),
+        colnames(subset_of_lineages),
         function(x, y) {
             mapply(
                 FUN = is_almost_subset,
-                v1 = subset_of_variants[, x],
-                v2 = subset_of_variants[, y])
+                v1 = subset_of_lineages[, x],
+                v2 = subset_of_lineages[, y])
         })
-    colnames(similarities$is_almost_subset) <- colnames(subset_of_variants)
-    rownames(similarities$is_almost_subset) <- colnames(subset_of_variants)
+    colnames(similarities$is_almost_subset) <- colnames(subset_of_lineages)
+    rownames(similarities$is_almost_subset) <- colnames(subset_of_lineages)
 
     if (simplify) {
         similarities <- simplify_similarity(similarities,
@@ -172,24 +172,24 @@ variants_similarity <- function(data, simplify = FALSE, almost = 1) {
     return(similarities)
 }
 
-#' Simplifies variant similarity matrices for easier interpretation
+#' Simplifies lineage similarity matrices for easier interpretation
 #' 
-#' @param similarities Result of \code{variants_similarity()}
+#' @param similarities Result of \code{lineage_similarity()}
 #' @param almost Degree of similarity.
 simplify_similarity <- function(similarities, almost) {
 
 
-    keep_vars <- apply(X = similarities$Differ_by_one_or_less,
+    keep_lins <- apply(X = similarities$Differ_by_one_or_less,
         MARGIN = 1,
         FUN = function(x) {
             sum(x) > 1
         })
 
     similarities$Differ_by_one_or_less <-
-        similarities$Differ_by_one_or_less[keep_vars, keep_vars]
+        similarities$Differ_by_one_or_less[keep_lins, keep_lins]
 
     diag(similarities$Jaccard_similarity) <- 0
-    keep_vars <- apply(X = similarities$Jaccard_similarity,
+    keep_lins <- apply(X = similarities$Jaccard_similarity,
         MARGIN = 1,
         FUN = function(x) {
             any(x > 0.99)
@@ -197,37 +197,37 @@ simplify_similarity <- function(similarities, almost) {
     diag(similarities$Jaccard_similarity) <- 1
 
     similarities$Jaccard_similarity <-
-        similarities$Jaccard_similarity[keep_vars, keep_vars]
+        similarities$Jaccard_similarity[keep_lins, keep_lins]
 
-    keep_vars1 <- apply(X = similarities$is_subset,
+    keep_lins1 <- apply(X = similarities$is_subset,
         MARGIN = 1,
         FUN = function(x) {
             sum(x) > 1
         })
-    keep_vars2 <- apply(X = similarities$is_subset,
+    keep_lins2 <- apply(X = similarities$is_subset,
         MARGIN = 2,
         FUN = function(x) {
             sum(x) > 1
         })
-    keep_vars <- keep_vars1 | keep_vars2
+    keep_lins <- keep_lins1 | keep_lins2
 
     similarities$is_subset <-
-        similarities$is_subset[keep_vars, keep_vars]
+        similarities$is_subset[keep_lins, keep_lins]
 
-    keep_vars1 <- apply(X = similarities$is_almost_subset,
+    keep_lins1 <- apply(X = similarities$is_almost_subset,
         MARGIN = 1,
         FUN = function(x) {
             sum(x) > 1
         })
-    keep_vars2 <- apply(X = similarities$is_almost_subset,
+    keep_lins2 <- apply(X = similarities$is_almost_subset,
         MARGIN = 2,
         FUN = function(x) {
             sum(x) > 1
         })
-    keep_vars <- keep_vars1 | keep_vars2
+    keep_lins <- keep_lins1 | keep_lins2
 
     similarities$is_almost_subset <-
-        similarities$is_almost_subset[keep_vars, keep_vars]
+        similarities$is_almost_subset[keep_lins, keep_lins]
 
     similarities
 }
@@ -240,8 +240,8 @@ simplify_similarity <- function(similarities, almost) {
 #'
 #' @return TRUE, if they only differ by one mutation
 differ_by_one_or_less <- function(v1, v2) {
-    variants_difference <- v1 == v2
-    if (sum(variants_difference) %in% c(length(v1) - 1, length(v1))) {
+    lineage_difference <- v1 == v2
+    if (sum(lineage_difference) %in% c(length(v1) - 1, length(v1))) {
         return(TRUE)
     } else {
         return(FALSE)
@@ -255,11 +255,11 @@ differ_by_one_or_less <- function(v1, v2) {
 #'
 #' @return The Jaccard simularity
 jaccard_simularity <- function(v1, v2) {
-    variants_difference <- v1 == v2
-    return(sum(variants_difference) / length(v1))
+    lineage_difference <- v1 == v2
+    return(sum(lineage_difference) / length(v1))
 }
 
-#' Finds if one variant is a subset of another
+#' Finds if one lineage is a subset of another
 #'
 #' @param v1 vector for comparison
 #' @param v2 vector for comparison
@@ -277,7 +277,7 @@ is_subset <- function(v1, v2) {
     return(result)
 }
 
-#' Finds if one variant is almost a subset of another
+#' Finds if one lineage is almost a subset of another
 #'
 #' @param v1 vector for comparison
 #' @param v2 vector for comparison

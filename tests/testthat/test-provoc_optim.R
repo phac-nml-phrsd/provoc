@@ -8,9 +8,9 @@ test_that("Ensure estimate is within the bootstrap confidence interval.", {
     }
   }
   test_bootstrap <- function(rel_counts){
-    varmat <- simulate_varmat() #simulates a new variant matrix
-    coco <- simulate_coco(varmat, rel_counts)
-    converg_info <- provoc_optim(coco, varmat, 1000, TRUE) #estimates the proportions of VOCs with 1000 bootstrap samples
+    lineage_defs <- simulate_lineage_defs() #simulates a new lineage matrix
+    coco <- simulate_coco(lineage_defs, rel_counts)
+    converg_info <- provoc_optim(coco, lineage_defs, 1000, TRUE) #estimates the proportions of VOCs with 1000 bootstrap samples
     expect_results(converg_info)
   }
   j = 0
@@ -21,9 +21,9 @@ test_that("Ensure estimate is within the bootstrap confidence interval.", {
 })
 
 test_that("output is of correct type",{
-  varmat <- simulate_varmat()
-  coco <- simulate_coco(varmat)
-  res <- provoc_optim(coco, varmat, 0, FALSE)
+  lineage_defs <- simulate_lineage_defs()
+  coco <- simulate_coco(lineage_defs)
+  res <- provoc_optim(coco, lineage_defs, 0, FALSE)
   expect_s3_class(res$res_df, "data.frame")
   expect_type(res$convergence, "logical")
 })

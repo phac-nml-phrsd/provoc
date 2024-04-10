@@ -17,7 +17,7 @@ test_that("verifying data in matrix is reasonable", {
     expect_lte(matrix_ratio, 1+epsilon) #sees if decimal is less than or equal to 1 plus episilon (for significant digits issues)
     expect_gte(matrix_ratio, 0) #sees if decimal is greater than or equal to 0
   }
-  matrix <- simulate_varmat()
+  matrix <- simulate_lineage_defs()
   i = 1
   while (i<20){ #iterations through in_range function 20 times
     in_range(matrix)

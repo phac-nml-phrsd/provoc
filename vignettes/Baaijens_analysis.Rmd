@@ -21,18 +21,18 @@ Let's try some linear modelling approaches!
 
 ```{R}
 library(provoc)
-varmat <- astronomize()
+lineage_defs <- astronomize()
 baaijens_lineages <- c("B.1.1.7", "B.1.427",
     "B.1.429", "B.1.526", "B.1.617.2")
-varmat <- varmat[baaijens_lineages, ]
+lineage_defs <- lineage_defs[baaijens_lineages, ]
 
 data(Baaijens)
 baaijens1 <- Baaijens[Baaijens$date == "2021-01-01", ]
 baaijens1$mutation <- parse_mutations(baaijens1$label)
-fused <- fuse(baaijens1, varmat, verbose = FALSE)
+fused <- fuse(baaijens1, lineage_defs, verbose = FALSE)
 
-rhs <- paste0("-1 + var_",
-    paste(baaijens_lineages, collapse = " + var_"))
+rhs <- paste0("-1 + lin_",
+    paste(baaijens_lineages, collapse = " + lin_"))
 
 lmcoef <- coef(lm(
     paste0("frequency ~ ", rhs),
@@ -49,7 +49,7 @@ data.frame(
 # Analyze the dataset using the default mutation definitions
 res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2,
               data = baaijens1, by = "sample_name",
-              mutation_defs = as.matrix(varmat), verbose = FALSE)
+              mutation_defs = as.matrix(lineage_defs), verbose = FALSE)
 res
 
 preds <- predict(res)
@@ -63,9 +63,9 @@ obsdf <- baaijens1[, c("frequency", "count", "coverage", "mutation")]
 library(dplyr)
 library(ggplot2)
 augdf <- inner_join(predsdf, obsdf, by = "mutation")
-aug <- fuse(augdf, varmat, verbose = FALSE)
+aug <- fuse(augdf, lineage_defs, verbose = FALSE)
 
-aug$variant <- apply(select(aug, starts_with("var")), 1, function(x) {
+aug$lineage <- apply(select(aug, starts_with("lin_")), 1, function(x) {
     paste(names(x)[x == 1], collapse = "-")
 })
 
@@ -74,7 +74,7 @@ ggplot(aug) +
     aes(x = pred, y = frequency - pred) +
     geom_point(shape = 1) +
     geom_hline(yintercept = 0) +
-    facet_wrap(~ variant)
+    facet_wrap(~ lineage)
 ```
 
 Oooh that's bad! Negative estimates??? That's not possible. 
@@ -100,13 +100,13 @@ theme_set(theme_bw())
 library(lubridate)
 Baaijens$mutation <- parse_mutations(Baaijens$label)
 Baaijens$sample <- Baaijens$sra
-fused <- fuse(Baaijens, varmat)
+fused <- fuse(Baaijens, lineage_defs)
 res <- provoc(fused = fused)
 
 ggplot(res) +
     aes(x = ymd(date), y = rho) +
     geom_point() +
-    facet_wrap(~ variant) +
+    facet_wrap(~ lineage) +
     scale_x_date() +
     labs(x = "Date", y = "Proportion in Sample",
         title = "ProVoC applied to many samples")

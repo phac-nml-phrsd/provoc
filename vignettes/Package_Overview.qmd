@@ -24,7 +24,7 @@ The primary aims of the package are:
     - mutation frequency, coverage, lineage defining mutations
 2. Exploration of the discoverability of lineages within wastewater
     - For example, whether the mutations required to differentiate BA.1 from BA.2 are present in the wastewater in large enough quantities.
-3. Estimation of proportions of variants of concern
+3. Estimation of proportions of lineages of concern
 4. Model diagnostics that work for any of the common estimation procedures (Freyja, Alcov, etc.).
 
 Our intent is to facilitate a standardized approach to the assessment of model results for wastewater data.
@@ -39,13 +39,13 @@ ProVoC is designed for data with the following format:
 #| message: false
 #| echo: false
 
-varmat <- astronomize()[c("B.1.1.7", "B.1.617.2", "P.1"), ]
-varmat <- varmat[, apply(varmat, 2, function(x) {sum(x) != 0})]
+lineage_defs <- astronomize()[c("B.1.1.7", "B.1.617.2", "P.1"), ]
+lineage_defs <- lineage_defs[, apply(lineage_defs, 2, function(x) {sum(x) != 0})]
 
 data(Baaijens)
 b1 <- Baaijens
 b1$mutation <- parse_mutations(b1$label)
-b2 <- fuse(b1, varmat, verbose = FALSE)
+b2 <- fuse(b1, lineage_defs, verbose = FALSE)
 
 b2[c(1, 10, 11, 18), c(1,2,12,3,4,5,6)] |>
     knitr::kable(row.names = 0, caption = "Input data, as processed from short read sequencing of wastewater samples.")
@@ -63,7 +63,7 @@ ProVoC also requires the definition of lineages such as:
 
 ```{r}
 #| echo: false
-varmat[,c("C913T", "aa:S:N501Y", "aa:orf1a:K1795Q", 
+lineage_defs[,c("C913T", "aa:S:N501Y", "aa:orf1a:K1795Q", 
         "T16176C")] |>
     t() |>
     knitr::kable(caption = "Lineage definitions in a format (a matrix) compatible with common modelling frameworks.")
@@ -84,7 +84,7 @@ Essentially, the estimate of a proportion for B.1.1.7 amounts to fitting a linea
 ```{r}
 #| echo: false
 b3 <- filter(b1, date == b1$date[1])
-v2 <- varmat |> t() |> as.data.frame()
+v2 <- lineage_defs |> t() |> as.data.frame()
 v2$mutation <- rownames(v2)
 rownames(v2) <- NULL
 f1 <- full_join(select(b3, mutation, frequency, coverage), v2, by = "mutation") |>
@@ -169,7 +169,7 @@ If we have too many lineages, there is bound to be a false positive. Since the s
 
 Conversely, suppose we are missing a lineage that should be present. Under the assumption that this lineage shares mutations with another lineage, the estimate of the other lineage will be biased upwards. In other words, *bias increases with missing lineages.* 
 
-For a concrete example, consider variants A, B, and C with mutations m1, m2, m3, and m4, as follows:
+For a concrete example, consider lineages A, B, and C with mutations m1, m2, m3, and m4, as follows:
 
 | mutation | frequency | varA | varB | varC |
 |----------|-----------|------|------|------|
@@ -178,11 +178,11 @@ For a concrete example, consider variants A, B, and C with mutations m1, m2, m3,
 | m3       | 0.25      | no   | yes  | no   |
 | m4       | 0         | no   | no   | yes  |
 
-In this example, we can guess that A and B have a proportion of 0.25, while C has a proportion of 0. When A and B are both present, any mutations they share are expected to be in 50\% of the samples. However, if we were to exlcude A, then we would get an estimate of 0.375 (the average of the frequencies of mutations in variant B). The erroneous exclusion of A means that B's estimate is biased upwards.
+In this example, we can guess that A and B have a proportion of 0.25, while C has a proportion of 0. When A and B are both present, any mutations they share are expected to be in 50\% of the samples. However, if we were to exlcude A, then we would get an estimate of 0.375 (the average of the frequencies of mutations in lineage B). The erroneous exclusion of A means that B's estimate is biased upwards.
 
 Conversely, suppose we included varC in our estimation. If the proportion is estimated to be above 0, then the prediction for m1 would be too high, so instead the model would need to reduce the estimate for varA. The erroneous inlusion of C has biased A's estimate downwards.
 
-There is a another potential issue with including or excluding lineages. In the table above we looked at mutations 1 through 4 because they were present in variants A, B, and C. If we introduced variant D which also included mutation 5, then we would be using another mutation in the estimation procedure.
+There is a another potential issue with including or excluding lineages. In the table above we looked at mutations 1 through 4 because they were present in lineages A, B, and C. If we introduced lineage D which also included mutation 5, then we would be using another mutation in the estimation procedure.
 
 To detect these issues, `provoc` facilitates re-running the analysis with different lineages to see the effect on the remaining estimates.
 

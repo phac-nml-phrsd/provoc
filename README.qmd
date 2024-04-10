@@ -7,22 +7,22 @@ execute:
 
 [![Lifecycle: development](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental-1) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-PROportions of Variants of Concern using counts, coverage, and a variant matrix.
+PROportions of Variants of Concern using counts, coverage, and a lineage definition matrix.
 
 Builds and diagnoses a model based on:
 
--   Counts: The number of times a given mutation was observed.
--   Coverage: The number of times the position of a given variant was read.
--   Mutation names: whatever format you want, as long as they match the names in the Variant Matrix.
--   Variant Matrix: A matrix where the row names are variants, the column names are mutations, and the entries are 1 if the row variant has the column mutation and 0 otherwise.
-    -   For example: Usher Barcodes
-    -   All current methods accept fractional entries.
+- Counts: The number of times a given mutation was observed.
+- Coverage: The number of times the position of a given mutation was read.
+- Mutation names: whatever format you want, as long as they match the names in the lineage definition matrix.
+- Lineage definition matrix: A matrix where the row names are lineage, the column names are mutations, and the entries are 1 if the row lineage has the column mutation and 0 otherwise.
+    - For example: Usher Barcodes
+    - All current methods accept fractional entries.
 
 # Usage
 
-There are two steps to using this software: create the mutation definitions and run the model(s).
+There are two steps to using this software: create the lineage definitions and run the model(s).
 
-If not specified, the mutation definitions uses hardcoded definitions from the [cov-lineages/constellations](https://github.com/cov-lineages/constellations) repo, which contains the representative mutations that were identified by the PANGO team. The mutation definitions must have names that match what exists in the data.
+If not specified, the lineage definitions uses hardcoded definitions from the [cov-lineages/constellations](https://github.com/cov-lineages/constellations) repo, which contains the representative mutations that were identified by the PANGO team. The lineage definitions must have names that match what exists in the data.
 
 ```{r}
 #| label: load_Baaijens
@@ -76,8 +76,8 @@ summary(res)
 ```
 
 ```{r}
-#| label: one-sample-variant-plot
-plot_variants(res)
+#| label: one-sample-lineage-plot
+plot_lineages(res)
 ```
 
 # Multiple Samples
@@ -108,8 +108,8 @@ res
 ```
 
 ```{r}
-#| label: multi-sample-variant-plot
-plot_variants(res)
+#| label: multi-sample-lineage-plot
+plot_lineages(res)
 ```
 
 The plotting functions above work as expected.
@@ -147,7 +147,7 @@ Since `autoplot()` returns a `ggplot2` object, you can use all your knowledge of
 ```{r}
 #| label: faceting
 autoplot(res, date_col = "date") +
-    facet_wrap(~ variant, nrow = 1) +
+    facet_wrap(~ lineage, nrow = 1) +
     labs(title = "Proportions of Lineages over Time") +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
@@ -160,7 +160,7 @@ Finally, the residual plot still works (although it's a bunch of samples stuffed
 plot_resids(res)
 ```
 
-## Searching for Different Variants
+## Searching for Different Lineages
 
 ```{r}
 #| label: with-without
@@ -190,12 +190,12 @@ Notice two important points:
 2. Due to shared mutations, excluding B.1.1.7 when it should be included means other lineages increase to make up for it.
     - Erroneously **decreasing** one means **increasing** other lineages.
 
-`provoc` also accepts the `~ .` formula notation. This is useful if you want to manipulate the lineages in the lineage definitions matrix, which is easier programmatically than dealing with formulae in R. The `filter_variants()` function will remove mutations that are not present in any of the remaining lineages.
+`provoc` also accepts the `~ .` formula notation. This is useful if you want to manipulate the lineages in the lineage definitions matrix, which is easier programmatically than dealing with formulae in R. The `filter_lineages()` function will remove mutations that are not present in any of the remaining lineages.
 
 ```{r}
 #| label: load-usher
 mutation_defs <- provoc::usher_barcodes(path = "working") |>
-    filter_variants(c("B.1.1.7", "B.1.617.2", "B.1.427",
+    filter_lineages(c("B.1.1.7", "B.1.617.2", "B.1.427",
         "B.1.429", "AY.4", "BA.4", "BA.5"))
 ```
 
@@ -207,7 +207,7 @@ res_all <- provoc(count / coverage ~ ., data = b1,
     bootstrap_samples = 0,
     mutation_defs = mutation_defs)
 
-plot_variants(res_all)
+plot_lineages(res_all)
 
 ```
 

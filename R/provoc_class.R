@@ -11,7 +11,7 @@ print.provoc <- function(provoc_obj, n = 6) {
     cat("\n")
     minfo <- attributes(provoc_obj)$mutation_info
     cat("Mutations in lineage definitions: ",
-        ncol(attributes(provoc_obj)$variant_matrix),
+        ncol(attributes(provoc_obj)$lineage_defs),
         "\n")
     if (length(minfo[[1]]) <= 10) {
         cat("Mutations used in analysis/mutations in data:\n")
@@ -34,7 +34,7 @@ print.provoc <- function(provoc_obj, n = 6) {
     provoc_df <- provoc_obj[order(-provoc_obj$rho), ]
     provoc_df$rho <- ifelse(provoc_df$rho < 0.001,
         "<0.001", round(provoc_df$rho, 3))
-    cat("Top", n, "variants:\n")
+    cat("Top", n, "lineages:\n")
     print.data.frame(provoc_df[1:n, ], digits = 3)
 }
 
@@ -57,7 +57,7 @@ summary.provoc <- function(provoc_obj) {
 
     minfo <- attributes(provoc_obj)$mutation_info
     cat("\nMutations in lineage definitions:",
-        ncol(attributes(provoc_obj)$variant_matrix),
+        ncol(attributes(provoc_obj)$lineage_defs),
         "\n")
     if (length(minfo[[1]]) <= 10) {
         cat("Mutations used in analysis/mutations in data:\n")
@@ -139,15 +139,15 @@ plot.provoc <- function(provoc_obj, plot_type = c("barplot")) {
                     length(unique(provoc_obj$group)),
                     1)),
             names.arg = unique(provoc_obj$group),
-            col = seq_along(unique(provoc_obj$variant)),
+            col = seq_along(unique(provoc_obj$lineage)),
             horiz = TRUE,
             xlim = c(0, 1),
             xlab = "Proportion",
             ylab = NULL,
             las = 1)
         legend("topright",
-            legend = unique(provoc_obj$variant),
-            col = seq_along(unique(provoc_obj$variant)),
+            legend = unique(provoc_obj$lineage),
+            col = seq_along(unique(provoc_obj$lineage)),
             pch = 15)
     }
 }
@@ -174,7 +174,7 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
         if (!inherits(provoc_obj[, date_col], "Date"))
             stop("Supplied date column does not include Date values. \nTry lubridate::ymd().")
         gg <- gg  +
-            aes(x = date, y = rho, fill = variant, group = group) +
+            aes(x = date, y = rho, fill = lineage, group = group) +
             labs(y = "Proportion", x = "Date", fill = "Lineage") +
             theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -182,14 +182,14 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
         if (ncol(provoc_obj) > 4)
             warning("Detected extra information, but plotting results as if they're a single sample.")
         gg <- gg +
-            aes(x = 1, y = rho, fill = variant) +
+            aes(x = 1, y = rho, fill = lineage) +
             labs(y = "Proportion", x = NULL, fill = "Lineage") +
             scale_x_continuous(minor_breaks = NULL, breaks = NULL) +
             coord_flip()
 
     } else {
         gg <- gg +
-            aes(x = group, y = rho, fill = variant) +
+            aes(x = group, y = rho, fill = lineage) +
             labs(y = "Proportion", x = "Group", fill = "Lineage") +
             scale_x_discrete(breaks = sort(unique(provoc_obj$group))) +
             coord_flip()
@@ -205,7 +205,7 @@ autoplot.provoc <- function(provoc_obj, date_col = NULL) {
 #'
 #' @export
 get_mutation_defs <- function(provoc_obj) {
-    attributes(provoc_obj)$variant_matrix
+    attributes(provoc_obj)$lineage_defs
 }
 
 
@@ -247,84 +247,84 @@ get_convergence <- function(res, verbose = TRUE) {
 }
 
 
-#' Summarise the similarities in variant matrices
+#' Summarise the similarities in lineage matrices
 #'
 #' @inherit summary.provoc
-summarise_variants <- function(provoc_obj) {
+summarise_lineages <- function(provoc_obj) {
     similarities <- attributes(provoc_obj)$similarities |>
         provoc:::simplify_similarity()
 
     msg <- ""
     if (length(similarities$Differ_by_one_or_less) > 0) {
         msg <- paste0(msg,
-            "At least one pair of variants has a single difference.\n",
+            "At least one pair of lineage has a single difference.\n",
             collapse = " ")
     }
     if (length(similarities$Jaccard_similarity) > 0) {
         msg <- paste0(msg,
-            "At least one pair of variants has a Jaccard similarity > 0.99.\n",
+            "At least one pair of lineage has a Jaccard similarity > 0.99.\n",
             collapse = " ")
     }
     if (length(similarities$is_subset) > 0) {
         msg <- paste0(msg,
-            "At least one variant is a subset of another.\n",
+            "At least one lineage is a subset of another.\n",
             collapse = " ")
     }
     if (length(similarities$is_almost_subset) > 0) {
         msg <- paste0(msg,
-            "At least one variant is almost a subset of another.\n",
+            "At least one lineage is almost a subset of another.\n",
             collapse = " ")
     }
 
     if (nchar(msg) > 0) {
-        msg <- paste0(msg, "See variants_similarity(res) for more info.\n",
+        msg <- paste0(msg, "See lineage_similarity(res) for more info.\n",
             collapse = "\n")
     } else {
-        msg <- "No issues detected for mutation definition.\n"
+        msg <- "No issues detected for lineage definition.\n"
     }
 
     msg
 }
 
-#' Plot the residuals, by variant
+#' Plot the residuals, by lineage
 #'
 #' @param provoc_obj Result of fitting provoc().
 #' @param type Deviance or raw residuals.
 #'
 #' @export
-plot_resids <- function(provoc_obj, type = "deviance", by_variant = TRUE) {
+plot_resids <- function(provoc_obj, type = "deviance", by_lineage = TRUE) {
     data <- attributes(provoc_obj)$internal_data
-    vardf <- data[, startsWith(colnames(data), "var_")]
-    varnames <- colnames(vardf)[startsWith(colnames(vardf), "var_")]
-    vardf$fitted <- as.numeric(predict(provoc_obj))
-    vardf$residuals <- provoc:::resid.provoc(provoc_obj, type = type)
+    lin_df <- data[, startsWith(colnames(data), "lin_")]
+    lin_names <- colnames(lin_df)[startsWith(colnames(lin_df), "lin_")]
+    lin_df$fitted <- as.numeric(predict(provoc_obj))
+    lin_df$residuals <- provoc:::resid.provoc(provoc_obj, type = type)
 
     plot(NA,
         xlim = c(0, 1),
-        ylim = range(vardf$residuals, na.rm = TRUE),
+        ylim = range(lin_df$residuals, na.rm = TRUE),
         xlab = "Fitted",
         ylab = paste0(tools::toTitleCase(type), " Residuals"),
         main = "Residuals versus Fitted"
     )
     abline(h = 0, col = "lightgrey", lty = 2, lwd = 2)
-    if (by_variant) {
-        for (i in seq_len(ncol(vardf) - 2)) {
+    if (by_lineage) {
+        for (i in seq_len(ncol(lin_df) - 2)) {
             points(residuals ~ fitted,
-                data = vardf[vardf[, i] == 1, ],
+                data = lin_df[lin_df[, i] == 1, ],
                 col = i, pch = 16)
         }
         legend("bottomright",
-            legend = gsub("var_", "", varnames),
-            col = seq_along(varnames),
+            legend = gsub("lin_", "", lin_names),
+            col = seq_along(lin_names),
             pch = 16)
     } else {
-        points(residuals ~ fitted, data = vardf, pch = 16)
+        points(residuals ~ fitted, data = lin_df, pch = 16)
     }
 }
 
-#' plot the similarities of variants
+#' plot the similarities of lineage
 #' @export
-plot_variants <- function(provoc_obj,
+plot_lineages <- function(provoc_obj,
     type = "Jaccard_similarity", labels = TRUE) {
     
     old_par <- par()
@@ -332,8 +332,8 @@ plot_variants <- function(provoc_obj,
     similarities[upper.tri(similarities)] <- NA
     diag(similarities) <- NA
     similarities <- similarities[-1, -ncol(similarities)]
-    rownames <- gsub("var_", "", rownames(similarities))
-    colnames <- gsub("var_", "", colnames(similarities))
+    rownames <- gsub("lin_", "", rownames(similarities))
+    colnames <- gsub("lin_", "", colnames(similarities))
     atseq <- (seq_along(rownames) - 1) / (length(rownames) - 1)
 
     omar <- par()$mar

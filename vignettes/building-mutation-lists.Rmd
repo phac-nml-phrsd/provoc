@@ -23,11 +23,11 @@ library(provoc)
 There are three ways to build mutation lists provided by ProVoC:
 
 1. Using a mutation list curated by the PANGO team ("Constellations")
-    - These are (mostly) representative mutations - there is very little overlap between the mutation lists for different variants.
+    - These are (mostly) representative mutations - there is very little overlap between the mutation lists for different lineages.
     - The team takes great pains to keep them updated and useful.
-    - This list only a specific subset of variants of concern with a small subset of their mutations and may not be useful for all purposes.
-2. By specifying the variants that are of interest to you and then pruning down the NextStrain GenBank data.
-3. Using variants that contain the same mutations as the ones in your data.
+    - This list only a specific subset of lineages of concern with a small subset of their mutations and may not be useful for all purposes.
+2. By specifying the lineages that are of interest to you and then pruning down the NextStrain GenBank data.
+3. Using lineages that contain the same mutations as the ones in your data.
 
 # Constellations
 
@@ -49,10 +49,10 @@ ll # check that your project directory is in the current directory
 git clone https://github.com/cov-lineages/constellations
 ```
 
-From within R, you can get the variant matrix using the following code:
+From within R, you can get the lineage definition matrix using the following code:
 
 ```{r}
-varmat <- astronomize()
+lineage_defs <- astronomize()
 ```
 
 Note that this structure isn't required.
@@ -73,12 +73,12 @@ The repo can be brought back up to date with a simple `git checkout`.
 
 
 
-# Specifying Variants
+# Specifying Lineages
 
-ProVoC also contains a function to build mutation lists based on a list of variant names.
+ProVoC also contains a function to build mutation lists based on a list of lineage names.
 It does so using the NextStrain GenBank metadata, which contains a list of mutations relative to the Wuhan-1 genome sequence.
 
-The function `varmat_by_variants()` allows for a specification of the sample date.
+The function `lineage_defs_by_lineages()` allows for a specification of the sample date.
 The mutations in the `mutations_by_lineage` data frame include information about the dates that the mutation was observed.
 For instance, a single sequence assigned to the lineage B.1.1.7 was observed in the summer of 2020, even though this lineage only became a variant of concern in the spring of 2021.
 The lineage had acquired many new mutations by the time it became a variant of concern, and it would thus be inappropriate to assume that wastewater sampled in summer of 2020 would be expected to contain the new mutations.
@@ -86,7 +86,7 @@ The lineage had acquired many new mutations by the time it became a variant of c
 The data set is separated by lineage, which each lineage having one row dedicated to each mutation observed in that lineage.
 There is a column representing the first time a given mutation was observed in that lineage, and a column representing the last time that mutation was observed in that lineage.
 
-The function also incorporates the date that the database  to ensure that currently circulating variants are not assumed to be missing simply because they haven't been sequenced recently.
+The function also incorporates the date that the database  to ensure that currently circulating lineages are not assumed to be missing simply because they haven't been sequenced recently.
 If the last observed date is within the last two months since the GenBank data were accessed, it is assumed that that mutation is still present in that lineage.
 
 

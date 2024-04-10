@@ -28,7 +28,7 @@ re_findall <- function(pat, s) {
 #'
 #' @param path Path to the constellations folder in the cov-lineages/constellations repository. The default assumes that the current project and the constellations repo are in the same directory.
 #'
-#' @return A variant matrix for use with provoc.
+#' @return A lineage matrix for use with provoc.
 #' @export
 #'
 #' @details From the repo, a constellation "a collection of mutations which are functionally meaningful, but which may arise independently a number of times".
@@ -37,21 +37,21 @@ re_findall <- function(pat, s) {
 #'
 #' If this is not the case, a path to the root folder of the constellations repo is required. The path is to the root folder, not the folder with the constellation files.
 #'
-#' There are no options to specify which lineages to include. I am working on a \code{annihilate(coco, varmat)} function to remove mutations that aren't shared between coco and varmat and squash lineages that have too few observed mutations or are too similar to other lineages.
+#' There are no options to specify which lineages to include. I am working on a \code{annihilate(coco, linmat)} function to remove mutations that aren't shared between coco and linmat and squash lineages that have too few observed mutations or are too similar to other lineages.
 #'
 #' @examples
 #' if(dir.exists("../constellations")) {
-#'     varmat <- astronomize()
+#'     linmat <- astronomize()
 #' }
 #'
 astronomize <- function(path = NULL) {
 
     if (is.null(path)) {
-        return(provoc::varmat_from_list(provoc::constellation_lists))
+        return(provoc::linmat_from_list(provoc::constellation_lists))
     }
 
     if (!dir.exists(path)) {
-        return(provoc::varmat_from_list(provoc::constellation_lists))
+        return(provoc::linmat_from_list(provoc::constellation_lists))
     }
 
     orfs <- list(
@@ -147,82 +147,82 @@ astronomize <- function(path = NULL) {
         sites <- unlist(sites, recursive = FALSE)
     })
 
-    varmat <- as.matrix(dplyr::bind_rows(sapply(sitelist, function(sites) {
+    linmat <- as.matrix(dplyr::bind_rows(sapply(sitelist, function(sites) {
         x <- rep(1, length(sites))
         names(x) <- sites
         x
     })))
 
-    varmat[is.na(varmat)] <- 0
-    rownames(varmat) <- gsub(".json", "", list.files(path, full.names = FALSE))
-    rownames(varmat) <- gsub("_constellation", "", rownames(varmat),
+    linmat[is.na(linmat)] <- 0
+    rownames(linmat) <- gsub(".json", "", list.files(path, full.names = FALSE))
+    rownames(linmat) <- gsub("_constellation", "", rownames(linmat),
         fixed = TRUE)
-    rownames(varmat) <- gsub("c", "", rownames(varmat))
+    rownames(linmat) <- gsub("c", "", rownames(linmat))
 
-    varmat <- varmat[, colSums(varmat) > 0]
+    linmat <- linmat[, colSums(linmat) > 0]
 
     # Manual fixes based on known naming anomalies
-    colnames(varmat)[which(colnames(varmat) == "+22205.GAGCCAGAA")] <-
+    colnames(linmat)[which(colnames(linmat) == "+22205.GAGCCAGAA")] <-
         "ins:22205:9"
-    colnames(varmat)[which(colnames(varmat) == "+28262.AACA")] <- "ins:28262:4"
-    colnames(varmat)[which(colnames(varmat) == "28271-")] <- "del:28271:1"
-    colnames(varmat)[which(colnames(varmat) == "A28271-")] <- "del:28271:1"
+    colnames(linmat)[which(colnames(linmat) == "+28262.AACA")] <- "ins:28262:4"
+    colnames(linmat)[which(colnames(linmat) == "28271-")] <- "del:28271:1"
+    colnames(linmat)[which(colnames(linmat) == "A28271-")] <- "del:28271:1"
     # Spike protein starts at position 21562
     # Position reported as index of amino acids, hence 3*246
-    colnames(varmat)[which(colnames(varmat) == "aa:S:RSYLTPG246-")] <-
+    colnames(linmat)[which(colnames(linmat) == "aa:S:RSYLTPG246-")] <-
         paste0("del:", 21562 + 3 * 246, ":21")
-    colnames(varmat)[which(colnames(varmat) == "aa:S:Y144-")] <-
+    colnames(linmat)[which(colnames(linmat) == "aa:S:Y144-")] <-
         paste0("del:", 21562 + 3 * 144, ":1")
-    colnames(varmat)[which(colnames(varmat) == "aa:S:HV69-")] <-
+    colnames(linmat)[which(colnames(linmat) == "aa:S:HV69-")] <-
         paste0("del:", 21562 + 3 * 69, ":2")
     # ORF 1a starts at 265
-    colnames(varmat)[which(colnames(varmat) == "aa:orf1a:SGF3675-")] <-
+    colnames(linmat)[which(colnames(linmat) == "aa:orf1a:SGF3675-")] <-
         paste0("del:", 265 + 3 * 3675 - 1, ":9")
-    as.matrix(varmat)
+    as.matrix(linmat)
 }
 
-#' Filter varmat for specific variants, keeping mutations that are present in at least one variant
+#' Filter linmat for specific lineages, keeping mutations that are present in at least one lineage
 #'
-#' @param varmat The result of \code{astronomize()}. If NULL, tries to run \code{astronoimize}.
-#' @param variants Vector of variant names (must be in \code{rownmaes(varmat)}). Defaults to variants circulating in 2021-2022.
-#' @param return_df Should the function return a data frame? Note that returned df is transposed compared to varmat. Default FALSE.
-#' @param path Passed on to \code{astronomize} if \code{varmat} is NULL.
+#' @param linmat The result of \code{astronomize()}. If NULL, tries to run \code{astronoimize}.
+#' @param lineages Vector of lineage names (must be in \code{rownmaes(linmat)}). Defaults to lineages circulating in 2021-2022.
+#' @param return_df Should the function return a data frame? Note that returned df is transposed compared to linmat. Default FALSE.
+#' @param path Passed on to \code{astronomize} if \code{linmat} is NULL.
 #' @param shared_order Put shared mutations first? Default TRUE.
 #'
-#' @return A variant matrix with fewer rows and columns than \code{varmat}. If \code{return_df}, the columns represent variant names and a \code{mutations} column is added.
+#' @return A lineage matrix with fewer rows and columns than \code{linmat}. If \code{return_df}, the columns represent lineage names and a \code{mutations} column is added.
 #' @export
 #'
-#' @details After removing some variants, the remaining mutations might not be present in any of the remaining variants. This function will remove mutations that no longer belong to any variants.
+#' @details After removing some lineage, the remaining mutations might not be present in any of the remaining lineage. This function will remove mutations that no longer belong to any lineage.
 #'
 #' Note that return_df will
-filter_variants <- function(
-    varmat = NULL,
-    variants = c("B.1.526", "B.1.1.7", "B.1.351", "B.1.617.2",
+filter_lineages <- function(
+    linmat = NULL,
+    lineages = c("B.1.526", "B.1.1.7", "B.1.351", "B.1.617.2",
         "B.1.427", "B.1.429", "P.1"),
     return_df = FALSE,
     path = NULL,
     shared_order = TRUE) {
 
-    if (is.null(varmat)) {
-        varmat <- astronomize(path = path)
+    if (is.null(linmat)) {
+        linmat <- astronomize(path = path)
     }
 
-    varmat <- varmat[variants, ]
-    varmat <- varmat[, apply(varmat, 2, sum) > 0]
+    linmat <- linmat[lineages, ]
+    linmat <- linmat[, apply(linmat, 2, sum) > 0]
 
     if (shared_order) {
-        varmat <- varmat[rev(order(apply(varmat, 1, sum))),
-            rev(order(apply(varmat, 2, sum)))]
+        linmat <- linmat[rev(order(apply(linmat, 1, sum))),
+            rev(order(apply(linmat, 2, sum)))]
     }
 
     if (return_df) {
-        mutnames <- colnames(varmat)
-        varmat <- as.data.frame(t(varmat))
-        varmat$mutation <- mutnames
-        rownames(varmat) <- NULL
+        mutnames <- colnames(linmat)
+        linmat <- as.data.frame(t(linmat))
+        linmat$mutation <- mutnames
+        rownames(linmat) <- NULL
     }
 
-    return(varmat)
+    return(linmat)
 }
 
 #' Obtain and clean barcodes file from usher_barcores in Freyja (or elsewhere)
@@ -256,7 +256,7 @@ usher_barcodes <- function(
         cat(ifelse(update, "", "usher_barcodes.csv not found."),
             "Downloading from Freyja repository.\n")
         barcodes <- read.csv(url)
-        # First column is variant names
+        # First column is lineage names
         rownames(barcodes) <- barcodes[, 1]
         barcodes <- barcodes[, -1]
         for (pathname in c(path, "data/clean/", "data/", "./")) {
