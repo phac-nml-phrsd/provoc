@@ -1,6 +1,6 @@
 Package: provoc
 Title: Proportions of Variants of Concern from Counts and Coverage of a list of Mutations and a Reference for Which Variants Those Mutations may Come From
-Version: 0.5.0
+Version: 0.5.1
 Authors@R: c(
     person("Devan", "Becker", , "D7Becker@gmail.com", 
         role = c("aut", "cre"), comment = c(ORCID = "0000-0003-3796-3946")),
