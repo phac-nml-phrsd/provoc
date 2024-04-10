@@ -4,20 +4,28 @@
 \alias{provoc_optim}
 \title{Estimate the proportions of VOCs using Constrained Optimization}
 \usage{
-provoc_optim(coco, varmat, bootstrap_samples = 0, verbose = TRUE)
+provoc_optim(
+  coco,
+  lineage_defs,
+  bootstrap_samples = 0,
+  verbose = TRUE,
+  rho_init = NULL
+)
 }
 \arguments{
 \item{coco}{A data frame containing columns labelled count, coverage, and mutation.}
 
-\item{varmat}{The variant matrix to be used in the study. The rownames must be the VoCs and the colnames must be the mutation names (in the same format as the mutation names in \code{coco})}
+\item{lineage_defs}{The lineage matrix to be used in the study. The rownames must be the VoCs and the colnames must be the mutation names (in the same format as the mutation names in \code{coco})}
 
 \item{bootstrap_samples}{The number of bootstrap samples to use.}
+
+\item{verbose}{Print messages to the console, default to True.}
 }
 \value{
 A list containing the results as well as convergence information from \code{constrOptim}.
 
 \describe{
-\item{res_df}{The estimated proportions of the variants of concern (\eqn{rho}), including CI if \code{bootstrap_samples > 0}}
+\item{res_df}{The estimated proportions of the lineage (\eqn{rho}), including CI if \code{bootstrap_samples > 0}}
 \item{convergence}{Logical}
 \item{convergence_note}{Convergence code from \code{constrOptim}. Also includes the method used for initializing \eqn{\rho}.}
 }
@@ -26,17 +34,17 @@ A list containing the results as well as convergence information from \code{cons
 If
 }
 \details{
-The estimates are found by minimizing the squared difference between the frequency of each mutation and the prediction of a binomial model where the proportion is equal to the sum of rho times the relevant column of varmat and the size parameter is equal to the coverage.
+The estimates are found by minimizing the squared difference between the frequency of each mutation and the prediction of a binomial model where the proportion is equal to the sum of rho times the relevant column of lineage_defs and the size parameter is equal to the coverage.
 
 The algorithm will first try a prior guess based on the current (March 2022) most common VOCs, then will try a uniform proportion, then (the nuclear option) will try 20 random perturbations until it works. Fails gracefully, with list elements indicating the convergence status and the initialization of rho, and returns the results that had the lowest value of the objective function.
 
 Bootstrapping is performed parametrically, assuming that coverage is Poisson with a mean of the observed coverage and, based on the sampled value of the coverage, the count is sampled from a binomial distribution with proportion equal to that in the data.
 }
 \examples{
-varmat <- simulate_varmat() # default values (Omicron)
-varmat <- varmat[row.names(varmat) \%in\% c("B.1.1.529", "BA.1", "BA.2")]
-coco <- simulate_coco(varmat, rel_counts = c(100, 200, 300)) # expect 1/6, 2/6, and 3/6
-res <- copt_binom(coco, varmat)
+lineage_defs <- simulate_lineage_defs() # default values (Omicron)
+lineage_defs <- lineage_defs[row.names(lineage_defs) \%in\% c("B.1.1.529", "BA.1", "BA.2")]
+coco <- simulate_coco(lineage_defs, rel_counts = c(100, 200, 300)) # expect 1/6, 2/6, and 3/6
+res <- copt_binom(coco, lineage_defs)
 res$res_df
 }
 \seealso{

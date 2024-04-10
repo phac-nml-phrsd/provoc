@@ -2,16 +2,16 @@
 % Please edit documentation in R/provoc_optim.R
 \name{rho_initializer}
 \alias{rho_initializer}
-\title{Initialize a vector of proportions for the variants of concern, prioritizing current (March 2022) most probable VoCs.}
+\title{Initialize a vector of proportions for the lineages of concern, prioritizing current (March 2022) most probable VoCs.}
 \usage{
-rho_initializer(varmat)
+rho_initializer(lineage_defs)
 }
 \arguments{
-\item{varmat}{The variant matrix to be used in the study; only used for the rownames (which should be VOCs in the expected format)}
+\item{lineage_defs}{The lineage matrix to be used in the study; only used for the rownames (which should be VOCs in the expected format)}
 }
 \value{
-varmat a vector with the same length as the number of rows of varmat, such that the values sum to less than one and each value is between 0 and 1
+lineage_defs a vector with the same length as the number of rows of lineage_defs, such that the values sum to less than one and each value is between 0 and 1
 }
 \description{
-Initialize a vector of proportions for the variants of concern, prioritizing current (March 2022) most probable VoCs.
+Initialize a vector of proportions for the lineages of concern, prioritizing current (March 2022) most probable VoCs.
 }

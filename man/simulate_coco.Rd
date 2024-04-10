@@ -2,10 +2,10 @@
 % Please edit documentation in R/simulate_coco.R
 \name{simulate_coco}
 \alias{simulate_coco}
-\title{Simulate counts and coverage from a variant matrix}
+\title{Simulate counts and coverage from a lineage definition matrix}
 \usage{
 simulate_coco(
-  varmat,
+  lineage_defs,
   rel_counts = NULL,
   censoring = NULL,
   absurd = FALSE,
@@ -13,13 +13,13 @@ simulate_coco(
 )
 }
 \arguments{
-\item{varmat}{The variant matrix, with properly named rows (VOCs) and columns (mutations)}
+\item{lineage_defs}{The lineage definition matrix, with properly named rows (VOCs) and columns (mutations)}
 
-\item{rel_counts}{(Optional) The relative counts of each VOC (will be censored by coverage). Must be same length as nrow(varmat).}
+\item{rel_counts}{(Optional) The relative counts of each VOC (will be censored by coverage). Must be same length as nrow(lineage_defs).}
 
-\item{censoring}{(Optional) The proportion of observations for each mutation. Must be same length as ncol(varmat).}
+\item{censoring}{(Optional) The proportion of observations for each mutation. Must be same length as ncol(lineage_defs).}
 
-\item{absurd}{If true, the counts are completely unrelated to the variant proportions. Useful for Monte Carlo estimation.}
+\item{absurd}{If true, the counts are completely unrelated to the lineage proportions. Useful for Monte Carlo estimation.}
 
 \item{verbose}{Print information about the simulation}
 }
@@ -27,7 +27,7 @@ simulate_coco(
 A data frame with counts and coverage of the sampled mutations, ready to be used in \code{copt_binom()}.
 }
 \description{
-Simulate counts and coverage from a variant matrix
+Simulate counts and coverage from a lineage definition matrix
 }
 \details{
 By default, uses a negative binomial distribution for the counts and uniform censoring for the coverage.

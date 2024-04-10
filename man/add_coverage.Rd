@@ -11,7 +11,7 @@ add_coverage(coco, coverage, mutation_list)
 
 \item{coverage}{The coverage filen with position as the first column and coverage as the second.}
 
-\item{mutation_list}{The mutations to be added (usually \code{colnames(varmat)}).}
+\item{mutation_list}{The mutations to be added (usually \code{colnames(lineage_defs)}).}
 }
 \value{
 coco, but with added rows.

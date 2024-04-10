@@ -1,3 +1,11 @@
 *rds
 *tsv.gz
 inst/doc
+working/
+*usher_barcodes*
+*pdf
+.Rproj.user
+README_cache/*
+provoc.Rproj
+.Rhistory
+.R_outbreak-info-token

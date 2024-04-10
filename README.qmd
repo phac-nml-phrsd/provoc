@@ -1,0 +1,238 @@
+---
+title: "ProVoC"
+format: gfm
+execute:
+  cache: true
+---
+
+[![Lifecycle: development](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental-1) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+PROportions of Variants of Concern using counts, coverage, and a lineage definition matrix.
+
+Builds and diagnoses a model based on:
+
+- Counts: The number of times a given mutation was observed.
+- Coverage: The number of times the position of a given mutation was read.
+- Mutation names: whatever format you want, as long as they match the names in the lineage definition matrix.
+- Lineage definition matrix: A matrix where the row names are lineage, the column names are mutations, and the entries are 1 if the row lineage has the column mutation and 0 otherwise.
+    - For example: Usher Barcodes
+    - All current methods accept fractional entries.
+
+# Usage
+
+There are two steps to using this software: create the lineage definitions and run the model(s).
+
+If not specified, the lineage definitions uses hardcoded definitions from the [cov-lineages/constellations](https://github.com/cov-lineages/constellations) repo, which contains the representative mutations that were identified by the PANGO team. The lineage definitions must have names that match what exists in the data.
+
+```{r}
+#| label: load_Baaijens
+#| echo: true
+#| eval: true
+#library(provoc)
+devtools::load_all()
+data(Baaijens)
+b1 <- Baaijens [Baaijens$sra == Baaijens$sra[1], ]
+b1$mutation <- parse_mutations(b1$label)
+
+head(b1[, c("count", "coverage", "mutation", "label")])
+```
+
+The main fitting function is designed to mimic `glm()`, with formula notation that emphasizes the connection to binomial GLM models. The `bootstrap_samples` argument is optional, and is used to calculate confidence intervals and correlation of the parameters.
+
+```{r}
+#| label: fit one sample
+res <- provoc(
+    formula = count / coverage ~ B.1.1.7 + B.1.429 + B.1.617.2 + 
+        B.1.427 + AY.4 + P.1,
+    data = b1,
+    bootstrap_samples = 100)
+res
+```
+
+We have created a class for `provoc` objects with convenient methods. For example, plotting the results is achieved as follows:
+
+```{r}
+#| label: one-sample-res-base
+#| fig-height: 4
+plot(res)
+```
+
+We use the convention of [`autoplot()`](https://ggplot2.tidyverse.org/reference/autoplot.html) as a function that creates a `ggplot2` plot based on a particular type of data. This allows for all of `ggplot2`'s fanciness on top of a pre-made plot.
+
+```{r}
+#| label: one-sample-res-ggplot
+#| fig-height: 4
+library(ggplot2)
+autoplot(res) +
+    theme_bw() +
+    labs(title = "Results for one sample")
+```
+
+```{r}
+#| label: one-sample-resid-plot
+#| fig-height: 4
+plot_resids(res)
+summary(res)
+```
+
+```{r}
+#| label: one-sample-lineage-plot
+plot_lineages(res)
+```
+
+# Multiple Samples
+
+```{r}
+#| label: multi_sample
+# First thirty samples from Baaijens
+b2 <- Baaijens [Baaijens$sra %in% unique(Baaijens$sra)[1:30], ]
+b2$mutations <- parse_mutations(b2$label)
+head(b1[, c("count", "coverage", "mutation", "label", "sra")])
+```
+
+Note the "`by`" argument below. This tells `provoc()` to fit the model separately to each sample defined by the `by` column. Since there are 30 samples, the model takes a while to run, hence why there are no bootstrap samples here.
+
+```{r}
+#| label: fit-multi-sample
+#| warning: false
+#| message: false
+system.time(
+    res <- provoc(
+        formula = count / coverage ~ B.1.1.7 + B.1.429 + B.1.617.2 +
+            B.1.427 + AY.4 + P.1,
+        data = b2, 
+        by = "sra",
+        bootstrap_samples = 0)
+)
+res
+```
+
+```{r}
+#| label: multi-sample-lineage-plot
+plot_lineages(res)
+```
+
+The plotting functions above work as expected.
+
+```{r}
+#| fig-height: 8
+#| label: multi-sample-res-base
+plot(res)
+```
+
+```{r}
+#| fig-height: 8
+#| label: multi-sample-resid-base
+plot_resids(res)
+```
+
+```{r}
+#| fig-height: 4
+#| label: multi-sample-res-ggplot
+autoplot(res)
+```
+
+In addition, we've added special functionality for data with a "date" column:
+
+```{r}
+#| fig-height: 4
+#| label: multi-date-res-ggplot
+theme_set(theme_bw())
+res$date <- lubridate::ymd(res$date)
+autoplot(res, date_col = "date")
+```
+
+Since `autoplot()` returns a `ggplot2` object, you can use all your knowledge of ggplot2:
+
+```{r}
+#| label: faceting
+autoplot(res, date_col = "date") +
+    facet_wrap(~ lineage, nrow = 1) +
+    labs(title = "Proportions of Lineages over Time") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Finally, the residual plot still works (although it's a bunch of samples stuffed into one plot, so its use is limited.)
+
+```{r}
+#| label: multi-sample-resid-plot
+#| fig-height: 4
+plot_resids(res)
+```
+
+## Searching for Different Lineages
+
+```{r}
+#| label: with-without
+library(patchwork)
+res_with <- provoc(cbind(count, coverage) ~ B.1.1.7 + B.1.429 + B.1.617.2 + B.1.427,
+    data = b2, by = "sra",
+    verbose = FALSE, bootstrap_samples = 0)
+res_with$date <- lubridate::ymd(res_with$date)
+
+res_without <- provoc(cbind(count, coverage) ~ B.1.429 + B.1.617.2 + B.1.427,
+    data = b2, by = "sra",
+    verbose = FALSE, bootstrap_samples = 0)
+res_without$date <- lubridate::ymd(res_without$date)
+
+g_with <- autoplot(res_with, date_col = "date") +
+    scale_fill_manual(values = 2:5)
+g_without <- autoplot(res_without, date_col = "date") +
+    scale_fill_manual(values = 3:5)
+
+g_with / g_without
+```
+
+Notice two important points:
+
+1. Since proportions can't sum to greater than one, including B.1.1.7 when it should be excluded means it will take away from the other lineages!
+    - Erroneously **increasing** one means **decreasing** true lineages.
+2. Due to shared mutations, excluding B.1.1.7 when it should be included means other lineages increase to make up for it.
+    - Erroneously **decreasing** one means **increasing** other lineages.
+
+`provoc` also accepts the `~ .` formula notation. This is useful if you want to manipulate the lineages in the lineage definitions matrix, which is easier programmatically than dealing with formulae in R. The `filter_lineages()` function will remove mutations that are not present in any of the remaining lineages.
+
+```{r}
+#| label: load-usher
+lineage_defs <- provoc::usher_barcodes(path = "working") |>
+    filter_lineages(c("B.1.1.7", "B.1.617.2", "B.1.427",
+        "B.1.429", "AY.4", "BA.4", "BA.5"))
+```
+
+With these definitions, we can just use all of them:
+
+```{r}
+#| label: run-barcodes
+res_all <- provoc(count / coverage ~ ., data = b1, 
+    bootstrap_samples = 0,
+    lineage_defs = lineage_defs)
+
+plot_lineages(res_all)
+
+```
+
+# Version Roadmap
+
+- [x] 0.5: Current version
+- [ ] 0.6: Refactor and add methods
+    - [ ] Standardize to use "lineage" everywhere
+    - [ ] General ease of use for fitting multiple models, checking lineage definitions, and checking diagnostics.
+    - [ ] Correct documentation errors and vestiges
+- [ ] 0.7: Better handling of multiple samples
+    - [ ] Proper diagnostics, easily applied to all samples
+    - [ ] `multiprovoc` class so functions know how to handle things?
+- [ ] 0.8: Multiple methods
+    - [ ] Freyja and AlCoV (possibly others) as first-class objects, with access to methods for `provoc` objects.
+        - Potentially loading in Freyja output files as `provoc` objects
+    - [ ] Stacking (`cbind()`) models for ease of comparison
+    - [ ] Import and process iVar data.
+    - [ ] Main function works for multiple methods and data sources.
+    - [ ] Unified `parse_mutations()` function with minimal user input.
+- [ ] 0.9: The shiny minor version
+    - [ ] Shiny app to interact with lineage defitions
+    - [ ] Shiny app to interact with results
+- [ ] 1.0: First major release
+    - [ ] All functions unit-tested and debugged
+    - [ ] Vignettes fully built
+    - [ ] All documentation up-to-date and built via `pkgdown`
+    - [ ] 

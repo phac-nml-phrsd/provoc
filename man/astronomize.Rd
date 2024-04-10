@@ -4,13 +4,13 @@
 \alias{astronomize}
 \title{Extract mutation list from a directory of constellation files.}
 \usage{
-astronomize(path = "../constellations")
+astronomize(path = NULL)
 }
 \arguments{
 \item{path}{Path to the constellations folder in the cov-lineages/constellations repository. The default assumes that the current project and the constellations repo are in the same directory.}
 }
 \value{
-A variant matrix for use with provoc.
+A lineage matrix for use with provoc.
 }
 \description{
 "Constellations" are files produced from \url{https://github.com/cov-lineages/constellations}, which represent the cov-lineage team's best knowledge about which mutations define a lineage. These are updated frequently, please \code{git pull} in your cloned copy accordingly. See details.
@@ -24,11 +24,11 @@ This function requires a local clone of the constellations repository. By defaul
 
 If this is not the case, a path to the root folder of the constellations repo is required. The path is to the root folder, not the folder with the constellation files.
 
-There are no options to specify which lineages to include. I am working on a \code{annihilate(coco, varmat)} function to remove mutations that aren't shared between coco and varmat and squash lineages that have too few observed mutations or are too similar to other lineages.
+There are no options to specify which lineages to include. I am working on a \code{annihilate(coco, lineage_defs)} function to remove mutations that aren't shared between coco and lineage_defs and squash lineages that have too few observed mutations or are too similar to other lineages.
 }
 \examples{
 if(dir.exists("../constellations")) {
-    varmat <- astronomize()
+    lineage_defs <- astronomize()
 }
 
 }

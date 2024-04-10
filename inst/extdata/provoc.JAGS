@@ -5,12 +5,12 @@ model{
         count[i] ~ dbinom((pvec[i] + 0.001)*0.999, coverage[i])
     }
 
-    # Prior on proportions for each variant
+    # Prior on proportions for each lineage
     for(j in 1:P) {
         p1[j] ~ dbeta(alpha, beta)
         p[j] <- ifelse(sum(p1) >= 1, p1[j] - (sum(p1) - 1), p1[j])
     }
 
     # Sum of p times an indicator function
-    pvec <- p %*% variantmat
+    pvec <- p %*% lineagemat
 }

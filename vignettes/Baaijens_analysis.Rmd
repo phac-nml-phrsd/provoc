@@ -1,0 +1,118 @@
+---
+title: "Analysis of Baaijens data"
+author: "Devan Becker"
+---
+
+# Introduction
+
+Baaijens et al. collected wastewater sequencing data as part of a study to predict lineage abundance. I reanalyse the data here.
+
+
+
+# Data Processing
+
+The data have been processed according to my own pipeline ([Data-Treatment-Plant](https://github.com/DASL-Lab/data-treatment-plant), which is based on [GromStole](https://github.com/PoonLab/gromstole)).
+
+In particular, every mutation that was observed with at least 20% frequency was included in all samples. For samples where the mutation was not present, I looked up the coverage in the coverage files. This is not relevant for ProVoC, since it only looks at a single sample at a time. It does, however, ensure that each sample is based on the same information. 
+
+# Naive Analysis
+
+Let's try some linear modelling approaches!
+
+```{R}
+library(provoc)
+lineage_defs <- astronomize()
+baaijens_lineages <- c("B.1.1.7", "B.1.427",
+    "B.1.429", "B.1.526", "B.1.617.2")
+lineage_defs <- lineage_defs[baaijens_lineages, ]
+
+data(Baaijens)
+baaijens1 <- Baaijens[Baaijens$date == "2021-01-01", ]
+baaijens1$mutation <- parse_mutations(baaijens1$label)
+fused <- fuse(baaijens1, lineage_defs, verbose = FALSE)
+
+rhs <- paste0("-1 + lin_",
+    paste(baaijens_lineages, collapse = " + lin_"))
+
+lmcoef <- coef(lm(
+    paste0("frequency ~ ", rhs),
+    data = fused
+))
+
+data.frame(
+        lineage = baaijens_lineages,
+        lm = round(unname(lmcoef), 3)) |>
+    knitr::kable(digits = 3)
+```
+
+```{R}
+# Analyze the dataset using the default mutation definitions
+res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2,
+              data = baaijens1, by = "sample_name",
+              lineage_defs = as.matrix(lineage_defs), verbose = FALSE)
+res
+
+preds <- predict(res)
+predsdf <- as.data.frame(t(preds))
+names(predsdf) <- "pred"
+predsdf$mutation <- rownames(predsdf)
+rownames(predsdf) <- NULL
+
+obsdf <- baaijens1[, c("frequency", "count", "coverage", "mutation")]
+
+library(dplyr)
+library(ggplot2)
+augdf <- inner_join(predsdf, obsdf, by = "mutation")
+aug <- fuse(augdf, lineage_defs, verbose = FALSE)
+
+aug$lineage <- apply(select(aug, starts_with("lin_")), 1, function(x) {
+    paste(names(x)[x == 1], collapse = "-")
+})
+
+head(aug)
+ggplot(aug) +
+    aes(x = pred, y = frequency - pred) +
+    geom_point(shape = 1) +
+    geom_hline(yintercept = 0) +
+    facet_wrap(~ lineage)
+```
+
+Oooh that's bad! Negative estimates??? That's not possible. 
+
+# ProVoC
+
+ProVoC ensures that estimates are positive and that their sum is less than or equal to 1.
+
+```{R}
+res <- provoc(fused = fused)
+data.frame(
+        lineage = baaijens_lineages,
+        lm = round(unname(lmcoef), 3),
+        provoc = round(res$rho, 3)) |>
+    knitr::kable(digits = 3)
+```
+
+ProVoC is set up to handle multiple samples and provide output convenient for `ggplot2`. As of this writing, it uses a column labelled "`sample`" and applies the model separately to each unique value in that column. It will also retain any information that is constant within each sample - for example, the date or location.
+
+```{R}
+library(ggplot2)
+theme_set(theme_bw())
+library(lubridate)
+Baaijens$mutation <- parse_mutations(Baaijens$label)
+Baaijens$sample <- Baaijens$sra
+fused <- fuse(Baaijens, lineage_defs)
+res <- provoc(fused = fused)
+
+ggplot(res) +
+    aes(x = ymd(date), y = rho) +
+    geom_point() +
+    facet_wrap(~ lineage) +
+    scale_x_date() +
+    labs(x = "Date", y = "Proportion in Sample",
+        title = "ProVoC applied to many samples")
+```
+
+
+# Reference
+
+[Baaijens, Jasmijn A., Alessandro Zulli, Isabel M. Ott, Ioanna Nika, Mart J. van der Lugt, Mary E. Petrone, Tara Alpert, Joseph R. Fauver, Chaney C. Kalinich, Chantal B. F. Vogels, Mallery I. Breban, Claire Duvallet, Kyle A. McElroy, Newsha Ghaeli, Maxim Imakaev, Malaika F. Mckenzie-Bennett, Keith Robison, Alex Plocik, Rebecca Schilling, Martha Pierson, Rebecca Littlefield, Michelle L. Spencer, Birgitte B. Simen, Ahmad Altajar, Anderson F. Brito, Anne E. Watkins, Anthony Muyombwe, Caleb Neal, Chen Liu, Christopher Castaldi, Claire Pearson, David R. Peaper, Eva Laszlo, Irina R. Tikhonova, Jafar Razeq, Jessica E. Rothman, Jianhui Wang, Kaya Bilguvar, Linda Niccolai, Madeline S. Wilson, Margaret L. Anderson, Marie L. Landry, Mark D. Adams, Pei Hui, Randy Downing, Rebecca Earnest, Shrikant Mane, Steven Murphy, William P. Hanage, Nathan D. Grubaugh, Jordan Peccia, Michael Baym, and Yale SARS-CoV-2 Genomic Surveillance Initiative. 2022. “Lineage Abundance Estimation for SARS-CoV-2 in Wastewater Using Transcriptome Quantification Techniques.” \emph{Genome Biology} 23(1):236. doi: 10.1186/s13059-022-02805-9.](https://doi.org/10.1186/s13059-022-02805-9)

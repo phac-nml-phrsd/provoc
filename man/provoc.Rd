@@ -2,54 +2,63 @@
 % Please edit documentation in R/provoc.R
 \name{provoc}
 \alias{provoc}
-\title{Proportions of Variants of Concern}
+\title{Proportions of Variants of Concern (provoc) Analysis}
 \usage{
 provoc(
-  coco,
-  varmat,
-  fused = NULL,
-  method = c("optim", "runjags"),
-  ncores = 1,
+  formula,
+  data,
+  lineage_defs = NULL,
+  by = NULL,
   bootstrap_samples = 0,
   update_interval = 20,
-  verbose = TRUE,
-  ...
+  verbose = FALSE,
+  annihilate = FALSE
 )
 }
 \arguments{
-\item{coco}{The counts and coverage data frame. Ignored if \code{fused} is supplied.}
+\item{formula}{A formula for the binomial model, like cbind(count, coverage) ~ .}
 
-\item{varmat}{The matrix of variant mutations. Ignored if \code{fused} is supplied.}
+\item{data}{Data frame containing count, coverage, and lineage columns.}
 
-\item{fused}{The fused data frame of coco and varmat. The fusion ensures that the mutations are properly joined and varmat contains only the most pertinent mutations.}
+\item{lineage_defs}{Optional mutation definitions; if NULL, uses astronomize().}
 
-\item{method}{Optimization or Bayesian?}
+\item{by}{Column name to group and process data. If included, the results will contain a column labelled "group".}
 
-\item{ncores}{For optim, the number of cores to be used. Requires the parallel package for ncores > 1}
+\item{bootstrap_samples}{The number of bootstrap samples to use.}
 
-\item{update_interval}{Print message after \code{update_interval} samples. Set to 0 to suppress output.}
+\item{update_interval}{Interval for progress messages (0 to suppress).}
 
-\item{...}{Arguments to be passed to \code{provoc_jags()} (ignored for method = "optim"). See \code{?provoc_jags}.}
+\item{verbose}{TRUE to print detailed messages.}
+
+\item{annihilate}{TRUE to remove duplicate lineages from the data}
 }
 \value{
-Results of the estimation. Regardless of the technique used, the results are as follows.
-
-\describe{
-\item{point_est}{A data frame with columns labelled rho, ci_low, ci_high, and the name of the variant. For \code{optim}, these are the estimates (bootstrap CI not yet implemented). For \code{runjags}, these are the medians and quantiles.}
-\item{convergence}{True if the algorithm converged.}
-\item{convergence_notes}{For \code{optim}, the message returned from \code{optim} as well as the initialization method for rho. For \code{runjags}, the gelman-rubin statistics for each parameter.}
-\item{note}{A brief note about the method.}
-\item{loglik}{The log likelihood value. For \code{runjags}, this is calculated for the medians of all parameters. This may be changed in future updates.}
-\item{sample_info}{The function checks for any columns that have exactly one unique value within a given sample. The unique value of each is returned in a data frame. Very useful if samples have columns such as "date" or "location".}
+Returns an object of class 'provoc' with results from applying \code{provoc_optim} to the input data. The object has methods for print(), plot(), and summary(), but otherwise is treated as a dataframe. Fit information can be extracted as follows:
+\itemize{
+\item convergence(res)
+\item get_lineage_defs(res): Mutation definitions used for analysis, provided \code{lineage_defs} or default \code{astronomize()}.
 }
+
+Outputs necessary information for subsequent analysis, including the use of the \code{predict.provoc()}.
 }
 \description{
-Un-fuses coco and varmat and applies the appropriate estimation technique. If a column labelled "sample" is present, applies the analysis to each sample separately.
+Applies provoc_optim to analyze COVID-19 lineage proportions.
+It allows flexible lineage and mutation definitions.
 }
 \examples{
-varmat <- simulate_varmat()
-coco <- simulate_coco(varmat)
-fused <- fuse(coco, varmat)
-res <- provoc(fused)
-res$point_est
+library(provoc)
+# Load a dataset
+data("Baaijens")
+# Prepare the dataset
+Baaijens$mutation <- parse_mutations(Baaijens$label)
+
+# Analyze the dataset using the default mutation definitions
+res <- provoc(formula = cbind(count, coverage) ~ B.1.1.7 + B.1.617.2, data = Baaijens, by = "sample_id")
+
+# Check for analysis convergence
+print(get_convergence(res))
+
+# Use the results for prediction
+predicted_values <- predict.provoc(res)
+
 }
